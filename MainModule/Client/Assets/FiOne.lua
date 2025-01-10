@@ -1,3 +1,4 @@
+--# selene: allow(mixed_table, divide_by_zero)
 --[[
 FiOne
 Copyright (C) 2021  Rerumu

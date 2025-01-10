@@ -1584,13 +1584,7 @@ return function(envArgs)
 		end,
 
 		getNetworks = function()
-			local dupTable = {}
-
-			for i, v in pairs(createdNetworks) do
-				dupTable[i] = v
-			end
-
-			return dupTable
+			return table.clone(createdNetworks)
 		end,
 
 		getClient = function(userIdOrName)

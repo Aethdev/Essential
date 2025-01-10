@@ -168,7 +168,7 @@ return function(envArgs, data)
 		aliasSettingsCatg:makeInstance("TextLabel", {
 			Text = "Existing aliases",
 			TextSize = 16,
-			Font = Enum.Font.GothamSemibold,
+			Font = Enum.Font.GothamMedium,
 			TextColor3 = Color3.fromRGB(239, 239, 239),
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
@@ -523,7 +523,7 @@ return function(envArgs, data)
 		aliasSettingsCatg:makeInstance("TextLabel", {
 			Text = "Existing aliases",
 			TextSize = 16,
-			Font = Enum.Font.GothamSemibold,
+			Font = Enum.Font.GothamMedium,
 			TextColor3 = Color3.fromRGB(239, 239, 239),
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
@@ -886,7 +886,7 @@ return function(envArgs, data)
 		keybindSettingsCatg:makeInstance("TextLabel", {
 			Text = "Existing Keybinds",
 			TextSize = 16,
-			Font = Enum.Font.GothamSemibold,
+			Font = Enum.Font.GothamMedium,
 			TextColor3 = Color3.fromRGB(239, 239, 239),
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,

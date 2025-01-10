@@ -2786,13 +2786,12 @@ function parser:filterArguments(
 					ignoreHigherPriority = ignoreHigherPriority,
 				}) or {}
 
-				if (minPlayers and not maxPlayers) and #list >= minPlayers then
-					minAndMaxPass = true
-				elseif (not minPlayers and maxPlayers) and #list <= maxPlayers then
-					minAndMaxPass = true
-				elseif (minPlayers and maxPlayers) and (#list >= minPlayers and #list <= maxPlayers) then
-					minAndMaxPass = true
-				elseif not minPlayers and not maxPlayers then
+				if ((minPlayers and not maxPlayers) and #list >= minPlayers) or
+					((not minPlayers and maxPlayers) and #list <= maxPlayers) or
+					((not minPlayers and maxPlayers) and #list <= maxPlayers) or
+					((minPlayers and maxPlayers) and (#list >= minPlayers and #list <= maxPlayers)) or
+					(not minPlayers and not maxPlayers)
+				then
 					minAndMaxPass = true
 				end
 

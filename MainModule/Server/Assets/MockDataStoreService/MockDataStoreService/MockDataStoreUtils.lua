@@ -1,3 +1,4 @@
+--# selene: allow(manual_table_clone)
 --[[
 	MockDataStoreUtils.lua
 	Contains helper and utility functions used by other classes.

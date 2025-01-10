@@ -647,7 +647,7 @@ return function(env)
 							RichText = true,
 							ClipsDescendants = true,
 							BackgroundTransparency = 1,
-							Font = Enum.Font.GothamSemibold,
+							Font = Enum.Font.GothamMedium,
 							TextXAlignment = Enum.TextXAlignment.Left,
 							TextYAlignment = Enum.TextYAlignment.Top,
 							Parent = hoverFrame,

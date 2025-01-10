@@ -1,3 +1,4 @@
+--# selene: allow(unbalanced_assignments, divide_by_zero)
 -- Adapted from the amazing Yueliang project
 -- http://yueliang.luaforge.net/
 

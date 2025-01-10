@@ -1,4 +1,5 @@
 --!nonstrict
+--TODO: When to use this?
 
 local TableAssist = {}
 TableAssist.prototype = {}
@@ -16,8 +17,6 @@ local _rawlen = rawlen
 local _isTableAListOf = function(tab: { [any]: any }, valueType: string): boolean
 	local isValid = true
 
-	for i, v in pairs(tab) do
-	end
 end
 
 function TableAssist.prototype:at(): number return _rawlen(self.linkedTable) end

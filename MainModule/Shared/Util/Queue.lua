@@ -1,3 +1,4 @@
+--# selene: allow(if_same_then_else)
 --[[
 	ESSENTIAL QUEUE V1.4
 	  > Creator: trzistan
@@ -1032,7 +1033,7 @@ function Queue:linkCrossCommunication(crossQueueName: string, settings: { [strin
 							self:warn(`DS Attempt {dataAttempt} attempting to session lock memory que {itemId}`)
 						end
 
-						local success, error = doDSAttempt(dataAttempt)
+						local success, error = doDSAttempt()
 
 						if not success and queueDebug then
 							self:warn(`DS Attempt {dataAttempt} failed to session lock memory que {itemId}`)

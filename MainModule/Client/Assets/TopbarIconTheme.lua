@@ -71,7 +71,7 @@ return {
 	--         iconOffset = UDim2.new(0, 0, 0, 0),
 	--         iconText = "",
 	--         iconTextColor = Color3.fromRGB(232, 232, 232),
-	--         iconFont = Enum.Font.GothamSemibold,
+	--         iconFont = Enum.Font.GothamMedium,
 	--         noticeCircleColor = Color3.fromRGB(173, 191, 217),
 	--         noticeCircleImage = "http://www.roblox.com/asset/?id=4871790969",
 	--         noticeTextColor = Color3.fromRGB(221, 221, 221),
@@ -101,7 +101,7 @@ return {
 	--     captionBackgroundTransparency = 0.5,
 	--     captionTextColor = Color3.fromRGB(255, 255, 255),
 	--     captionTextTransparency = 0,
-	--     captionFont = Enum.Font.GothamSemibold,
+	--     captionFont = Enum.Font.GothamMedium,
 	--     captionOverlineColor = Color3.fromRGB(0, 170, 255),
 	--     captionOverlineTransparency = 0,
 	--     captionCornerRadius = UDim.new(0.25, 0),
@@ -110,7 +110,7 @@ return {
 	--     tipBackgroundTransparency = 0.1,
 	--     tipTextColor = Color3.fromRGB(27, 42, 53),
 	--     tipTextTransparency = 0,
-	--     tipFont = Enum.Font.GothamSemibold,
+	--     tipFont = Enum.Font.GothamMedium,
 	--     tipCornerRadius = UDim.new(0.175, 0),
 	--     -- Dropdown settings
 	--     dropdownAlignment = "auto", -- 'left', 'mid', 'right' or 'auto' (auto is where the dropdown alignment matches the icons alignment)

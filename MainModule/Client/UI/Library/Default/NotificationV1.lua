@@ -66,11 +66,6 @@ return function(envArgs, data)
 	notifContainer:add(notif)
 
 	notif:show(time)
-	if time and time > 0 then
-		if not (data.noYield or data.noWait) then notif.hidden:wait() end
-		return openedState, closedState
-	else
-		if not (data.noYield or data.noWait) then notif.hidden:wait() end
-		return openedState, closedState
-	end
+	if not (data.noYield or data.noWait) then notif.hidden:wait() end
+	return openedState, closedState
 end

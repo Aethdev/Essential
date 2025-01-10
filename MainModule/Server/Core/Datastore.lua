@@ -929,10 +929,7 @@ return function(envArgs)
 				reqType = Enum.DataStoreRequestType.SetIncrementAsync
 			elseif reqType == "read" or reqType == "get" then
 				reqType = Enum.DataStoreRequestType.GetAsync
-			elseif reqType == "getSorted" or reqType == "getVersion" then
-				reqType = Enum.DataStoreRequestType.GetSortedAsync
-				reqPerMin = 5 + playersCount * 2
-			elseif reqType == "remove" then
+			elseif reqType == "getSorted" or reqType == "getVersion" or reqType == "remove" then
 				reqType = Enum.DataStoreRequestType.GetSortedAsync
 				reqPerMin = 5 + playersCount * 2
 			end

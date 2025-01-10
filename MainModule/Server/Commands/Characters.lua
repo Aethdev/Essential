@@ -1336,9 +1336,9 @@ return function(envArgs)
 
 					if char then
 						for d, desc in pairs(char:GetDescendants()) do
-							if desc:IsA "Decal" or desc:IsA "Texture" then
-								desc.Transparency = 1
-							elseif desc:IsA "BasePart" and not (desc.Name == "HumanoidRootPart") then
+							if desc:IsA "Decal" or desc:IsA "Texture" or
+								(desc:IsA "BasePart" and not (desc.Name == "HumanoidRootPart"))
+							then
 								desc.Transparency = 1
 							end
 						end
@@ -1368,9 +1368,9 @@ return function(envArgs)
 
 					if char then
 						for d, desc in pairs(char:GetDescendants()) do
-							if desc:IsA "Decal" or desc:IsA "Texture" then
-								desc.Transparency = 0
-							elseif desc:IsA "BasePart" and not (desc.Name == "HumanoidRootPart") then
+							if desc:IsA "Decal" or desc:IsA "Texture" or
+								(desc:IsA "BasePart" and not (desc.Name == "HumanoidRootPart"))
+							then
 								desc.Transparency = 0
 							end
 						end

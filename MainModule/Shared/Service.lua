@@ -1172,11 +1172,8 @@ return function(specificTab, errHandler, Promise)
 			end,
 
 			shallowCloneTable = function(tab)
-				local new = {}
-
-				for i, v in pairs(tab) do
-					new[i] = v
-				end
+				local new = table.clone(tab)
+				setmetatable(new, nil)
 
 				return new
 			end,
