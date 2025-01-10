@@ -1,0 +1,14 @@
+std = "roblox"
+roblox-std-source = "pinned"
+
+[lints]
+global_usage = "allow"
+high_cyclomatic_complexity = "warn"
+empty_if = "allow"
+manual_table_clone = "warn"
+mixed_table = "warn"
+shadowing = "allow"
+suspicious_reverse_loop = "warn"
+unscoped_variables = "allow"
+unused_variable = "allow"
+multiple_statements = "allow"

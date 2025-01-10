@@ -1,0 +1,14 @@
+# Project place file
+/essential-module-git.rbxlx
+
+# Roblox Studio lock files
+/*.rbxlx.lock
+/*.rbxl.lock
+
+# Added by cargo
+
+/target
+
+
+# Misc
+roblox.yml

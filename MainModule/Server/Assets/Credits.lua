@@ -1,0 +1,31 @@
+return {
+	"<b>Foundation</b>";
+	"Founder & lead developer - trzistan";
+	"";
+	"<b>Core Dependencies</b>";
+	"Signal (custom events) - trzistan";
+	"Queue (custom queues) - trzistan";
+	"";
+	"<b>Sound Effects</b>";
+	"System Notifications - UNIVERSFIELD through FreeSound";
+	"";
+	"<b>Tools</b>";
+	"Building Tools - GigsD4X";
+	"Boombox - ArceusInator";
+	"Classic Sword - Roblox";
+	"";
+	"<b>Dependencies</b>";
+	"Base64 - Github @Reselim";
+	"LibDeflate - Github @Haoqian";
+	"HashLib - Egor Skriptunoff, boatbomber, & howmanysmall";
+	"LuaParser - Github @Rerumu";
+	"TurlirAES - Github @tulir.quacknet";
+	"FiOne (dependency of Loadstring module) - Github @Rerumu";
+	"Yueliang 5 (dependency of Loadstring module) - Kein-Hong Man";
+	"Vela (outdated) - trzistan";
+	"Promise - eryn";
+	"";
+	"<b>User Interface</b>";
+	"Essential UIs (Modern) - trzistan";
+	"Material Icons - Google";
+}

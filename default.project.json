@@ -1,0 +1,34 @@
+{
+  "name": "Essential",
+  "tree": {
+    "$className": "DataModel",
+
+    "ServerStorage": {
+      "$className": "ServerStorage",
+
+      "Essential": {
+        "$className": "Folder",
+        "$properties": {
+          "Attributes": {
+            "Rojo": {"Bool": true}
+          }
+        },
+        "MainModule": {
+          "$path": "MainModule/"
+        }
+      }
+    },
+
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$properties": {
+        "LoadStringEnabled": true
+      },
+
+      "Essential": {
+        "$className": "Folder",
+        "$path": "Essential/"
+      }
+    }
+  }
+}
