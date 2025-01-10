@@ -1,4 +1,3 @@
-
 return function(envArgs)
 	local server = envArgs.server
 	local service = envArgs.service
@@ -6,7 +5,7 @@ return function(envArgs)
 	local variables = envArgs.variables
 	local getEnv = envArgs.getEnv
 	local script = envArgs.script
-	
+
 	local Cmds = server.Commands
 	local Core = server.Core
 	local Cross = server.Cross
@@ -16,12 +15,10 @@ return function(envArgs)
 	local Moderation = server.Moderation
 	local Process = server.Process
 	local Remote = server.Remote
-	
-	local cmdsList = {
-		
-	}
-	
-	for cmdName,cmdTab in pairs(cmdsList) do
+
+	local cmdsList = {}
+
+	for cmdName, cmdTab in pairs(cmdsList) do
 		cmdTab.Category = script.Name
 		Cmds.create(cmdName, cmdTab)
 	end

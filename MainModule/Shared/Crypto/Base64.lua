@@ -6,9 +6,15 @@ local FILLER_CHARACTER = 61
 local alphabet = {}
 local indexes = {}
 
-for index = 65, 90 do table.insert(alphabet, index) end -- A-Z
-for index = 97, 122 do table.insert(alphabet, index) end -- a-z
-for index = 48, 57 do table.insert(alphabet, index) end -- 0-9
+for index = 65, 90 do
+	table.insert(alphabet, index)
+end -- A-Z
+for index = 97, 122 do
+	table.insert(alphabet, index)
+end -- a-z
+for index = 48, 57 do
+	table.insert(alphabet, index)
+end -- 0-9
 
 table.insert(alphabet, 43) -- +
 table.insert(alphabet, 47) -- /
@@ -21,9 +27,7 @@ local function buildString(values)
 	local output = {}
 
 	for index = 1, #values, 4096 do
-		table.insert(output, string.char(
-			unpack(values, index, math.min(index + 4096 - 1, #values))
-			))
+		table.insert(output, string.char(unpack(values, index, math.min(index + 4096 - 1, #values))))
 	end
 
 	return table.concat(output, "")

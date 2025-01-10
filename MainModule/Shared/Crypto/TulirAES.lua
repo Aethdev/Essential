@@ -1,15 +1,19 @@
 --//
 --//	Github @tulir.quacknet/lib/aes.lua
---//		- https://gist.github.com/SquidDev/86925e07cbabd70773e53d781bd8b2fe	
+--//		- https://gist.github.com/SquidDev/86925e07cbabd70773e53d781bd8b2fe
 --//
 --//	- Code optimized by trzistan 3/8/22
 --//
 
 local _ENV = getfenv(0)
 local sleepCheckIn = task.wait
-local function _W(f) local e=setmetatable({}, {__index = _ENV or getfenv()}) if setfenv then setfenv(f, e) end return f(e) or e end
-local bit=_W(function(_ENV, ...)
---[[
+local function _W(f)
+	local e = setmetatable({}, { __index = _ENV or getfenv() })
+	if setfenv then setfenv(f, e) end
+	return f(e) or e
+end
+local bit = _W(function(_ENV, ...)
+	--[[
 	This bit API is designed to cope with unsigned integers instead of normal integers
 	To do this we add checks for overflows: (x > 2^31 ? x - 2 ^ 32 : x)
 	These are written in long form because no constant folding.
@@ -19,25 +23,21 @@ local bit=_W(function(_ENV, ...)
 
 	local lshift, rshift
 
-	rshift = function(a,disp)
-		return floor(a % 4294967296 / 2^disp)
-	end
+	rshift = function(a, disp) return floor(a % 4294967296 / 2 ^ disp) end
 
-	lshift = function(a,disp)
-		return (a * 2^disp) % 4294967296
-	end
+	lshift = function(a, disp) return (a * 2 ^ disp) % 4294967296 end
 
 	return {
 		-- bit operations
 		bnot = bit32.bnot,
 		band = bit32.band,
-		bor  = bit32.bor,
+		bor = bit32.bor,
 		bxor = bit32.bxor,
 		rshift = rshift,
 		lshift = lshift,
 	}
 end)
-local gf=_W(function(_ENV, ...)
+local gf = _W(function(_ENV, ...)
 	-- finite field with base 2 and modulo irreducible polynom x^8+x^4+x^3+x+1 = 0x11d
 	local bxor = bit32.bxor
 	local lshift = bit32.lshift
@@ -52,16 +52,12 @@ local gf=_W(function(_ENV, ...)
 	--
 	-- add two polynoms (its simply xor)
 	--
-	local function add(operand1, operand2)
-		return bxor(operand1,operand2)
-	end
+	local function add(operand1, operand2) return bxor(operand1, operand2) end
 
 	--
 	-- subtract two polynoms (same as addition)
 	--
-	local function sub(operand1, operand2)
-		return bxor(operand1,operand2)
-	end
+	local function sub(operand1, operand2) return bxor(operand1, operand2) end
 
 	--
 	-- inverts element
@@ -69,9 +65,7 @@ local gf=_W(function(_ENV, ...)
 	--
 	local function invert(operand)
 		-- special case for 1
-		if (operand == 1) then
-			return 1
-		end
+		if operand == 1 then return 1 end
 		-- normal invert
 		local exponent = ord - log[operand]
 		return exp[exponent]
@@ -82,15 +76,11 @@ local gf=_W(function(_ENV, ...)
 	-- a*b = g^(log(a)+log(b))
 	--
 	local function mul(operand1, operand2)
-		if (operand1 == 0 or operand2 == 0) then
-			return 0
-		end
+		if operand1 == 0 or operand2 == 0 then return 0 end
 
 		local exponent = log[operand1] + log[operand2]
-		if (exponent >= ord) then
-			exponent = exponent - ord
-		end
-		return  exp[exponent]
+		if exponent >= ord then exponent = exponent - ord end
+		return exp[exponent]
 	end
 
 	--
@@ -98,14 +88,10 @@ local gf=_W(function(_ENV, ...)
 	-- a/b = g^(log(a)-log(b))
 	--
 	local function div(operand1, operand2)
-		if (operand1 == 0)  then
-			return 0
-		end
+		if operand1 == 0 then return 0 end
 		-- TODO: exception if operand2 == 0
 		local exponent = log[operand1] - log[operand2]
-		if (exponent < 0) then
-			exponent = exponent + ord
-		end
+		if exponent < 0 then exponent = exponent + ord end
 		return exp[exponent]
 	end
 
@@ -114,7 +100,7 @@ local gf=_W(function(_ENV, ...)
 	--
 	local function printLog()
 		for i = 1, n do
-			print("log(", i-1, ")=", log[i-1])
+			print("log(", i - 1, ")=", log[i - 1])
 		end
 	end
 
@@ -123,7 +109,7 @@ local gf=_W(function(_ENV, ...)
 	--
 	local function printExp()
 		for i = 1, n do
-			print("exp(", i-1, ")=", exp[i-1])
+			print("exp(", i - 1, ")=", exp[i - 1])
 		end
 	end
 
@@ -133,7 +119,7 @@ local gf=_W(function(_ENV, ...)
 	local function initMulTable()
 		local a = 1
 
-		for i = 0,ord-1 do
+		for i = 0, ord - 1 do
 			exp[i] = a
 			log[a] = i
 
@@ -141,9 +127,7 @@ local gf=_W(function(_ENV, ...)
 			a = bxor(lshift(a, 1), a)
 
 			-- if a gets larger than order, reduce modulo irreducible polynom
-			if a > ord then
-				a = sub(a, irrPolynom)
-			end
+			if a > ord then a = sub(a, irrPolynom) end
 		end
 	end
 
@@ -159,7 +143,7 @@ local gf=_W(function(_ENV, ...)
 		printExp = printExp,
 	}
 end)
-util=_W(function(_ENV, ...)
+util = _W(function(_ENV, ...)
 	-- Cache some bit operators
 	local bxor = bit32.bxor
 	local rshift = bit32.rshift
@@ -181,22 +165,21 @@ util=_W(function(_ENV, ...)
 	-- get byte at position index
 	--
 	local function getByte(number, index)
-		if (index == 0) then
-			return band(number,0xff)
+		if index == 0 then
+			return band(number, 0xff)
 		else
-			return band(rshift(number, index*8),0xff)
+			return band(rshift(number, index * 8), 0xff)
 		end
 	end
-
 
 	--
 	-- put number into int at position index
 	--
 	local function putByte(number, index)
-		if (index == 0) then
-			return band(number,0xff)
+		if index == 0 then
+			return band(number, 0xff)
 		else
-			return lshift(band(number,0xff),index*8)
+			return lshift(band(number, 0xff), index * 8)
 		end
 	end
 
@@ -206,11 +189,10 @@ util=_W(function(_ENV, ...)
 	local function bytesToInts(bytes, start, n)
 		local ints = {}
 		for i = 0, n - 1 do
-			ints[i + 1] =
-				putByte(bytes[start + (i*4)], 3) +
-				putByte(bytes[start + (i*4) + 1], 2) +
-				putByte(bytes[start + (i*4) + 2], 1) +
-				putByte(bytes[start + (i*4) + 3], 0)
+			ints[i + 1] = putByte(bytes[start + (i * 4)], 3)
+				+ putByte(bytes[start + (i * 4) + 1], 2)
+				+ putByte(bytes[start + (i * 4) + 2], 1)
+				+ putByte(bytes[start + (i * 4) + 3], 0)
 
 			if n % 10000 == 0 then sleepCheckIn() end
 		end
@@ -223,8 +205,8 @@ util=_W(function(_ENV, ...)
 	local function intsToBytes(ints, output, outputOffset, n)
 		n = n or #ints
 		for i = 0, n - 1 do
-			for j = 0,3 do
-				output[outputOffset + i*4 + (3 - j)] = getByte(ints[i + 1], j)
+			for j = 0, 3 do
+				output[outputOffset + i * 4 + (3 - j)] = getByte(ints[i + 1], j)
 			end
 
 			if n % 10000 == 0 then sleepCheckIn() end
@@ -238,7 +220,7 @@ util=_W(function(_ENV, ...)
 	local function bytesToHex(bytes)
 		local hexBytes = ""
 
-		for i,byte in ipairs(bytes) do
+		for i, byte in ipairs(bytes) do
 			hexBytes = hexBytes .. string.format("%02x ", byte)
 		end
 
@@ -259,12 +241,12 @@ util=_W(function(_ENV, ...)
 	--
 	local function toHexString(data)
 		local type = type(data)
-		if (type == "number") then
-			return string.format("%08x",data)
-		elseif (type == "table") then
+		if type == "number" then
+			return string.format("%08x", data)
+		elseif type == "table" then
 			return bytesToHex(data)
-		elseif (type == "string") then
-			local bytes = {string.byte(data, 1, #data)}
+		elseif type == "string" then
+			local bytes = { string.byte(data, 1, #data) }
 
 			return bytesToHex(bytes)
 		else
@@ -275,10 +257,11 @@ util=_W(function(_ENV, ...)
 	local function padByteString(data)
 		local dataLength = #data
 
-		local random1 = math.random(0,255)
-		local random2 = math.random(0,255)
+		local random1 = math.random(0, 255)
+		local random2 = math.random(0, 255)
 
-		local prefix = string.char(random1,
+		local prefix = string.char(
+			random1,
 			random2,
 			random1,
 			random2,
@@ -290,40 +273,36 @@ util=_W(function(_ENV, ...)
 
 		data = prefix .. data
 
-		local paddingLength = math.ceil(#data/16)*16 - #data
+		local paddingLength = math.ceil(#data / 16) * 16 - #data
 		local padding = ""
-		for i=1,paddingLength do
-			padding = padding .. string.char(math.random(0,255))
+		for i = 1, paddingLength do
+			padding = padding .. string.char(math.random(0, 255))
 		end
 
 		return data .. padding
 	end
 
 	local function properlyDecrypted(data)
-		local random = {string.byte(data,1,4)}
+		local random = { string.byte(data, 1, 4) }
 
-		if (random[1] == random[3] and random[2] == random[4]) then
-			return true
-		end
+		if random[1] == random[3] and random[2] == random[4] then return true end
 
 		return false
 	end
 
 	local function unpadByteString(data)
-		if (not properlyDecrypted(data)) then
-			return nil
-		end
+		if not properlyDecrypted(data) then return nil end
 
-		local dataLength = putByte(string.byte(data,5), 3)
-			+ putByte(string.byte(data,6), 2)
-			+ putByte(string.byte(data,7), 1)
-			+ putByte(string.byte(data,8), 0)
+		local dataLength = putByte(string.byte(data, 5), 3)
+			+ putByte(string.byte(data, 6), 2)
+			+ putByte(string.byte(data, 7), 1)
+			+ putByte(string.byte(data, 8), 0)
 
-		return string.sub(data,9,8+dataLength)
+		return string.sub(data, 9, 8 + dataLength)
 	end
 
 	local function xorIV(data, iv)
-		for i = 1,16 do
+		for i = 1, 16 do
 			data[i] = bxor(data[i], iv[i])
 		end
 	end
@@ -350,7 +329,7 @@ util=_W(function(_ENV, ...)
 		if newTime - oldTime >= 0.03 then -- (0.020 * 1.5)
 			oldTime = newTime
 			--pull("sleep")
-			task.wait(.1)
+			task.wait(0.1)
 		end
 	end
 
@@ -358,8 +337,8 @@ util=_W(function(_ENV, ...)
 		local char, random, sleep, insert = string.char, math.random, sleepCheckIn, table.insert
 		local result = {}
 
-		for i=1,bytes do
-			insert(result, random(0,255))
+		for i = 1, bytes do
+			insert(result, random(0, 255))
 			if i % 10240 == 0 then sleep() end
 		end
 
@@ -370,8 +349,8 @@ util=_W(function(_ENV, ...)
 		local char, random, sleep, insert = string.char, math.random, sleepCheckIn, table.insert
 		local result = {}
 
-		for i=1,bytes do
-			insert(result, char(random(0,255)))
+		for i = 1, bytes do
+			insert(result, char(random(0, 255)))
 			if i % 10240 == 0 then sleep() end
 		end
 
@@ -399,7 +378,7 @@ util=_W(function(_ENV, ...)
 		getRandomString = getRandomString,
 	}
 end)
-aes=_W(function(_ENV, ...)
+aes = _W(function(_ENV, ...)
 	-- Implementation of AES with nearly pure lua
 	-- AES with lua is slow, really slow :-)
 
@@ -407,10 +386,10 @@ aes=_W(function(_ENV, ...)
 	local getByte = util.getByte
 
 	-- some constants
-	local ROUNDS = 'rounds'
+	local ROUNDS = "rounds"
 	local KEY_TYPE = "type"
-	local ENCRYPTION_KEY=1
-	local DECRYPTION_KEY=2
+	local ENCRYPTION_KEY = 1
+	local DECRYPTION_KEY = 2
 
 	-- aes SBOX
 	local SBox = {}
@@ -454,16 +433,16 @@ aes=_W(function(_ENV, ...)
 		local mask = 0xf8
 		local result = 0
 		local parity, lastbit
-		for i = 1,8 do
-			result = bit32.lshift(result,1)
+		for i = 1, 8 do
+			result = bit32.lshift(result, 1)
 
-			parity = util.byteParity(bit32.band(byte,mask))
+			parity = util.byteParity(bit32.band(byte, mask))
 			result = result + parity
 
 			-- simulate roll
 			lastbit = bit32.band(mask, 1)
-			mask = bit32.band(bit32.rshift(mask, 1),0xff)
-			if (lastbit ~= 0) then
+			mask = bit32.band(bit32.rshift(mask, 1), 0xff)
+			if lastbit ~= 0 then
 				mask = bit32.bor(mask, 0x80)
 			else
 				mask = bit32.band(mask, 0x7f)
@@ -480,7 +459,7 @@ aes=_W(function(_ENV, ...)
 	local function calcSBox()
 		local inverse, mapped
 		for i = 0, 255 do
-			if (i ~= 0) then
+			if i ~= 0 then
 				inverse = gf.invert(i)
 			else
 				inverse = i
@@ -497,24 +476,24 @@ aes=_W(function(_ENV, ...)
 	-- with 4 table lookups and 4 xor operations.
 	--
 	local function calcRoundTables()
-		for x = 0,255 do
+		for x = 0, 255 do
 			local byte = SBox[x]
 			table0[x] = putByte(gf.mul(0x03, byte), 0)
-				+ putByte(             byte , 1)
-				+ putByte(             byte , 2)
+				+ putByte(byte, 1)
+				+ putByte(byte, 2)
 				+ putByte(gf.mul(0x02, byte), 3)
-			table1[x] = putByte(             byte , 0)
-				+ putByte(             byte , 1)
+			table1[x] = putByte(byte, 0)
+				+ putByte(byte, 1)
 				+ putByte(gf.mul(0x02, byte), 2)
 				+ putByte(gf.mul(0x03, byte), 3)
-			table2[x] = putByte(             byte , 0)
+			table2[x] = putByte(byte, 0)
 				+ putByte(gf.mul(0x02, byte), 1)
 				+ putByte(gf.mul(0x03, byte), 2)
-				+ putByte(             byte , 3)
+				+ putByte(byte, 3)
 			table3[x] = putByte(gf.mul(0x02, byte), 0)
 				+ putByte(gf.mul(0x03, byte), 1)
-				+ putByte(             byte , 2)
-				+ putByte(             byte , 3)
+				+ putByte(byte, 2)
+				+ putByte(byte, 3)
 		end
 	end
 
@@ -525,7 +504,7 @@ aes=_W(function(_ENV, ...)
 	--
 	local function calcInvRoundTables()
 		local byte
-		for x = 0,255 do
+		for x = 0, 255 do
 			byte = iSBox[x]
 			tableInv0[x] = putByte(gf.mul(0x0b, byte), 0)
 				+ putByte(gf.mul(0x0d, byte), 1)
@@ -546,14 +525,13 @@ aes=_W(function(_ENV, ...)
 		end
 	end
 
-
 	--
 	-- rotate word: 0xaabbccdd gets 0xbbccddaa
 	-- used for key schedule
 	--
 	local function rotWord(word)
-		local tmp = bit32.band(word,0xff000000)
-		return (bit32.lshift(word,8) + bit32.rshift(tmp,24))
+		local tmp = bit32.band(word, 0xff000000)
+		return (bit32.lshift(word, 8) + bit32.rshift(tmp, 24))
 	end
 
 	--
@@ -561,10 +539,10 @@ aes=_W(function(_ENV, ...)
 	-- used for key schedule
 	--
 	local function subWord(word)
-		return putByte(SBox[getByte(word,0)],0)
-			+ putByte(SBox[getByte(word,1)],1)
-			+ putByte(SBox[getByte(word,2)],2)
-			+ putByte(SBox[getByte(word,3)],3)
+		return putByte(SBox[getByte(word, 0)], 0)
+			+ putByte(SBox[getByte(word, 1)], 1)
+			+ putByte(SBox[getByte(word, 2)], 2)
+			+ putByte(SBox[getByte(word, 3)], 3)
 	end
 
 	--
@@ -577,8 +555,7 @@ aes=_W(function(_ENV, ...)
 		local keySchedule = {}
 		local keyWords = math.floor(#key / 4)
 
-
-		if ((keyWords ~= 4 and keyWords ~= 6 and keyWords ~= 8) or (keyWords * 4 ~= #key)) then
+		if (keyWords ~= 4 and keyWords ~= 6 and keyWords ~= 8) or (keyWords * 4 ~= #key) then
 			error("Invalid key size: " .. tostring(keyWords))
 			return nil
 		end
@@ -586,27 +563,27 @@ aes=_W(function(_ENV, ...)
 		keySchedule[ROUNDS] = keyWords + 6
 		keySchedule[KEY_TYPE] = ENCRYPTION_KEY
 
-		for i = 0,keyWords - 1 do
-			keySchedule[i] = putByte(key[i*4+1], 3)
-				+ putByte(key[i*4+2], 2)
-				+ putByte(key[i*4+3], 1)
-				+ putByte(key[i*4+4], 0)
+		for i = 0, keyWords - 1 do
+			keySchedule[i] = putByte(key[i * 4 + 1], 3)
+				+ putByte(key[i * 4 + 2], 2)
+				+ putByte(key[i * 4 + 3], 1)
+				+ putByte(key[i * 4 + 4], 0)
 		end
 
-		for i = keyWords, (keySchedule[ROUNDS] + 1)*4 - 1 do
-			local tmp = keySchedule[i-1]
+		for i = keyWords, (keySchedule[ROUNDS] + 1) * 4 - 1 do
+			local tmp = keySchedule[i - 1]
 
-			if ( i % keyWords == 0) then
+			if i % keyWords == 0 then
 				tmp = rotWord(tmp)
 				tmp = subWord(tmp)
 
-				local index = math.floor(i/keyWords)
-				tmp = bit32.bxor(tmp,rCon[index])
-			elseif (keyWords > 6 and i % keyWords == 4) then
+				local index = math.floor(i / keyWords)
+				tmp = bit32.bxor(tmp, rCon[index])
+			elseif keyWords > 6 and i % keyWords == 4 then
 				tmp = subWord(tmp)
 			end
 
-			keySchedule[i] = bit32.bxor(keySchedule[(i-keyWords)],tmp)
+			keySchedule[i] = bit32.bxor(keySchedule[(i - keyWords)], tmp)
 		end
 
 		return keySchedule
@@ -617,27 +594,18 @@ aes=_W(function(_ENV, ...)
 	-- used for key schedule of decryption key
 	--
 	local function invMixColumnOld(word)
-		local b0 = getByte(word,3)
-		local b1 = getByte(word,2)
-		local b2 = getByte(word,1)
-		local b3 = getByte(word,0)
+		local b0 = getByte(word, 3)
+		local b1 = getByte(word, 2)
+		local b2 = getByte(word, 1)
+		local b3 = getByte(word, 0)
 
-		return putByte(gf.add(gf.add(gf.add(gf.mul(0x0b, b1),
-			gf.mul(0x0d, b2)),
-			gf.mul(0x09, b3)),
-			gf.mul(0x0e, b0)),3)
-			+ putByte(gf.add(gf.add(gf.add(gf.mul(0x0b, b2),
-				gf.mul(0x0d, b3)),
-				gf.mul(0x09, b0)),
-				gf.mul(0x0e, b1)),2)
-			+ putByte(gf.add(gf.add(gf.add(gf.mul(0x0b, b3),
-				gf.mul(0x0d, b0)),
-				gf.mul(0x09, b1)),
-				gf.mul(0x0e, b2)),1)
-			+ putByte(gf.add(gf.add(gf.add(gf.mul(0x0b, b0),
-				gf.mul(0x0d, b1)),
-				gf.mul(0x09, b2)),
-				gf.mul(0x0e, b3)),0)
+		return putByte(
+			gf.add(gf.add(gf.add(gf.mul(0x0b, b1), gf.mul(0x0d, b2)), gf.mul(0x09, b3)), gf.mul(0x0e, b0)),
+			3
+		) + putByte(gf.add(gf.add(gf.add(gf.mul(0x0b, b2), gf.mul(0x0d, b3)), gf.mul(0x09, b0)), gf.mul(0x0e, b1)), 2) + putByte(
+			gf.add(gf.add(gf.add(gf.mul(0x0b, b3), gf.mul(0x0d, b0)), gf.mul(0x09, b1)), gf.mul(0x0e, b2)),
+			1
+		) + putByte(gf.add(gf.add(gf.add(gf.mul(0x0b, b0), gf.mul(0x0d, b1)), gf.mul(0x09, b2)), gf.mul(0x0e, b3)), 0)
 	end
 
 	--
@@ -646,24 +614,24 @@ aes=_W(function(_ENV, ...)
 	-- TODO: make it work
 	--
 	local function invMixColumn(word)
-		local b0 = getByte(word,3)
-		local b1 = getByte(word,2)
-		local b2 = getByte(word,1)
-		local b3 = getByte(word,0)
+		local b0 = getByte(word, 3)
+		local b1 = getByte(word, 2)
+		local b2 = getByte(word, 1)
+		local b3 = getByte(word, 0)
 
-		local t = bit32.bxor(b3,b2)
-		local u = bit32.bxor(b1,b0)
-		local v = bit32.bxor(t,u)
+		local t = bit32.bxor(b3, b2)
+		local u = bit32.bxor(b1, b0)
+		local v = bit32.bxor(t, u)
 		local w = nil
-		
-		v = bit32.bxor(v,gf.mul(0x08,v))
-		w = bit32.bxor(v,gf.mul(0x04, bit32.bxor(b2,b0)))
-		v = bit32.bxor(v,gf.mul(0x04, bit32.bxor(b3,b1)))
 
-		return putByte( bit32.bxor(bit32.bxor(b3,v), gf.mul(0x02, bit32.bxor(b0,b3))), 0)
-			+ putByte( bit32.bxor(bit32.bxor(b2,w), gf.mul(0x02, t              )), 1)
-			+ putByte( bit32.bxor(bit32.bxor(b1,v), gf.mul(0x02, bit32.bxor(b0,b3))), 2)
-			+ putByte( bit32.bxor(bit32.bxor(b0,w), gf.mul(0x02, u              )), 3)
+		v = bit32.bxor(v, gf.mul(0x08, v))
+		w = bit32.bxor(v, gf.mul(0x04, bit32.bxor(b2, b0)))
+		v = bit32.bxor(v, gf.mul(0x04, bit32.bxor(b3, b1)))
+
+		return putByte(bit32.bxor(bit32.bxor(b3, v), gf.mul(0x02, bit32.bxor(b0, b3))), 0)
+			+ putByte(bit32.bxor(bit32.bxor(b2, w), gf.mul(0x02, t)), 1)
+			+ putByte(bit32.bxor(bit32.bxor(b1, v), gf.mul(0x02, bit32.bxor(b0, b3))), 2)
+			+ putByte(bit32.bxor(bit32.bxor(b0, w), gf.mul(0x02, u)), 3)
 	end
 
 	--
@@ -674,13 +642,11 @@ aes=_W(function(_ENV, ...)
 	--
 	local function expandDecryptionKey(key)
 		local keySchedule = expandEncryptionKey(key)
-		if (keySchedule == nil) then
-			return nil
-		end
+		if keySchedule == nil then return nil end
 
 		keySchedule[KEY_TYPE] = DECRYPTION_KEY
 
-		for i = 4, (keySchedule[ROUNDS] + 1)*4 - 5 do
+		for i = 4, (keySchedule[ROUNDS] + 1) * 4 - 5 do
 			keySchedule[i] = invMixColumnOld(keySchedule[i])
 		end
 
@@ -692,7 +658,7 @@ aes=_W(function(_ENV, ...)
 	--
 	local function addRoundKey(state, key, round)
 		for i = 0, 3 do
-			state[i + 1] = bit32.bxor(state[i + 1], key[round*4+i])
+			state[i + 1] = bit32.bxor(state[i + 1], key[round * 4 + i])
 		end
 	end
 
@@ -700,108 +666,124 @@ aes=_W(function(_ENV, ...)
 	-- do encryption round (ShiftRow, SubBytes, MixColumn together)
 	--
 	local function doRound(origState, dstState)
-		dstState[1] =  bit32.bxor(bit32.bxor(bit32.bxor(
-			table0[getByte(origState[1],3)],
-			table1[getByte(origState[2],2)]),
-			table2[getByte(origState[3],1)]),
-			table3[getByte(origState[4],0)])
+		dstState[1] = bit32.bxor(
+			bit32.bxor(
+				bit32.bxor(table0[getByte(origState[1], 3)], table1[getByte(origState[2], 2)]),
+				table2[getByte(origState[3], 1)]
+			),
+			table3[getByte(origState[4], 0)]
+		)
 
-		dstState[2] =  bit32.bxor(bit32.bxor(bit32.bxor(
-			table0[getByte(origState[2],3)],
-			table1[getByte(origState[3],2)]),
-			table2[getByte(origState[4],1)]),
-			table3[getByte(origState[1],0)])
+		dstState[2] = bit32.bxor(
+			bit32.bxor(
+				bit32.bxor(table0[getByte(origState[2], 3)], table1[getByte(origState[3], 2)]),
+				table2[getByte(origState[4], 1)]
+			),
+			table3[getByte(origState[1], 0)]
+		)
 
-		dstState[3] =  bit32.bxor(bit32.bxor(bit32.bxor(
-			table0[getByte(origState[3],3)],
-			table1[getByte(origState[4],2)]),
-			table2[getByte(origState[1],1)]),
-			table3[getByte(origState[2],0)])
+		dstState[3] = bit32.bxor(
+			bit32.bxor(
+				bit32.bxor(table0[getByte(origState[3], 3)], table1[getByte(origState[4], 2)]),
+				table2[getByte(origState[1], 1)]
+			),
+			table3[getByte(origState[2], 0)]
+		)
 
-		dstState[4] =  bit32.bxor(bit32.bxor(bit32.bxor(
-			table0[getByte(origState[4],3)],
-			table1[getByte(origState[1],2)]),
-			table2[getByte(origState[2],1)]),
-			table3[getByte(origState[3],0)])
+		dstState[4] = bit32.bxor(
+			bit32.bxor(
+				bit32.bxor(table0[getByte(origState[4], 3)], table1[getByte(origState[1], 2)]),
+				table2[getByte(origState[2], 1)]
+			),
+			table3[getByte(origState[3], 0)]
+		)
 	end
 
 	--
 	-- do last encryption round (ShiftRow and SubBytes)
 	--
 	local function doLastRound(origState, dstState)
-		dstState[1] = putByte(SBox[getByte(origState[1],3)], 3)
-			+ putByte(SBox[getByte(origState[2],2)], 2)
-			+ putByte(SBox[getByte(origState[3],1)], 1)
-			+ putByte(SBox[getByte(origState[4],0)], 0)
+		dstState[1] = putByte(SBox[getByte(origState[1], 3)], 3)
+			+ putByte(SBox[getByte(origState[2], 2)], 2)
+			+ putByte(SBox[getByte(origState[3], 1)], 1)
+			+ putByte(SBox[getByte(origState[4], 0)], 0)
 
-		dstState[2] = putByte(SBox[getByte(origState[2],3)], 3)
-			+ putByte(SBox[getByte(origState[3],2)], 2)
-			+ putByte(SBox[getByte(origState[4],1)], 1)
-			+ putByte(SBox[getByte(origState[1],0)], 0)
+		dstState[2] = putByte(SBox[getByte(origState[2], 3)], 3)
+			+ putByte(SBox[getByte(origState[3], 2)], 2)
+			+ putByte(SBox[getByte(origState[4], 1)], 1)
+			+ putByte(SBox[getByte(origState[1], 0)], 0)
 
-		dstState[3] = putByte(SBox[getByte(origState[3],3)], 3)
-			+ putByte(SBox[getByte(origState[4],2)], 2)
-			+ putByte(SBox[getByte(origState[1],1)], 1)
-			+ putByte(SBox[getByte(origState[2],0)], 0)
+		dstState[3] = putByte(SBox[getByte(origState[3], 3)], 3)
+			+ putByte(SBox[getByte(origState[4], 2)], 2)
+			+ putByte(SBox[getByte(origState[1], 1)], 1)
+			+ putByte(SBox[getByte(origState[2], 0)], 0)
 
-		dstState[4] = putByte(SBox[getByte(origState[4],3)], 3)
-			+ putByte(SBox[getByte(origState[1],2)], 2)
-			+ putByte(SBox[getByte(origState[2],1)], 1)
-			+ putByte(SBox[getByte(origState[3],0)], 0)
+		dstState[4] = putByte(SBox[getByte(origState[4], 3)], 3)
+			+ putByte(SBox[getByte(origState[1], 2)], 2)
+			+ putByte(SBox[getByte(origState[2], 1)], 1)
+			+ putByte(SBox[getByte(origState[3], 0)], 0)
 	end
 
 	--
 	-- do decryption round
 	--
 	local function doInvRound(origState, dstState)
-		dstState[1] =  bit32.bxor(bit32.bxor(bit32.bxor(
-			tableInv0[getByte(origState[1],3)],
-			tableInv1[getByte(origState[4],2)]),
-			tableInv2[getByte(origState[3],1)]),
-			tableInv3[getByte(origState[2],0)])
+		dstState[1] = bit32.bxor(
+			bit32.bxor(
+				bit32.bxor(tableInv0[getByte(origState[1], 3)], tableInv1[getByte(origState[4], 2)]),
+				tableInv2[getByte(origState[3], 1)]
+			),
+			tableInv3[getByte(origState[2], 0)]
+		)
 
-		dstState[2] =  bit32.bxor(bit32.bxor(bit32.bxor(
-			tableInv0[getByte(origState[2],3)],
-			tableInv1[getByte(origState[1],2)]),
-			tableInv2[getByte(origState[4],1)]),
-			tableInv3[getByte(origState[3],0)])
+		dstState[2] = bit32.bxor(
+			bit32.bxor(
+				bit32.bxor(tableInv0[getByte(origState[2], 3)], tableInv1[getByte(origState[1], 2)]),
+				tableInv2[getByte(origState[4], 1)]
+			),
+			tableInv3[getByte(origState[3], 0)]
+		)
 
-		dstState[3] =  bit32.bxor(bit32.bxor(bit32.bxor(
-			tableInv0[getByte(origState[3],3)],
-			tableInv1[getByte(origState[2],2)]),
-			tableInv2[getByte(origState[1],1)]),
-			tableInv3[getByte(origState[4],0)])
+		dstState[3] = bit32.bxor(
+			bit32.bxor(
+				bit32.bxor(tableInv0[getByte(origState[3], 3)], tableInv1[getByte(origState[2], 2)]),
+				tableInv2[getByte(origState[1], 1)]
+			),
+			tableInv3[getByte(origState[4], 0)]
+		)
 
-		dstState[4] =  bit32.bxor(bit32.bxor(bit32.bxor(
-			tableInv0[getByte(origState[4],3)],
-			tableInv1[getByte(origState[3],2)]),
-			tableInv2[getByte(origState[2],1)]),
-			tableInv3[getByte(origState[1],0)])
+		dstState[4] = bit32.bxor(
+			bit32.bxor(
+				bit32.bxor(tableInv0[getByte(origState[4], 3)], tableInv1[getByte(origState[3], 2)]),
+				tableInv2[getByte(origState[2], 1)]
+			),
+			tableInv3[getByte(origState[1], 0)]
+		)
 	end
 
 	--
 	-- do last decryption round
 	--
 	local function doInvLastRound(origState, dstState)
-		dstState[1] = putByte(iSBox[getByte(origState[1],3)], 3)
-			+ putByte(iSBox[getByte(origState[4],2)], 2)
-			+ putByte(iSBox[getByte(origState[3],1)], 1)
-			+ putByte(iSBox[getByte(origState[2],0)], 0)
+		dstState[1] = putByte(iSBox[getByte(origState[1], 3)], 3)
+			+ putByte(iSBox[getByte(origState[4], 2)], 2)
+			+ putByte(iSBox[getByte(origState[3], 1)], 1)
+			+ putByte(iSBox[getByte(origState[2], 0)], 0)
 
-		dstState[2] = putByte(iSBox[getByte(origState[2],3)], 3)
-			+ putByte(iSBox[getByte(origState[1],2)], 2)
-			+ putByte(iSBox[getByte(origState[4],1)], 1)
-			+ putByte(iSBox[getByte(origState[3],0)], 0)
+		dstState[2] = putByte(iSBox[getByte(origState[2], 3)], 3)
+			+ putByte(iSBox[getByte(origState[1], 2)], 2)
+			+ putByte(iSBox[getByte(origState[4], 1)], 1)
+			+ putByte(iSBox[getByte(origState[3], 0)], 0)
 
-		dstState[3] = putByte(iSBox[getByte(origState[3],3)], 3)
-			+ putByte(iSBox[getByte(origState[2],2)], 2)
-			+ putByte(iSBox[getByte(origState[1],1)], 1)
-			+ putByte(iSBox[getByte(origState[4],0)], 0)
+		dstState[3] = putByte(iSBox[getByte(origState[3], 3)], 3)
+			+ putByte(iSBox[getByte(origState[2], 2)], 2)
+			+ putByte(iSBox[getByte(origState[1], 1)], 1)
+			+ putByte(iSBox[getByte(origState[4], 0)], 0)
 
-		dstState[4] = putByte(iSBox[getByte(origState[4],3)], 3)
-			+ putByte(iSBox[getByte(origState[3],2)], 2)
-			+ putByte(iSBox[getByte(origState[2],1)], 1)
-			+ putByte(iSBox[getByte(origState[1],0)], 0)
+		dstState[4] = putByte(iSBox[getByte(origState[4], 3)], 3)
+			+ putByte(iSBox[getByte(origState[3], 2)], 2)
+			+ putByte(iSBox[getByte(origState[2], 1)], 1)
+			+ putByte(iSBox[getByte(origState[1], 0)], 0)
 	end
 
 	--
@@ -821,7 +803,7 @@ aes=_W(function(_ENV, ...)
 		local state = {}
 		local tmpState = {}
 
-		if (key[KEY_TYPE] ~= ENCRYPTION_KEY) then
+		if key[KEY_TYPE] ~= ENCRYPTION_KEY then
 			error("No encryption key: " .. tostring(key[KEY_TYPE]) .. ", expected " .. ENCRYPTION_KEY)
 			return
 		end
@@ -829,9 +811,8 @@ aes=_W(function(_ENV, ...)
 		state = util.bytesToInts(input, inputOffset, 4)
 		addRoundKey(state, key, 0)
 
-
 		local round = 1
-		while (round < key[ROUNDS] - 1) do
+		while round < key[ROUNDS] - 1 do
 			-- do a double round to save temporary assignments
 			doRound(state, tmpState)
 			addRoundKey(tmpState, key, round)
@@ -844,7 +825,7 @@ aes=_W(function(_ENV, ...)
 
 		doRound(state, tmpState)
 		addRoundKey(tmpState, key, round)
-		round = round +1
+		round = round + 1
 
 		doLastRound(tmpState, state)
 		addRoundKey(state, key, round)
@@ -870,7 +851,7 @@ aes=_W(function(_ENV, ...)
 		local state = {}
 		local tmpState = {}
 
-		if (key[KEY_TYPE] ~= DECRYPTION_KEY) then
+		if key[KEY_TYPE] ~= DECRYPTION_KEY then
 			error("No decryption key: " .. tostring(key[KEY_TYPE]))
 			return
 		end
@@ -879,7 +860,7 @@ aes=_W(function(_ENV, ...)
 		addRoundKey(state, key, key[ROUNDS])
 
 		local round = key[ROUNDS] - 1
-		while (round > 2) do
+		while round > 2 do
 			-- do a double round to save temporary assignments
 			doInvRound(state, tmpState)
 			addRoundKey(tmpState, key, round)
@@ -889,7 +870,6 @@ aes=_W(function(_ENV, ...)
 			addRoundKey(state, key, round)
 			round = round - 1
 		end
-
 
 		doInvRound(state, tmpState)
 		addRoundKey(tmpState, key, round)
@@ -919,18 +899,12 @@ aes=_W(function(_ENV, ...)
 		decrypt = decrypt,
 	}
 end)
-local buffer=_W(function(_ENV, ...)
-	local function new ()
-		return {}
-	end
+local buffer = _W(function(_ENV, ...)
+	local function new() return {} end
 
-	local function addString (stack, s)
-		table.insert(stack, s)
-	end
+	local function addString(stack, s) table.insert(stack, s) end
 
-	local function toString (stack)
-		return table.concat(stack)
-	end
+	local function toString(stack) return table.concat(stack) end
 
 	return {
 		new = new,
@@ -938,7 +912,7 @@ local buffer=_W(function(_ENV, ...)
 		toString = toString,
 	}
 end)
-ciphermode=_W(function(_ENV, ...)
+ciphermode = _W(function(_ENV, ...)
 	local public = {}
 
 	--
@@ -952,18 +926,20 @@ ciphermode=_W(function(_ENV, ...)
 	function public.encryptString(key, data, modeFunction, iv)
 		if iv then
 			local ivCopy = {}
-			for i = 1, 16 do ivCopy[i] = iv[i] end
+			for i = 1, 16 do
+				ivCopy[i] = iv[i]
+			end
 			iv = ivCopy
 		else
-			iv = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+			iv = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 		end
 
 		local keySched = aes.expandEncryptionKey(key)
 		local encryptedData = buffer.new()
 
-		for i = 1, #data/16 do
-			local offset = (i-1)*16 + 1
-			local byteData = {string.byte(data,offset,offset +15)}
+		for i = 1, #data / 16 do
+			local offset = (i - 1) * 16 + 1
+			local byteData = { string.byte(data, offset, offset + 15) }
 
 			iv = modeFunction(keySched, byteData, iv)
 
@@ -979,9 +955,7 @@ ciphermode=_W(function(_ENV, ...)
 	--
 
 	-- Electronic code book mode encrypt function
-	function public.encryptECB(keySched, byteData, iv)
-		aes.encrypt(keySched, byteData, 1, byteData, 1)
-	end
+	function public.encryptECB(keySched, byteData, iv) aes.encrypt(keySched, byteData, 1, byteData, 1) end
 
 	-- Cipher block chaining mode encrypt function
 	function public.encryptCBC(keySched, byteData, iv)
@@ -1006,7 +980,9 @@ ciphermode=_W(function(_ENV, ...)
 
 	function public.encryptCTR(keySched, byteData, iv)
 		local nextIV = {}
-		for j = 1, 16 do nextIV[j] = iv[j] end
+		for j = 1, 16 do
+			nextIV[j] = iv[j]
+		end
 
 		aes.encrypt(keySched, iv, 1, iv, 1)
 		util.xorIV(byteData, iv)
@@ -1025,14 +1001,20 @@ ciphermode=_W(function(_ENV, ...)
 	function public.decryptString(key, data, modeFunction, iv)
 		if iv then
 			local ivCopy = {}
-			for i = 1, 16 do ivCopy[i] = iv[i] end
+			for i = 1, 16 do
+				ivCopy[i] = iv[i]
+			end
 			iv = ivCopy
 		else
-			iv = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+			iv = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 		end
 
 		local keySched
-		if modeFunction == public.decryptOFB or modeFunction == public.decryptCFB or modeFunction == public.decryptCTR then
+		if
+			modeFunction == public.decryptOFB
+			or modeFunction == public.decryptCFB
+			or modeFunction == public.decryptCTR
+		then
 			keySched = aes.expandEncryptionKey(key)
 		else
 			keySched = aes.expandDecryptionKey(key)
@@ -1040,9 +1022,9 @@ ciphermode=_W(function(_ENV, ...)
 
 		local decryptedData = buffer.new()
 
-		for i = 1, #data/16 do
-			local offset = (i-1)*16 + 1
-			local byteData = {string.byte(data,offset,offset +15)}
+		for i = 1, #data / 16 do
+			local offset = (i - 1) * 16 + 1
+			local byteData = { string.byte(data, offset, offset + 15) }
 
 			iv = modeFunction(keySched, byteData, iv)
 
@@ -1066,7 +1048,9 @@ ciphermode=_W(function(_ENV, ...)
 	-- Cipher block chaining mode decrypt function
 	function public.decryptCBC(keySched, byteData, iv)
 		local nextIV = {}
-		for j = 1, 16 do nextIV[j] = byteData[j] end
+		for j = 1, 16 do
+			nextIV[j] = byteData[j]
+		end
 
 		aes.decrypt(keySched, byteData, 1, byteData, 1)
 		util.xorIV(byteData, iv)
@@ -1085,7 +1069,9 @@ ciphermode=_W(function(_ENV, ...)
 	-- Cipher feedback mode decrypt function
 	function public.decryptCFB(keySched, byteData, iv)
 		local nextIV = {}
-		for j = 1, 16 do nextIV[j] = byteData[j] end
+		for j = 1, 16 do
+			nextIV[j] = byteData[j]
+		end
 
 		aes.encrypt(keySched, iv, 1, iv, 1)
 		util.xorIV(byteData, iv)
@@ -1111,13 +1097,11 @@ CTRMODE = 5
 
 local function pwToKey(password, keyLength, iv)
 	local padLength = keyLength
-	if (keyLength == AES192) then
-		padLength = 32
-	end
+	if keyLength == AES192 then padLength = 32 end
 
-	if (padLength > #password) then
+	if padLength > #password then
 		local postfix = ""
-		for i = 1,padLength - #password do
+		for i = 1, padLength - #password do
 			postfix = postfix .. string.char(0)
 		end
 		password = password .. postfix
@@ -1125,12 +1109,12 @@ local function pwToKey(password, keyLength, iv)
 		password = string.sub(password, 1, padLength)
 	end
 
-	local pwBytes = {string.byte(password,1,#password)}
+	local pwBytes = { string.byte(password, 1, #password) }
 	password = ciphermode.encryptString(pwBytes, password, ciphermode.encryptCBC, iv)
 
 	password = string.sub(password, 1, keyLength)
 
-	return {string.byte(password,1,#password)}
+	return { string.byte(password, 1, #password) }
 end
 
 --
@@ -1168,9 +1152,6 @@ function encrypt(password, data, keyLength, mode, iv)
 	end
 end
 
-
-
-
 --
 -- Decrypts string data with password password.
 -- password  - the decryption key is generated from this string
@@ -1203,43 +1184,41 @@ function decrypt(password, data, keyLength, mode, iv)
 
 	local result = util.unpadByteString(plain)
 
-	if (result == nil) then
-		return nil
-	end
+	if result == nil then return nil end
 
 	return result
 end
 
 return {
-	encrypt = encrypt;
-	decrypt = decrypt;
-	
+	encrypt = encrypt,
+	decrypt = decrypt,
+
 	base64Encode = function(data)
 		local sub = string.sub
 		local byte = string.byte
 		local gsub = string.gsub
 
-		return (gsub(gsub(data, '.', function(x)
-			local r, b = "", byte(x)
-			for i = 8, 1, -1 do
-				r = r..(b % 2 ^ i - b % 2 ^ (i - 1) > 0 and '1' or '0')
-			end
-			return r;
-		end) .. '0000', '%d%d%d?%d?%d?%d?', function(x)
-			if (#(x) < 6) then
-				return ''
-			end
-			local c = 0
-			for i = 1, 6 do
-				c = c + (sub(x, i, i) == '1' and 2 ^ (6 - i) or 0)
-			end
-			return sub('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/', c + 1, c + 1)
-		end)..({
-			'',
-			'==',
-			'='
-		})[#(data) % 3 + 1])
-	end;
+		return (
+			gsub(gsub(data, ".", function(x)
+				local r, b = "", byte(x)
+				for i = 8, 1, -1 do
+					r = r .. (b % 2 ^ i - b % 2 ^ (i - 1) > 0 and "1" or "0")
+				end
+				return r
+			end) .. "0000", "%d%d%d?%d?%d?%d?", function(x)
+				if #x < 6 then return "" end
+				local c = 0
+				for i = 1, 6 do
+					c = c + (sub(x, i, i) == "1" and 2 ^ (6 - i) or 0)
+				end
+				return sub("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", c + 1, c + 1)
+			end) .. ({
+				"",
+				"==",
+				"=",
+			})[#data % 3 + 1]
+		)
+	end,
 
 	base64Decode = function(data)
 		local sub = string.sub
@@ -1247,27 +1226,29 @@ return {
 		local find = string.find
 		local char = string.char
 
-		local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+		local b = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
-		data = gsub(data, '[^'..b..'=]', '')
-		return (gsub(gsub(data, '.', function(x)
-			if (x == '=') then
-				return ''
-			end
-			local r, f = '', (find(b, x) - 1)
-			for i = 6, 1, -1 do
-				r = r .. (f % 2 ^ i - f % 2 ^ (i - 1) > 0 and '1' or '0')
-			end
-			return r;
-		end), '%d%d%d?%d?%d?%d?%d?%d?', function(x)
-			if (#x ~= 8) then
-				return ''
-			end
-			local c = 0
-			for i = 1, 8 do
-				c = c + (sub(x, i, i) == '1' and 2 ^ (8 - i) or 0)
-			end
-			return char(c)
-		end))
-	end;
+		data = gsub(data, "[^" .. b .. "=]", "")
+		return (
+			gsub(
+				gsub(data, ".", function(x)
+					if x == "=" then return "" end
+					local r, f = "", (find(b, x) - 1)
+					for i = 6, 1, -1 do
+						r = r .. (f % 2 ^ i - f % 2 ^ (i - 1) > 0 and "1" or "0")
+					end
+					return r
+				end),
+				"%d%d%d?%d?%d?%d?%d?%d?",
+				function(x)
+					if #x ~= 8 then return "" end
+					local c = 0
+					for i = 1, 8 do
+						c = c + (sub(x, i, i) == "1" and 2 ^ (8 - i) or 0)
+					end
+					return char(c)
+				end
+			)
+		)
+	end,
 }

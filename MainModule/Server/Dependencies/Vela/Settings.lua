@@ -1,4 +1,3 @@
-
 return {
-	constants = true; -- show constants?
+	constants = true, -- show constants?
 }

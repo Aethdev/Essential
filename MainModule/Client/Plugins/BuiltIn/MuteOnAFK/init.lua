@@ -1,8 +1,7 @@
-
 return function(envArgs)
 	local type, math = type, math
 	local mathFloor = math.floor
-	
+
 	local client = envArgs.client
 	local service = envArgs.service
 	local variables = envArgs.variables
@@ -13,41 +12,35 @@ return function(envArgs)
 	local Remote = client.Remote
 	local UI = client.UI
 	local Network = client.Network
-	
+
 	local Kill = client.Kill
 	local Signal = client.Signal
-	
+
 	local clientSettings = client.Settings or {}
 	client.Settings = clientSettings
-	
+
 	local curMuteState = false
 	local function toggleMuteOnAFK(bool: boolean, override: boolean?, reason: string?)
 		if curMuteState ~= bool or override then
 			curMuteState = bool
-			
-			if reason then
-				Remote.sendRemoteLog(`MuteOnAFK :: Status: {bool} | {reason}`)
-			end
-			
+
+			if reason then Remote.sendRemoteLog(`MuteOnAFK :: Status: {bool} | {reason}`) end
+
 			Network:fire("ToggleMuteOnAFK", bool)
 		end
 	end
-	
+
 	local userInput = service.UserInputService
 	userInput.WindowFocused:Connect(function()
-		if curMuteState then
-			toggleMuteOnAFK(false, nil, `Window regained focus`)
-		end
+		if curMuteState then toggleMuteOnAFK(false, nil, `Window regained focus`) end
 	end)
-	
+
 	userInput.WindowFocusReleased:Connect(function()
-		if clientSettings.ToggleMuteOnAFK then
-			toggleMuteOnAFK(true, nil, `Window lost focus`)
-		end
+		if clientSettings.ToggleMuteOnAFK then toggleMuteOnAFK(true, nil, `Window lost focus`) end
 	end)
-	
+
 	local idleRbxEvent = service.player.Idled
-	
+
 	local idleChEvent = Signal.new()
 	local idleCheck = Signal.new()
 	local _idleStateWithMOA, _menuStateWithMOA = false, false
@@ -56,10 +49,10 @@ return function(envArgs)
 		if _menuStateWithMOA then return end
 		if type(idleTime) ~= "number" or (idleTime > 60 * 20) then
 			idleCheck:disconnect()
-			Kill("Mute on AFK plugin detected improper idle time")
+			Kill "Mute on AFK plugin detected improper idle time"
 		else
 			idleChEvent:fire(idleTime)
-			
+
 			local newIdleTime = idleChEvent:wait(nil, 5)
 			if newIdleTime then
 				if clientSettings.ToggleMuteOnAFK then
@@ -72,7 +65,7 @@ return function(envArgs)
 			end
 		end
 	end)
-	
+
 	local menuOpenedEvent = Signal.new()
 	menuOpenedEvent:linkRbxEvent(service.GuiService.MenuOpened)
 	menuOpenedEvent:connect(function()
@@ -81,7 +74,7 @@ return function(envArgs)
 			toggleMuteOnAFK(true, nil, "Pause menu opened")
 		end
 	end)
-	
+
 	local menuClosedEvent = Signal.new()
 	menuClosedEvent:linkRbxEvent(service.GuiService.MenuClosed)
 	menuClosedEvent:connect(function()
@@ -90,6 +83,6 @@ return function(envArgs)
 			toggleMuteOnAFK(false, nil, "Pause menu closed")
 		end
 	end)
-	
+
 	toggleMuteOnAFK(false, true)
 end

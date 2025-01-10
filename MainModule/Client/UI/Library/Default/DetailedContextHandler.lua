@@ -1,4 +1,3 @@
-
 return function(envArgs, data)
 	local client = envArgs.client
 	local service = envArgs.service
@@ -7,19 +6,19 @@ return function(envArgs, data)
 	local detailedContextContainer = variables.detailedContextContainer
 
 	if not detailedContextContainer then
-		detailedContextContainer = client.UI.makeElement("Container")
+		detailedContextContainer = client.UI.makeElement "Container"
 
 		local pcEnabled = client.pcDevice or client.consoleDevice
 
 		local screenSize = client.ScreenSize
 		local frame = service.New("Frame", {
-			AnchorPoint = Vector2.new(.5, 0);
-			BackgroundTransparency = 1;
-			BorderSizePixel = 0;
-			Position = UDim2.new(0.5, 0, 0, 30);
-			Size = UDim2.new(0, 250, 0, 290);
-			ClipsDescendants = true;
-			Parent = detailedContextContainer._object;
+			AnchorPoint = Vector2.new(0.5, 0),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Position = UDim2.new(0.5, 0, 0, 30),
+			Size = UDim2.new(0, 250, 0, 290),
+			ClipsDescendants = true,
+			Parent = detailedContextContainer._object,
 		})
 
 		frame.Parent = detailedContextContainer._object
@@ -27,23 +26,21 @@ return function(envArgs, data)
 
 		detailedContextContainer._elements = {}
 		detailedContextContainer._subscribedElements = {}
-		
+
 		detailedContextContainer.maxElements = (pcEnabled and 4) or 2
 
 		function detailedContextContainer:checkFrame()
 			if not self.frame or self.frame.Parent ~= self._object then
-				if self.frame then
-					service.Delete(self.frame)
-				end
+				if self.frame then service.Delete(self.frame) end
 
 				self.frame = service.New("Frame", {
-					AnchorPoint = Vector2.new(.5, 0);
-					BackgroundTransparency = 1;
-					BorderSizePixel = 0;
-					Position = UDim2.new(0.5, 0, 0, 30);
-					Size = UDim2.new(0, 250, 0, 160);
-					ClipsDescendants = false;
-					Parent = detailedContextContainer._object;
+					AnchorPoint = Vector2.new(0.5, 0),
+					BackgroundTransparency = 1,
+					BorderSizePixel = 0,
+					Position = UDim2.new(0.5, 0, 0, 30),
+					Size = UDim2.new(0, 250, 0, 160),
+					ClipsDescendants = false,
+					Parent = detailedContextContainer._object,
 				})
 			end
 		end
@@ -52,10 +49,8 @@ return function(envArgs, data)
 			local results = {}
 			local stackElements = 0
 
-			for i,element in pairs(self._elements) do
-				if element.active and (element.forceHide or element.showState) then
-					table.insert(results, element)
-				end
+			for i, element in pairs(self._elements) do
+				if element.active and (element.forceHide or element.showState) then table.insert(results, element) end
 			end
 
 			return results
@@ -66,14 +61,16 @@ return function(envArgs, data)
 			local frameSizeY = 0
 			local countedElements = 0
 
-			for i,element in pairs(self._elements) do
-				if element.active and (element.forceHide or element.showState) and countedElements+1 <= self.maxElements then
-					frameSizeY = (frameSizeY+(element.expectedSize.Y))+5
+			for i, element in pairs(self._elements) do
+				if
+					element.active
+					and (element.forceHide or element.showState)
+					and countedElements + 1 <= self.maxElements
+				then
+					frameSizeY = (frameSizeY + element.expectedSize.Y) + 5
 					countedElements += 1
 
-					if highestSizeX < element.expectedSize.X then
-						highestSizeX = element.expectedSize.X
-					end
+					if highestSizeX < element.expectedSize.X then highestSizeX = element.expectedSize.X end
 				end
 			end
 
@@ -98,7 +95,7 @@ return function(envArgs, data)
 
 			local stackSize = 0
 			local maxElements = self.maxElements
-			local stopIndex = index-maxElements
+			local stopIndex = index - maxElements
 			local checkElements = {}
 
 			self:checkFrame()
@@ -117,15 +114,16 @@ return function(envArgs, data)
 						local expireOs = element.expireOs
 						local expireTime = element.time
 
-						if (expireOs and expireOs-os.time() > 0) or (not expireOs) then
+						if (expireOs and expireOs - os.time() > 0) or not expireOs then
 							if not element.showState then
-								coroutine.wrap(element.show)(element, (expireOs and expireOs-os.time()) or expireTime or nil)
+								coroutine.wrap(element.show)(
+									element,
+									(expireOs and expireOs - os.time()) or expireTime or nil
+								)
 							end
 						else
 							element.forceRemove = true
-							if element.showState then
-								coroutine.wrap(element.hide)(element)
-							end
+							if element.showState then coroutine.wrap(element.hide)(element) end
 
 							self:remove(element)
 							return
@@ -134,14 +132,17 @@ return function(envArgs, data)
 
 					element._object.Visible = true
 
-					if element._object.Parent == element.containerData.frame and element.containerData._object.Parent == service.playerGui then
+					if
+						element._object.Parent == element.containerData.frame
+						and element.containerData._object.Parent == service.playerGui
+					then
 						element._object:TweenPosition(expectedPos, "Out", "Quint", 0.4, true)
 					else
 						element._object.Position = expectedPos
 					end
 
 					checkElements[element] = true
-					stackSize = (stackSize+(element.expectedSize.Y))+5
+					stackSize = (stackSize + element.expectedSize.Y) + 5
 				else
 					stopIndex -= 1
 				end
@@ -151,7 +152,9 @@ return function(envArgs, data)
 
 			if len > 0 then
 				for i, element in pairs(self._elements) do
-					if (element.active and element.showState and not element.forceHide) and not checkElements[element] then
+					if
+						(element.active and element.showState and not element.forceHide) and not checkElements[element]
+					then
 						coroutine.wrap(element.hide)(element)
 						element.forceHide = true
 					end
@@ -190,7 +193,7 @@ return function(envArgs, data)
 								self:sort()
 							end
 						end
-					end);
+					end),
 
 					--shown = element.shown:connect(function()
 					--	self:sort()
@@ -207,14 +210,12 @@ return function(envArgs, data)
 			if elemIndex then
 				table.remove(self._elements, elemIndex)
 
-				if element.showState then
-					self:sort()
-				end
+				if element.showState then self:sort() end
 
 				local subscribedEvents = self._subscribedElements[element]
 
 				if subscribedEvents then
-					for i,event in pairs(subscribedEvents) do
+					for i, event in pairs(subscribedEvents) do
 						event:Disconnect()
 					end
 

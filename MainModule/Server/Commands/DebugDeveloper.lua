@@ -1,4 +1,3 @@
-
 return function(envArgs)
 	local server = envArgs.server
 	local service = envArgs.service
@@ -6,7 +5,7 @@ return function(envArgs)
 	local variables = envArgs.variables
 	local getEnv = envArgs.getEnv
 	local script = envArgs.script
-	
+
 	local Cmds = server.Commands
 	local Core = server.Core
 	local Cross = server.Cross
@@ -16,48 +15,47 @@ return function(envArgs)
 	local Moderation = server.Moderation
 	local Process = server.Process
 	local Remote = server.Remote
-	
+
 	local cmdPrefix = "debug-"
 	local cmdsList = {
 		viewRunningNetworks = {
-			Disabled = true;
-			Prefix = settings.actionPrefix;
-			Aliases = {cmdPrefix.."networks"};
-			Arguments = {};
-			Permissions = {};
-			Roles = {"developer"};
-			PlayerCooldown = 1;
-			NoPermissionsBypass = true;
-			
-			Description = "Gives boombox to specific players";
+			Disabled = true,
+			Prefix = settings.actionPrefix,
+			Aliases = { cmdPrefix .. "networks" },
+			Arguments = {},
+			Permissions = {},
+			Roles = { "developer" },
+			PlayerCooldown = 1,
+			NoPermissionsBypass = true,
+
+			Description = "Gives boombox to specific players",
 
 			Function = function(plr, args)
 				local tabResults = {}
 				local fireNetworks = Core.remoteNetwork1
 				local invokeNetworks = Core.remoteNetwork2
-				
+
 				table.insert(tabResults, "Players: ---------")
 				for i, target in pairs(service.getPlayers(true)) do
 					local cliData = target:getClientData()
-					
+
 					if cliData then
 						if not cliData.trustChecked then
-							table.insert(tabResults, tostring(target)..": *waiting to trust check*")
+							table.insert(tabResults, tostring(target) .. ": *waiting to trust check*")
 						else
-							
 						end
 					end
 				end
-				
+
 				plr:makeUI("ADONIS_LIST", {
-					Title = "E. Network system";
-					Table = tabResults;
+					Title = "E. Network system",
+					Table = tabResults,
 				})
-			end;
-		};
+			end,
+		},
 	}
-	
-	for cmdName,cmdTab in pairs(cmdsList) do
+
+	for cmdName, cmdTab in pairs(cmdsList) do
 		cmdTab.Category = script.Name
 		Cmds.create(cmdName, cmdTab)
 	end

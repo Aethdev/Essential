@@ -9,18 +9,14 @@
 -- LinkToInstance fixed by Elttob.
 -- Cleanup edge cases fixed by codesenseAye.
 
-local Promise = if script.Parent:FindFirstChild("Promise") then require(script.Parent.Promise) else nil
+local Promise = if script.Parent:FindFirstChild "Promise" then require(script.Parent.Promise) else nil
 
 local IndicesReference = setmetatable({}, {
-	__tostring = function()
-		return "IndicesReference"
-	end;
+	__tostring = function() return "IndicesReference" end,
 })
 
 local LinkToInstanceIndex = setmetatable({}, {
-	__tostring = function()
-		return "LinkToInstanceIndex"
-	end;
+	__tostring = function() return "LinkToInstanceIndex" end,
 })
 
 local INVALID_METHOD_NAME =
@@ -61,9 +57,9 @@ Janitor.__index = Janitor
 ]=]
 
 local TypeDefaults = {
-	["function"] = true;
-	thread = true;
-	RBXScriptConnection = "Disconnect";
+	["function"] = true,
+	thread = true,
+	RBXScriptConnection = "Disconnect",
 }
 
 --[=[
@@ -72,8 +68,8 @@ local TypeDefaults = {
 ]=]
 function Janitor.new(): Janitor
 	return setmetatable({
-		CurrentlyCleaning = false;
-		[IndicesReference] = nil;
+		CurrentlyCleaning = false,
+		[IndicesReference] = nil,
 	}, Janitor) :: any
 end
 
@@ -83,9 +79,7 @@ end
 	@param Object any -- The object you are checking.
 	@return boolean -- `true` if `Object` is a Janitor.
 ]=]
-function Janitor.Is(Object: any): boolean
-	return type(Object) == "table" and getmetatable(Object) == Janitor
-end
+function Janitor.Is(Object: any): boolean return type(Object) == "table" and getmetatable(Object) == Janitor end
 
 --[=[
 	An alias for [Janitor.Is](#Is). This is intended for roblox-ts support.
@@ -234,7 +228,12 @@ end
 	@param ... A... -- The arguments that will be passed to the constructor.
 	@return T -- The object that was passed as the first argument.
 ]=]
-function Janitor:AddObject<T, A...>(Constructor: {new: (A...) -> T}, MethodName: BooleanOrString?, Index: any?, ...: A...): T
+function Janitor:AddObject<T, A...>(
+	Constructor: { new: (A...) -> T },
+	MethodName: BooleanOrString?,
+	Index: any?,
+	...: A...
+): T
 	return self:Add(Constructor.new(...), MethodName, Index)
 end
 
@@ -265,9 +264,7 @@ end
 	@return Promise
 ]=]
 function Janitor:AddPromise(PromiseObject)
-	if not Promise then
-		return PromiseObject
-	end
+	if not Promise then return PromiseObject end
 
 	if not Promise.is(PromiseObject) then
 		error(string.format(NOT_A_PROMISE, typeof(PromiseObject), `{PromiseObject}`, debug.traceback(nil, 2)))
@@ -275,19 +272,17 @@ function Janitor:AddPromise(PromiseObject)
 
 	if PromiseObject:getStatus() == Promise.Status.Started then
 		local Id = newproxy(false)
-		local NewPromise = self:Add(Promise.new(function(Resolve, _, OnCancel)
-			if OnCancel(function()
-				PromiseObject:cancel()
-			end) then
-				return
-			end
+		local NewPromise = self:Add(
+			Promise.new(function(Resolve, _, OnCancel)
+				if OnCancel(function() PromiseObject:cancel() end) then return end
 
-			Resolve(PromiseObject)
-		end), "cancel", Id)
+				Resolve(PromiseObject)
+			end),
+			"cancel",
+			Id
+		)
 
-		NewPromise:finally(function()
-			self:Remove(Id)
-		end)
+		NewPromise:finally(function() self:Remove(Id) end)
 
 		return NewPromise
 	end
@@ -335,17 +330,11 @@ function Janitor:Remove(Index: any)
 						Object()
 					else
 						local Cancelled
-						if coroutine.running() ~= Object then
-							Cancelled = pcall(function()
-								task.cancel(Object)
-							end)
-						end
+						if coroutine.running() ~= Object then Cancelled = pcall(function() task.cancel(Object) end) end
 
 						if not Cancelled then
 							task.defer(function()
-								if Object then
-									task.cancel(Object)
-								end
+								if Object then task.cancel(Object) end
 							end)
 						end
 					end
@@ -408,9 +397,7 @@ function Janitor:RemoveNoClean(Index: any)
 
 	if This then
 		local Object = This[Index]
-		if Object then
-			self[Object] = nil
-		end
+		if Object then self[Object] = nil end
 
 		This[Index] = nil
 	end
@@ -463,9 +450,7 @@ function Janitor:RemoveList(...: any)
 	local This = self[IndicesReference]
 	if This then
 		local Length = select("#", ...)
-		if Length == 1 then
-			return self:Remove(...)
-		end
+		if Length == 1 then return self:Remove(...) end
 
 		for SelectIndex = 1, Length do
 			local Remove = select(SelectIndex, ...)
@@ -521,17 +506,13 @@ function Janitor:RemoveListNoClean(...: any)
 	local This = self[IndicesReference]
 	if This then
 		local Length = select("#", ...)
-		if Length == 1 then
-			return self:RemoveNoClean(...)
-		end
+		if Length == 1 then return self:RemoveNoClean(...) end
 
 		for SelectIndex = 1, Length do
 			-- MACRO
 			local Index = select(SelectIndex, ...)
 			local Object = This[Index]
-			if Object then
-				self[Object] = nil
-			end
+			if Object then self[Object] = nil end
 
 			This[Index] = nil
 		end
@@ -595,7 +576,7 @@ end
 	@since v1.15.1
 	@return {[any]: any}
 ]=]
-function Janitor:GetAll(): {[any]: any}
+function Janitor:GetAll(): { [any]: any }
 	local This = self[IndicesReference]
 	return if This then table.freeze(table.clone(This)) else {}
 end
@@ -603,9 +584,7 @@ end
 local function GetFenv(self)
 	return function()
 		for Object, MethodName in next, self do
-			if Object ~= IndicesReference and Object ~= "SuppressInstanceReDestroy" then
-				return Object, MethodName
-			end
+			if Object ~= IndicesReference and Object ~= "SuppressInstanceReDestroy" then return Object, MethodName end
 		end
 	end
 end
@@ -641,17 +620,11 @@ function Janitor:Cleanup()
 					Object()
 				else
 					local Cancelled
-					if coroutine.running() ~= Object then
-						Cancelled = pcall(function()
-							task.cancel(Object)
-						end)
-					end
+					if coroutine.running() ~= Object then Cancelled = pcall(function() task.cancel(Object) end) end
 
 					if not Cancelled then
 						task.defer(function()
-							if Object then
-								task.cancel(Object)
-							end
+							if Object then task.cancel(Object) end
 						end)
 					end
 				end
@@ -739,9 +712,7 @@ Janitor.__call = Janitor.Cleanup
 function Janitor:LinkToInstance(Object: Instance, AllowMultiple: boolean?): RBXScriptConnection
 	local IndexToUse = if AllowMultiple then newproxy(false) else LinkToInstanceIndex
 
-	return self:Add(Object.Destroying:Connect(function()
-		self:Cleanup()
-	end), "Disconnect", IndexToUse)
+	return self:Add(Object.Destroying:Connect(function() self:Cleanup() end), "Disconnect", IndexToUse)
 end
 
 Janitor.LegacyLinkToInstance = Janitor.LinkToInstance
@@ -756,9 +727,7 @@ function Janitor:LinkToInstances(...: Instance)
 	local ManualCleanup = Janitor.new()
 	for Index = 1, select("#", ...) do
 		local Object = select(Index, ...)
-		if typeof(Object) ~= "Instance" then
-			continue
-		end
+		if typeof(Object) ~= "Instance" then continue end
 
 		ManualCleanup:Add(self:LinkToInstance(Object, true), "Disconnect")
 	end
@@ -766,9 +735,7 @@ function Janitor:LinkToInstances(...: Instance)
 	return ManualCleanup
 end
 
-function Janitor:__tostring()
-	return "Janitor"
-end
+function Janitor:__tostring() return "Janitor" end
 
 export type Janitor = typeof(setmetatable(
 	{} :: {
@@ -779,7 +746,7 @@ export type Janitor = typeof(setmetatable(
 		Add: <T>(self: Janitor, Object: T, MethodName: BooleanOrString?, Index: any?) -> T,
 		AddObject: <T, A...>(
 			self: Janitor,
-			Constructor: {new: (A...) -> T},
+			Constructor: { new: (A...) -> T },
 			MethodName: BooleanOrString?,
 			Index: any?,
 			A...
@@ -793,7 +760,7 @@ export type Janitor = typeof(setmetatable(
 		RemoveListNoClean: (self: Janitor, ...any) -> Janitor,
 
 		Get: (self: Janitor, Index: any) -> any?,
-		GetAll: (self: Janitor) -> {[any]: any},
+		GetAll: (self: Janitor) -> { [any]: any },
 
 		Cleanup: (self: Janitor) -> (),
 		Destroy: (self: Janitor) -> (),
@@ -801,7 +768,7 @@ export type Janitor = typeof(setmetatable(
 		LinkToInstance: (self: Janitor, Object: Instance, AllowMultiple: boolean?) -> RBXScriptConnection,
 		LinkToInstances: (self: Janitor, ...Instance) -> Janitor,
 	},
-	{} :: {__call: (self: Janitor) -> ()}
+	{} :: { __call: (self: Janitor) -> () }
 ))
 
 return table.freeze(Janitor :: {

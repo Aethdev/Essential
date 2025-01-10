@@ -1,4 +1,3 @@
-
 return function(envArgs)
 	local server = envArgs.server
 	local service = envArgs.service
@@ -13,7 +12,7 @@ return function(envArgs)
 	local hashLib = server.HashLib
 	local compression = server.Compression
 
-	local DS_PlayerData;
+	local DS_PlayerData
 	local cloneTable = service.cloneTable
 	local loopTask = service.loopTask
 	local stopLoop = service.stopLoop
@@ -33,25 +32,24 @@ return function(envArgs)
 	local Utility = server.Utility
 	local Vela = server.Vela
 
-	local hashLib;
-	local datastore_Allow, datastore_ProtectIndex, datastore_EncryptKeys,
-		datastoreUseCompression, playerData_EncryptData, playerDataStoreEnabled;
-	local defaultPlayerData;
+	local hashLib
+	local datastore_Allow, datastore_ProtectIndex, datastore_EncryptKeys, datastoreUseCompression, playerData_EncryptData, playerDataStoreEnabled
+	local defaultPlayerData
 	local endToEndEncryption = settings.endToEndEncryption or settings.remoteClientToServerEncryption
 	local maxActivityLogs = settings.playerData_MaxActivityLogs
-	 
+
 	local function checkRemoteSignature(str: string): boolean
 		-- Signature byte is determined by hex decimals and decimals
 		-- Convert decimal/byte to hex decimal to get the hex code
-		
+
 		if string.sub(str, 1, 10) ~= "\28EssRemote" then return false end
 		if string.byte(string.sub(str, 11, 11)) ~= 0x1E then return false end
 		return true
 	end
-	
+
 	local remoteEncryptCompressionConfig = {
-		level = 1;
-		strategy = "dynamic";
+		level = 1,
+		strategy = "dynamic",
 	}
 
 	local function decryptRemoteArguments(encryptKey: string, encryptedArgs: string)
@@ -60,11 +58,9 @@ return function(envArgs)
 		local decryptValue3 = decryptValue2 and luaParser.Decode(decryptValue2)[1]
 		return decryptValue3
 	end
-	
-	local function sortArgumentsWithInstances(arguments: {[any]: any}, instanceList: {[string]: Instance})
-		local function getInstanceSignature(str: string)
-			return string.match(str, "^\28Instance" .. 0x1E .. "%-(%w+)$")
-		end
+
+	local function sortArgumentsWithInstances(arguments: { [any]: any }, instanceList: { [string]: Instance })
+		local function getInstanceSignature(str: string) return string.match(str, "^\28Instance" .. 0x1E .. "%-(%w+)$") end
 
 		local checkedTabValues = {}
 
@@ -93,7 +89,7 @@ return function(envArgs)
 					end
 				end
 
-				newClonedTable[i] = if not (not clonedValue) then clonedValue else tabValue
+				newClonedTable[i] = if not not clonedValue then clonedValue else tabValue
 			end
 
 			return newClonedTable
@@ -101,7 +97,7 @@ return function(envArgs)
 
 		return reverseCloneTableValue(arguments)
 	end
-	
+
 	local Commands, Core, Cross, Datastore, Identity, Logs, Moderation, Process, Remote
 	local function Init()
 		Core = server.Core
@@ -123,79 +119,77 @@ return function(envArgs)
 		datastore_EncryptKeys = settings.Datastore_EncryptKeys
 		datastoreUseCompression = settings.Datastore_Compression or false
 
-		DS_PlayerData = settings.Datastore_PlayerData:sub(1,50)
-		
+		DS_PlayerData = settings.Datastore_PlayerData:sub(1, 50)
+
 		playerDataStoreEnabled = settings.playerData_Datastore
 		playerData_EncryptData = settings.playerData_EncryptData
 
 		if #DS_PlayerData == 0 then
 			DS_PlayerData = "Default"
-			warn("[DATASTORE DISABLED] DATASTORE PLAYERDATA SCOPE MUST HAVE AT LEAST ONE CHARACTER.")
+			warn "[DATASTORE DISABLED] DATASTORE PLAYERDATA SCOPE MUST HAVE AT LEAST ONE CHARACTER."
 			settings.playerData_Datastore = false
 			datastore_Allow = false
 			playerDataStoreEnabled = false
 		end
-		
-		if datastore_Allow and game.PlaceId <= 0 then
-			datastore_Allow = false
-		end
+
+		if datastore_Allow and game.PlaceId <= 0 then datastore_Allow = false end
 	end
 
 	local playerDataCache = {}
 
 	server.Core = {
-		Init = Init;
+		Init = Init,
 
-		playerData = {};
-		clients = {};
+		playerData = {},
+		clients = {},
 
 		createRemote = function() -- Establishes client connections
 			local remoteNetwork1 = {}
 			local remoteNetwork2 = {}
-			
+
 			local remoteExploitCheckRL = {
-				Rates = 8;
-				Reset = 120;
+				Rates = 8,
+				Reset = 120,
 			}
-			
+
 			local function logRemoteExploit(plr: ParsedPlayer, text: string)
 				Logs.addLog("Remote", text)
 				local passExploit = Utility:deferCheckRate(remoteExploitCheckRL, plr.UserId)
 				if not passExploit then
 					plr:setVar("NetworkBan", true)
-					Moderation.addBan(
-						plr.Name,
-						"Server",
-						"Too many exploited attempts to remote"	
-					)
+					Moderation.addBan(plr.Name, "Server", "Too many exploited attempts to remote")
 				end
 			end
-			
+
 			-- Creates 20 remote events
-			for i = 1,30,1 do
-				local clientNetwork; clientNetwork = Network.newCreate("Main1", {
-					invokable = false;
+			for i = 1, 30, 1 do
+				local clientNetwork
+				clientNetwork = Network.newCreate("Main1", {
+					invokable = false,
 					--firewallEnabled = true;
 					--firewallType = "high";
-					firewallCheckIndex = true;
-					firewallRequireAccessKey = true;
-					firewallAllowRemoteKeyForAccess = true;
+					firewallCheckIndex = true,
+					firewallRequireAccessKey = true,
+					firewallAllowRemoteKeyForAccess = true,
 					networkCommands = Remote.Commands,
 					networkFunc = function(plr, ...)
 						local clientData = Core.clients[plr]
 						local cli_Remote = (clientData and clientData.remoteEv) or nil
 						local parsedPlr = server.Parser:apifyPlayer(plr)
-						
+
 						--warn("Player called:", {...})
 
 						if clientData and clientData.trustChecked and cli_Remote == clientNetwork then
 							if clientData.tamperedFolder then
-								plr:Kick("Essential:\nUnable to access network due to tampered folder:\n"..tostring(clientData.tamperedFolderReason))
+								plr:Kick(
+									"Essential:\nUnable to access network due to tampered folder:\n"
+										.. tostring(clientData.tamperedFolderReason)
+								)
 								return -1
 							end
-							
+
 							-- Remote client to server encryption
-							local remoteArguments = {...}
+							local remoteArguments = { ... }
 							if endToEndEncryption then
 								local _, encryptedArgs, instanceList = ...
 								--warn("Encrypted args:", encryptedArgs)
@@ -203,24 +197,37 @@ return function(envArgs)
 								encryptedArgs = decryptRemoteArguments(clientData.remoteServerKey, encryptedArgs)
 								--warn("Decrypted args:", encryptedArgs)
 								--warn("Instance list:", instanceList)
-								
+
 								if type(encryptedArgs) ~= "table" then return end
 								local assortedArguments = sortArgumentsWithInstances(encryptedArgs, instanceList)
 								--warn("Assorted arguments:", assortedArguments)
-								remoteArguments = {_, unpack(assortedArguments)}
+								remoteArguments = { _, unpack(assortedArguments) }
 							end
-							
-							local rets = {service.trackTask("MAIN1-CLIENTNETWORK-"..plr.UserId, false, Process.remoteCall, plr, false, false, unpack(remoteArguments))}
+
+							local rets = {
+								service.trackTask(
+									"MAIN1-CLIENTNETWORK-" .. plr.UserId,
+									false,
+									Process.remoteCall,
+									plr,
+									false,
+									false,
+									unpack(remoteArguments)
+								),
+							}
 
 							if not rets[1] then
-								warn("Server client-shared network (1) encountered an error: "..tostring(rets[2]), rets[3])
+								warn(
+									"Server client-shared network (1) encountered an error: " .. tostring(rets[2]),
+									rets[3]
+								)
 							end
 							--elseif clientData and clientData.trustChecked then
 							--	warn("Unauthorized remote called from "..plr.Name.."?")
 							--	server.Events.securityCheck:fire("UnauthorizedRemote", plr, clientNetwork)
 							--	parsedPlr:Kick("Unauthorized to call remote ("..tostring(clientNetwork.Id)..")")
 						end
-					end
+					end,
 				})
 
 				--local clientNetwork; clientNetwork = Network.create("Main1", Network.MainDirectory, false, false, function(plr, ...)
@@ -249,30 +256,34 @@ return function(envArgs)
 				table.insert(remoteNetwork1, clientNetwork)
 			end
 
-			for i = 1,30,1 do
+			for i = 1, 30, 1 do
 				-- Creates 20 remote functions
-				local clientNetwork; clientNetwork = Network.newCreate("Main2", {
-					invokable = true;
+				local clientNetwork
+				clientNetwork = Network.newCreate("Main2", {
+					invokable = true,
 					--firewallEnabled = true;
 					--firewallType = "high";
-					firewallCheckIndex = true;
-					firewallRequireAccessKey = true;
-					firewallAllowRemoteKeyForAccess = true;
+					firewallCheckIndex = true,
+					firewallRequireAccessKey = true,
+					firewallAllowRemoteKeyForAccess = true,
 					networkCommands = Remote.Commands,
 					networkFunc = function(plr, ...)
 						local clientData = Core.clients[plr]
 						local cli_Remote = (clientData and clientData.remoteFunc) or nil
 						local parsedPlr = server.Parser:apifyPlayer(plr)
-						
+
 						--warn("Player called:", {...})
 
 						if clientData and clientData.trustChecked and cli_Remote == clientNetwork then
 							if clientData.tamperedFolder then
-								plr:Kick("Essential:\nUnable to access network due to tampered folder:\n"..tostring(clientData.tamperedFolderReason))
+								plr:Kick(
+									"Essential:\nUnable to access network due to tampered folder:\n"
+										.. tostring(clientData.tamperedFolderReason)
+								)
 								return -1
 							end
-							
-							local remoteArguments = {...}
+
+							local remoteArguments = { ... }
 							if endToEndEncryption then
 								local _, encryptedArgs, instanceList = ...
 								--warn("Encrypted args:", encryptedArgs)
@@ -280,17 +291,30 @@ return function(envArgs)
 								encryptedArgs = decryptRemoteArguments(clientData.remoteServerKey, encryptedArgs)
 								--warn("Decrypted args:", encryptedArgs)
 								--warn("Instance list:", instanceList)
-								
+
 								if type(encryptedArgs) ~= "table" then return end
 								local assortedArguments = sortArgumentsWithInstances(encryptedArgs, instanceList)
 								--warn("Assorted arguments:", assortedArguments)
-								remoteArguments = {_, unpack(assortedArguments)}
+								remoteArguments = { _, unpack(assortedArguments) }
 							end
 
-							local rets = {service.trackTask("MAIN2-CLIENTNETWORK-"..plr.UserId, false, Process.remoteCall, plr, false, true, unpack(remoteArguments))}
+							local rets = {
+								service.trackTask(
+									"MAIN2-CLIENTNETWORK-" .. plr.UserId,
+									false,
+									Process.remoteCall,
+									plr,
+									false,
+									true,
+									unpack(remoteArguments)
+								),
+							}
 
 							if not rets[1] then
-								warn("Server client-shared network (2) encountered an error: "..tostring(rets[2]), rets[3])
+								warn(
+									"Server client-shared network (2) encountered an error: " .. tostring(rets[2]),
+									rets[3]
+								)
 							else
 								return unpack(rets, 2)
 							end
@@ -299,7 +323,7 @@ return function(envArgs)
 							--	server.Events.securityCheck:fire("UnauthorizedRemote", plr, clientNetwork)
 							--	parsedPlr:Kick("Unauthorized to call remote ("..tostring(clientNetwork.Id)..")")
 						end
-					end
+					end,
 				})
 
 				--local clientNetwork; clientNetwork = Network.create("Main2", Network.MainDirectory, true, false, function(plr, ...)
@@ -343,13 +367,14 @@ return function(envArgs)
 			--end
 
 			-- Create trust network
-			local subNetworkTrustChecker; subNetworkTrustChecker = Network.newCreate("TrustChecker", {
-				invokable = true;
-				firewallEnabled = true;
-				firewallType = "high";
+			local subNetworkTrustChecker
+			subNetworkTrustChecker = Network.newCreate("TrustChecker", {
+				invokable = true,
+				firewallEnabled = true,
+				firewallType = "high",
 				networkFunc = function(plr: Player, actionType: string, subNetworkId: string, trustKey: string)
 					local parsedPlr = Parser:apifyPlayer(plr)
-					--		local cliData = parsedPlr:getClientData()					
+					--		local cliData = parsedPlr:getClientData()
 					--		local personalKey = subNetwork.networkKeys[parsedPlr.playerId]
 					--		local didPassRetrievalCount = personalKey and personalKey.trustKeyRetrieveAttempts+1 <= subNetwork.securitySettings.maxTrustKeyRetrievals
 
@@ -363,18 +388,28 @@ return function(envArgs)
 					--				personalKey.disconnectId,
 					--			})
 					--		end
-					
+
 					--warn("Player called on sub network trust checker:", actionType, subNetworkId, trustKey)
 					if type(actionType) == "string" and actionType == "TrustCheck" then
 						local clientData = Core.clients[plr]
 						local parsedPlr = Parser:apifyPlayer(plr)
 
-						if clientData and clientData.trustChecked and type(subNetworkId) == "string" and type(trustKey) == "string" then 
+						if
+							clientData
+							and clientData.trustChecked
+							and type(subNetworkId) == "string"
+							and type(trustKey) == "string"
+						then
 							local subNetwork = Remote.getSubNetwork(subNetworkId)
 
 							if subNetwork then
 								local keyData = subNetwork:getPlayerKey(parsedPlr)
-								if keyData and keyData:isActive() and not keyData.trustChecked and keyData.trustKey == trustKey then
+								if
+									keyData
+									and keyData:isActive()
+									and not keyData.trustChecked
+									and keyData.trustKey == trustKey
+								then
 									keyData.trustChecked = true
 
 									--warn("Signed sub network trust check for sub network "..subNetwork.name)
@@ -385,27 +420,38 @@ return function(envArgs)
 
 									subNetwork.connecting:fire(parsedPlr)
 
-									return true, subNetwork._network1.publicId, subNetwork._network2.publicId, keyData.disconnectId
+									return true,
+										subNetwork._network1.publicId,
+										subNetwork._network2.publicId,
+										keyData.disconnectId
 								end
 							end
 
 							return false
 						end
 					end
-				end
+				end,
 			})
 
-			local trustChecker; trustChecker = Network.newCreate("TrustChecker", {
-				invokable = false;
-				firewallEnabled = true;
-				firewallType = "high";
+			local trustChecker
+			trustChecker = Network.newCreate("TrustChecker", {
+				invokable = false,
+				firewallEnabled = true,
+				firewallType = "high",
 				networkFunc = function(plr: Player, trustId: string)
 					local clientData = Core.clients[plr]
 					local parsedPlr = Parser:apifyPlayer(plr)
 
-					if clientData and not clientData.trustChecked and (not clientData.verifyId or clientData.verifyId==trustId) then 
+					if
+						clientData
+						and not clientData.trustChecked
+						and (not clientData.verifyId or clientData.verifyId == trustId)
+					then
 						if clientData.tamperedFolder then
-							plr:Kick("Essential:\nFailed to trust check due to tampered folder:\n"..tostring(clientData.tamperedFolderReason))
+							plr:Kick(
+								"Essential:\nFailed to trust check due to tampered folder:\n"
+									.. tostring(clientData.tamperedFolderReason)
+							)
 							return {}
 						end
 
@@ -414,11 +460,11 @@ return function(envArgs)
 						--warn("Did trust check?")
 
 						local idleSearchTimeout = 300 -- Wait seconds of trust check
-						local remoteEv_networks = Network.get("Main1")
-						local remoteFunc_networks = Network.get("Main2")
+						local remoteEv_networks = Network.get "Main1"
+						local remoteFunc_networks = Network.get "Main2"
 
-						local remoteEv = remoteEv_networks[math.random(1,#remoteEv_networks)]
-						local remoteFunc = remoteFunc_networks[math.random(1,#remoteFunc_networks)]
+						local remoteEv = remoteEv_networks[math.random(1, #remoteEv_networks)]
+						local remoteFunc = remoteFunc_networks[math.random(1, #remoteFunc_networks)]
 
 						local evPlayerKey = remoteEv:createPlayerKey(parsedPlr)
 						remoteEv:addPlayerToTrustCheck(parsedPlr, idleSearchTimeout)
@@ -427,11 +473,11 @@ return function(envArgs)
 
 						subNetworkTrustChecker:createPlayerKey(parsedPlr)
 
-						clientData.remoteEv  			= remoteEv
-						clientData.remoteFunc 			= remoteFunc
-						clientData.remoteServerKey		= service.getRandom(math.random(15,20))
+						clientData.remoteEv = remoteEv
+						clientData.remoteFunc = remoteFunc
+						clientData.remoteServerKey = service.getRandom(math.random(15, 20))
 
-						trustChecker:runToPlayers({plr}, "TrustCheck", {
+						trustChecker:runToPlayers({ plr }, "TrustCheck", {
 							remoteEv.publicId,
 							remoteFunc.publicId,
 							clientData.remoteServerKey,
@@ -439,20 +485,19 @@ return function(envArgs)
 							(endToEndEncryption and true) or false,
 							{
 								Rates = Process.remoteCall_RateLimit.Rates,
-								Reset = Process.remoteCall_RateLimit.Reset
-							}
+								Reset = Process.remoteCall_RateLimit.Reset,
+							},
 							--evPlayerKey,
 							--funcPlayerKey,
 						})
 					end
-				end
+				end,
 			})
-
 
 			Core.remoteNetwork1 = remoteNetwork1
 			Core.remoteNetwork2 = remoteNetwork2
 			Core.remoteTrustChecker = trustChecker
-		end;
+		end,
 
 		createGlobal = function()
 			local proxData = service.newProxy
@@ -461,25 +506,24 @@ return function(envArgs)
 			local tokenAuth = settings.G_API_TokenAuth
 			local tokens = {}
 			local checkedTokens = {}
-			local globals; globals = {
-
-			}
+			local globals
+			globals = {}
 			local openGlobal = {}
 
 			local function generateToken(tokenName, expiredOs)
 				local tokenInfo = setmetatable({
-					id = service.getRandom();
-					name = tokenName or service.getRandom();
-					expiredOs = expiredOs;
-					accessPerms = {};
-					openTable = {};
+					id = service.getRandom(),
+					name = tokenName or service.getRandom(),
+					expiredOs = expiredOs,
+					accessPerms = {},
+					openTable = {},
 
-					enabled = true;
-				},{})
+					enabled = true,
+				}, {})
 
 				local tokenMeta = getmetatable(tokenInfo)
-				tokenMeta.__tostring = function() return "EssGToken-"..tokenInfo.id.."-MetaTable" end
-				tokenMeta.__metatable = "EssGToken-"..tostring(tokenInfo.id or "[unknown]").."-MetaTable"
+				tokenMeta.__tostring = function() return "EssGToken-" .. tokenInfo.id .. "-MetaTable" end
+				tokenMeta.__metatable = "EssGToken-" .. tostring(tokenInfo.id or "[unknown]") .. "-MetaTable"
 
 				local prevToken
 				tokens[tokenInfo.name] = tokenInfo
@@ -490,7 +534,7 @@ return function(envArgs)
 			Core.generateGlobalToken = generateToken
 
 			local function accessIndex(ind, accessPerms, tokenInfo)
-				local validIndexes = {"Cores", "Dependencies", "Assets", "Settings"}
+				local validIndexes = { "Cores", "Dependencies", "Assets", "Settings" }
 
 				if not tokenInfo.enabled then
 					error("Token is not enabled", 0)
@@ -506,12 +550,17 @@ return function(envArgs)
 
 				if tokenInfo then
 					Logs.addLog("Global", {
-						title = "Token "..tokenInfo.name.." ("..tokenInfo.id..") attempted to index "..tostring(ind);
-						desc = "Id: "..tokenInfo.id.." | Name: "..tokenInfo.name;
+						title = "Token "
+							.. tokenInfo.name
+							.. " ("
+							.. tokenInfo.id
+							.. ") attempted to index "
+							.. tostring(ind),
+						desc = "Id: " .. tokenInfo.id .. " | Name: " .. tokenInfo.name,
 						data = {
-							token = tokenInfo;
-							invoker = debug.info(3, "f");
-						}
+							token = tokenInfo,
+							invoker = debug.info(3, "f"),
+						},
 					})
 				end
 
@@ -526,11 +575,11 @@ return function(envArgs)
 						elseif dataType == "table" then
 							local dataName = tostring(openTableData)
 
-							if dataName:sub(1,3) == "RO-" then
+							if dataName:sub(1, 3) == "RO-" then
 								return metaRead(openTableData)
-							elseif dataName:sub(1,4) == "CRO-" then
+							elseif dataName:sub(1, 4) == "CRO-" then
 								return metaRead(cloneTable(openTableData))
-							elseif dataName:sub(1,3) == "CT-" then
+							elseif dataName:sub(1, 3) == "CT-" then
 								return cloneTable(openTableData)
 							else
 								return openTableData
@@ -543,14 +592,14 @@ return function(envArgs)
 					local indAccessData = accessPerms[ind]
 
 					if not indAccessData then
-						error("Indexing "..tostring(ind).." isn't allowed in _G", 2)
+						error("Indexing " .. tostring(ind) .. " isn't allowed in _G", 2)
 					else
 						if ind == "Assets" then
 							local retType = indAccessData.RetrieveType
 
-							return service.newProxy{
+							return service.newProxy {
 								__index = function(_, assetName)
-									assert(type(assetName)=="string", "Argument 1 (asset name) must be a string")
+									assert(type(assetName) == "string", "Argument 1 (asset name) must be a string")
 
 									local canAccess = indAccessData.Access
 
@@ -565,12 +614,17 @@ return function(envArgs)
 											if retType == "Clone" or retType == "clone" then
 												if tokenInfo then
 													Logs.addLog("Global", {
-														title = "Token "..tokenInfo.name.." ("..tokenInfo.id..") invoked for the cloned item "..tostring(assetName);
-														desc = "Id: "..tokenInfo.id.." | Name: "..tokenInfo.name;
+														title = "Token "
+															.. tokenInfo.name
+															.. " ("
+															.. tokenInfo.id
+															.. ") invoked for the cloned item "
+															.. tostring(assetName),
+														desc = "Id: " .. tokenInfo.id .. " | Name: " .. tokenInfo.name,
 														data = {
-															token = tokenInfo;
-															invoker = debug.info(3, "f");
-														}
+															token = tokenInfo,
+															invoker = debug.info(3, "f"),
+														},
 													})
 												end
 
@@ -578,12 +632,17 @@ return function(envArgs)
 											elseif retType == "Original" or retType == "original" then
 												if tokenInfo then
 													Logs.addLog("Global", {
-														title = "Token "..tokenInfo.name.." ("..tokenInfo.id..") invoked for the original item "..tostring(assetName);
-														desc = "Id: "..tokenInfo.id.." | Name: "..tokenInfo.name;
+														title = "Token "
+															.. tokenInfo.name
+															.. " ("
+															.. tokenInfo.id
+															.. ") invoked for the original item "
+															.. tostring(assetName),
+														desc = "Id: " .. tokenInfo.id .. " | Name: " .. tokenInfo.name,
 														data = {
-															token = tokenInfo;
-															invoker = debug.info(3, "f");
-														}
+															token = tokenInfo,
+															invoker = debug.info(3, "f"),
+														},
 													})
 												end
 
@@ -591,17 +650,20 @@ return function(envArgs)
 											end
 										end
 
-										error("Unable to retrieve asset "..assetName, 2)
+										error("Unable to retrieve asset " .. assetName, 2)
 									end
-								end;
+								end,
 
-								__metatable = "Assets";
-								__tostring = function() return "E.Assets" end;
+								__metatable = "Assets",
+								__tostring = function() return "E.Assets" end,
 							}
 						elseif ind == "Settings" then
-							return service.newProxy{
+							return service.newProxy {
 								__index = function(self, settingName)
-									assert(type(settingName)=="string", "Setting name must be a string, not a "..type(settingName))
+									assert(
+										type(settingName) == "string",
+										"Setting name must be a string, not a " .. type(settingName)
+									)
 
 									local canAccess = indAccessData.Access
 
@@ -619,12 +681,20 @@ return function(envArgs)
 
 											if tokenInfo then
 												Logs.addLog("Global", {
-													title = "Token "..tokenInfo.name.." ("..tokenInfo.id..") acquired "..settingName;
-													desc = "Setting type: "..settingType.." | Setting val: "..tostring(settingType);
+													title = "Token "
+														.. tokenInfo.name
+														.. " ("
+														.. tokenInfo.id
+														.. ") acquired "
+														.. settingName,
+													desc = "Setting type: "
+														.. settingType
+														.. " | Setting val: "
+														.. tostring(settingType),
 													data = {
-														token = tokenInfo;
-														invoker = debug.info(3, "f");
-													}
+														token = tokenInfo,
+														invoker = debug.info(3, "f"),
+													},
 												})
 											end
 
@@ -634,10 +704,15 @@ return function(envArgs)
 												return indSetting
 											end
 										else
-											error("Cannot index "..tostring(settingName).." due to insufficient permissions", 2)
+											error(
+												"Cannot index "
+													.. tostring(settingName)
+													.. " due to insufficient permissions",
+												2
+											)
 										end
 									end
-								end;
+								end,
 
 								__newindex = function(self, settingName, settingVal)
 									local canAccess = indAccessData.Access
@@ -646,19 +721,36 @@ return function(envArgs)
 										error("Access denied. Insufficient permissions", 2)
 									else
 										local accessType = indAccessData.AccessType
-										local canWrite = accessType=="write" or accessType=="Write" or accessType=="readOrWrite"
+										local canWrite = accessType == "write"
+											or accessType == "Write"
+											or accessType == "readOrWrite"
 
 										if not canWrite then
-											error("Cannot overwrite "..tostring(settingName).." to "..tostring(settingVal))
+											error(
+												"Cannot overwrite "
+													.. tostring(settingName)
+													.. " to "
+													.. tostring(settingVal)
+											)
 										else
 											if tokenInfo then
 												Logs.addLog("Global", {
-													title = "Token "..tokenInfo.name.." ("..tokenInfo.id..") overwritten setting "..settingName.." to "..tostring(settingVal);
-													desc = "Setting val: "..tostring(settingVal).." | Val type: "..type(settingVal);
+													title = "Token "
+														.. tokenInfo.name
+														.. " ("
+														.. tokenInfo.id
+														.. ") overwritten setting "
+														.. settingName
+														.. " to "
+														.. tostring(settingVal),
+													desc = "Setting val: "
+														.. tostring(settingVal)
+														.. " | Val type: "
+														.. type(settingVal),
 													data = {
-														token = tokenInfo;
-														invoker = debug.info(3, "f");
-													}
+														token = tokenInfo,
+														invoker = debug.info(3, "f"),
+													},
 												})
 											end
 
@@ -667,7 +759,7 @@ return function(envArgs)
 									end
 								end,
 
-								__tostring = function() return "E.Settings" end;
+								__tostring = function() return "E.Settings" end,
 							}
 						elseif openGlobal[ind] ~= nil then
 							local openInd = openGlobal[ind]
@@ -679,11 +771,11 @@ return function(envArgs)
 							elseif indType == "table" then
 								local tabStr = tostring(tostring(openInd))
 
-								if tabStr:sub(1,3)=="CC-" then -- Clone table
+								if tabStr:sub(1, 3) == "CC-" then -- Clone table
 									return cloneTable(openInd)
-								elseif tabStr:sub(1,4)=="CL-" then -- Clone table with read only access
+								elseif tabStr:sub(1, 4) == "CL-" then -- Clone table with read only access
 									return metaRead(cloneTable(openInd))
-								elseif tabStr:sub(1,3)=="LT-" then -- Latest table
+								elseif tabStr:sub(1, 3) == "LT-" then -- Latest table
 									return openInd
 								else -- Read only table
 									return metaRead(openInd)
@@ -701,46 +793,83 @@ return function(envArgs)
 								local valAccessData = accessPerms[ind]
 
 								if not valAccessData then
-									error("Cannot access "..ind.." due to insufficient permissions.", 2)
+									error("Cannot access " .. ind .. " due to insufficient permissions.", 2)
 								else
-									return service.newProxy{
+									return service.newProxy {
 										__index = function(self, coreOrDepInd)
 											local coreOrDepValData = valAccessData[coreOrDepInd]
 
 											if not coreOrDepValData then
-												error("Unable to retrieve "..tostring(coreOrDepInd).." from "..tostring(ind), 2)
+												error(
+													"Unable to retrieve "
+														.. tostring(coreOrDepInd)
+														.. " from "
+														.. tostring(ind),
+													2
+												)
 											else
-												local canAccess = indValue[coreOrDepInd] and (coreOrDepValData.FullAccess or #coreOrDepValData.List>0) and true
+												local canAccess = indValue[coreOrDepInd]
+													and (coreOrDepValData.FullAccess or #coreOrDepValData.List > 0)
+													and true
 
 												if canAccess then
-													return service.newProxy{
+													return service.newProxy {
 														__index = function(_, indFromDepOrCore)
 															local coreOrDepVal = indValue[coreOrDepInd]
 
 															if type(coreOrDepVal) ~= "table" then
-																error("Failed to index "..tostring(indFromDepOrCore).." from a "..type(coreOrDepVal), 2)
+																error(
+																	"Failed to index "
+																		.. tostring(indFromDepOrCore)
+																		.. " from a "
+																		.. type(coreOrDepVal),
+																	2
+																)
 															else
 																local selectedIndex = coreOrDepVal[indFromDepOrCore]
 																local selectType = type(selectedIndex)
 																local valAccess = coreOrDepValData.Access
 																local fullAccess = coreOrDepValData.FullAccess
 
-																if fullAccess or table.find(coreOrDepValData.List, indFromDepOrCore) then
+																if
+																	fullAccess
+																	or table.find(
+																		coreOrDepValData.List,
+																		indFromDepOrCore
+																	)
+																then
 																	if tokenInfo then
 																		Logs.addLog("Global", {
-																			title = "Token "..tokenInfo.name.." ("..tokenInfo.id..") indexed "..tostring(indFromDepOrCore).." from "..tostring(coreOrDepInd);
-																			desc = "Index value type: "..selectType.." | Index value: "..tostring(selectedIndex);
+																			title = "Token "
+																				.. tokenInfo.name
+																				.. " ("
+																				.. tokenInfo.id
+																				.. ") indexed "
+																				.. tostring(indFromDepOrCore)
+																				.. " from "
+																				.. tostring(coreOrDepInd),
+																			desc = "Index value type: "
+																				.. selectType
+																				.. " | Index value: "
+																				.. tostring(selectedIndex),
 																			data = {
-																				token = tokenInfo;
-																				invoker = debug.info(3, "f");
-																			}
+																				token = tokenInfo,
+																				invoker = debug.info(3, "f"),
+																			},
 																		})
 																	end
 
 																	if selectType == "table" then
-																		if valAccess == "Read" or valAccess == "read" then
+																		if
+																			valAccess == "Read"
+																			or valAccess == "read"
+																		then
 																			return metaRead(selectedIndex)
-																		elseif valAccess == "Write" or valAccess == "write" or valAccess =="readOrWrite" then
+																		elseif
+																			valAccess == "Write"
+																			or valAccess == "write"
+																			or valAccess == "readOrWrite"
+																		then
 																			return selectedIndex
 																		else
 																			error("Unknown access", 2)
@@ -751,103 +880,135 @@ return function(envArgs)
 																		return selectedIndex
 																	end
 																else
-																	error("Cannot index "..tostring(indFromDepOrCore)..". Insufficient permissions.", 2)
+																	error(
+																		"Cannot index "
+																			.. tostring(indFromDepOrCore)
+																			.. ". Insufficient permissions.",
+																		2
+																	)
 																end
 															end
-														end;
+														end,
 
 														__newindex = function(_, indFromDepOrCore, val)
 															local valAccess = coreOrDepValData.Access
 
-															if valAccess == "Write" or valAccess == "write" or valAccess =="readOrWrite" then
+															if
+																valAccess == "Write"
+																or valAccess == "write"
+																or valAccess == "readOrWrite"
+															then
 																if tokenInfo then
 																	local oldVal = indValue[indFromDepOrCore]
 																	Logs.addLog("Global", {
-																		title = "Token "..tokenInfo.name.." ("..tokenInfo.id..") overwritten index sub-index value "..tostring(indFromDepOrCore).." from index "..tostring(coreOrDepInd);
-																		desc = "Changed index value to "..tostring(val).." ("..type(val)..") from "..tostring(oldVal).." ("..type(oldVal)..")";
+																		title = "Token "
+																			.. tokenInfo.name
+																			.. " ("
+																			.. tokenInfo.id
+																			.. ") overwritten index sub-index value "
+																			.. tostring(indFromDepOrCore)
+																			.. " from index "
+																			.. tostring(coreOrDepInd),
+																		desc = "Changed index value to " .. tostring(
+																			val
+																		) .. " (" .. type(val) .. ") from " .. tostring(
+																			oldVal
+																		) .. " (" .. type(oldVal) .. ")",
 																		data = {
-																			token = tokenInfo;
-																			invoker = debug.info(3, "f");
-																		}
+																			token = tokenInfo,
+																			invoker = debug.info(3, "f"),
+																		},
 																	})
 																end
 
 																indValue[indFromDepOrCore] = val
 															else
-																error("Attempted to overwrite value from index "..tostring(indFromDepOrCore).." to "..type(val), 2)
+																error(
+																	"Attempted to overwrite value from index "
+																		.. tostring(indFromDepOrCore)
+																		.. " to "
+																		.. type(val),
+																	2
+																)
 															end
-														end;
+														end,
 
-														__tostring = function() return "E."..tostring(ind).."-"..tostring(coreOrDepInd) end;
+														__tostring = function()
+															return "E."
+																.. tostring(ind)
+																.. "-"
+																.. tostring(coreOrDepInd)
+														end,
 													}
 												else
-													error("Unable to access "..tostring(coreOrDepInd).." due to no available permissions or it doesn't exist", 2)
+													error(
+														"Unable to access "
+															.. tostring(coreOrDepInd)
+															.. " due to no available permissions or it doesn't exist",
+														2
+													)
 												end
 											end
-										end;
+										end,
 
-										__tostring = function() return "E."..tostring(ind) end;
+										__tostring = function() return "E." .. tostring(ind) end,
 									}
 								end
 							else
-								error("Indexing "..tostring(ind).." is not accessible", 2)
+								error("Indexing " .. tostring(ind) .. " is not accessible", 2)
 							end
 						end
 					end
 				else
-					error("Unable to index "..tostring(ind), 2)
+					error("Unable to index " .. tostring(ind), 2)
 				end
 			end
 
-
-			local proxy = service.newProxy{
+			local proxy = service.newProxy {
 				__call = function(self, tokenName)
 					-- Ignore if the console or this proxy called itself
 					local callerEnv = getfenv(2)
-					if rawequal(callerEnv, getfenv()) then
-						return
-					end
+					if rawequal(callerEnv, getfenv()) then return end
 
 					local tokenInfo = tokens[tokenName]
 
 					if not tokenInfo then
-						error("Token "..tostring(tokenName).." doesn't exist", 2)
+						error("Token " .. tostring(tokenName) .. " doesn't exist", 2)
 					else
 						local function checkExpired()
-							return tokens[tokenName]~=tokenInfo or (tokenInfo.expiredOs and os.time()-tokenInfo.expiredOs > 0)
+							return tokens[tokenName] ~= tokenInfo
+								or (tokenInfo.expiredOs and os.time() - tokenInfo.expiredOs > 0)
 						end
 
 						if checkExpired() then
-							error("Token "..tokenName.." is expired and cannot be used")
+							error("Token " .. tokenName .. " is expired and cannot be used")
 						else
 							Logs.addLog("Global", {
-								title = "Acquired a sync G table with token auth "..tokenInfo.id;
-								desc = "A synchronous Essential G table was created with token auth "..tokenInfo.id;
+								title = "Acquired a sync G table with token auth " .. tokenInfo.id,
+								desc = "A synchronous Essential G table was created with token auth " .. tokenInfo.id,
 								data = {
-									token = tokenInfo;
-									invoker = debug.info(3, "f");
-								}
+									token = tokenInfo,
+									invoker = debug.info(3, "f"),
+								},
 							})
 
-							return service.newProxy{
+							return service.newProxy {
 								__index = function(_, ind)
 									if not checkExpired() then
 										return accessIndex(ind, tokenInfo.accessPerms or {}, tokenInfo)
 									end
-								end;
+								end,
 
-								__tostring = function() return "SharedEssentialG_TokenAuth_"..tostring(tokenName) end;
+								__tostring = function() return "SharedEssentialG_TokenAuth_" .. tostring(tokenName) end,
 							}
 						end
 					end
-				end;
+				end,
 
 				__index = function(self, ind)
 					-- Ignore if the console or this proxy called itself
 					local callerEnv = getfenv(2)
-					if rawequal(callerEnv, getfenv()) then
-						return
-					end
+					if rawequal(callerEnv, getfenv()) then return end
 
 					local indType = type(ind)
 					local tokenAuth = settings.globalApi_TokenAuth
@@ -855,10 +1016,12 @@ return function(envArgs)
 					if not tokenAuth then
 						if indType == "string" or indType == "number" then
 							return accessIndex(ind, settings.globalApi_Perms, {
-								name = "-[Global]-";
-								id = service.getRandom();
-								canAccessPrivateTable = (settings.globalApi_Perms.Default and settings.globalApi_Perms.Default.Access);
-								enabled = true;
+								name = "-[Global]-",
+								id = service.getRandom(),
+								canAccessPrivateTable = (
+									settings.globalApi_Perms.Default and settings.globalApi_Perms.Default.Access
+								),
+								enabled = true,
 							})
 						end
 					else
@@ -869,37 +1032,35 @@ return function(envArgs)
 				__newindex = function(self, ind, val)
 					-- Ignore if the console or this proxy called itself
 					local callerEnv = getfenv(2)
-					if rawequal(callerEnv, getfenv()) then
-						return
-					end
+					if rawequal(callerEnv, getfenv()) then return end
 
-					local indName = ''
+					local indName = ""
 					local indType = type(ind)
 
 					if indType == "table" or indType == "userdata" then
-						indName = 'userdata/table'
+						indName = "userdata/table"
 					elseif indType == "string" or indType == "number" then
 						indName = tostring(ind)
 					else
 						indName = indType
 					end
 
-					local valName = ''
+					local valName = ""
 					local valType = type(val)
 
 					if valType == "table" or valType == "userdata" then
-						valName = 'userdata/table'
+						valName = "userdata/table"
 					elseif valType == "string" or valType == "number" then
 						valName = tostring(val)
 					else
 						valName = valType
 					end
 
-					error("Attempting to overwrite "..indName.." to "..valName, 2)
-				end;
+					error("Attempting to overwrite " .. indName .. " to " .. valName, 2)
+				end,
 
-				__tostring = function() return "EssentialGlobal" end;
-				__metatable = "EssentialG";
+				__tostring = function() return "EssentialGlobal" end,
+				__metatable = "EssentialG",
 			}
 
 			if not table.isfrozen(_G) then
@@ -907,8 +1068,8 @@ return function(envArgs)
 					if not table.isfrozen(_G) then
 						rawset(_G, "Essential", proxy)
 					else
-						warn("Global table was frozen. Stopping global lock..")
-						service.stopLoop("Global lock")
+						warn "Global table was frozen. Stopping global lock.."
+						service.stopLoop "Global lock"
 						Logs.addLog("Script", "Global table failed to insert in _G due to frozen table.")
 					end
 				end)
@@ -918,13 +1079,13 @@ return function(envArgs)
 						if not table.isfrozen(shared) then
 							rawset(shared, "Essential", proxy)
 						else
-							warn("Shared table was frozen. Stopping global lock..")
-							service.stopLoop("Global lock")
+							warn "Shared table was frozen. Stopping global lock.."
+							service.stopLoop "Global lock"
 							Logs.addLog("Script", "Global table failed to insert in shared due to frozen table.")
 						end
 					end)
 				else
-					warn("_G and shared tables are frozen. UNABLE TO INSERT ESSENTIAL GLOBAL.")
+					warn "_G and shared tables are frozen. UNABLE TO INSERT ESSENTIAL GLOBAL."
 					Logs.addLog("Script", "Global table failed to insert in _G and shared due to frozen tables.")
 				end
 			end
@@ -933,52 +1094,51 @@ return function(envArgs)
 			server.openGlobalTable = openGlobal
 
 			server.Events.globalInitialized:fire(proxy)
-		end;
+		end,
 
 		defaultServerData = function()
 			return {
-				keybindsToggled = {};
+				keybindsToggled = {},
 			}
 		end,
 
 		defaultPlayerData = function()
 			return {
-				aliases = {};
-				customCmdAliases = {};
-				customKeybinds = {};
-				cmdKeybinds = {};
-				messages = {};
-				shortcuts = {};
-				
-				
+				aliases = {},
+				customCmdAliases = {},
+				customKeybinds = {},
+				cmdKeybinds = {},
+				messages = {},
+				shortcuts = {},
+
 				clientSettings = {
-					KeybindsEnabled = true;
-					IncognitoMode = false;
-				};
+					KeybindsEnabled = true,
+					IncognitoMode = false,
+				},
 
-				activityLogs = {};
-				savedRoles = {};
+				activityLogs = {},
+				savedRoles = {},
 
-				encryptKey = getRandom(18);
-				incognitoName = "";
+				encryptKey = getRandom(18),
+				incognitoName = "",
 			}, { -- Meta index settings
 				messages = {
-					maxEntries = 4;
-				};
+					maxEntries = 4,
+				},
 				activityLogs = {
-					maxEntries = math.clamp(math.floor(maxActivityLogs or 30), 1, 90);
-				};
+					maxEntries = math.clamp(math.floor(maxActivityLogs or 30), 1, 90),
+				},
 			}
-		end;
+		end,
 
 		getPlayerData = function(userId, ignoreLoading: boolean?)
 			if type(userId) == "number" then
 				-- DATA KEY MUST BE USED TO CHECK WITH THE SYSTEM DATASTORE FUNCTIONS
 				-- HOWEVER, HASHED DATA KEY IS USED FOR SAVING DATA THROUGH ROBLOX DATASTORE INSTEAD OF SYSTEM
 				local originalDataKey = tostring(userId)
-				local hashedDataKey = originalDataKey;
-				local dataAccessKey = "PData_"..DS_PlayerData:sub(1,44)
-				local encryptKey = playerData_EncryptData and "PlayerData-"..userId
+				local hashedDataKey = originalDataKey
+				local dataAccessKey = "PData_" .. DS_PlayerData:sub(1, 44)
+				local encryptKey = playerData_EncryptData and "PlayerData-" .. userId
 				local defaultData, metaIndexSettings = Core.defaultPlayerData()
 
 				-- Datastore encryption
@@ -989,41 +1149,36 @@ return function(envArgs)
 				local dataCache = playerDataCache[userId]
 
 				if not dataCache then
-					local bannedIndexes = {"_dataCache", "_changed", "_updated", "_lastUpdated", "_dataUpdate", "_dataCorrupted"}
+					local bannedIndexes =
+						{ "_dataCache", "_changed", "_updated", "_lastUpdated", "_dataUpdate", "_dataCorrupted" }
 
 					dataCache = {
-						_dataChanged = false;
-						_autoUpdate = true;
-						_dataUpdate = true;
+						_dataChanged = false,
+						_autoUpdate = true,
+						_dataUpdate = true,
 
-						_dataCorrupted = false;
+						_dataCorrupted = false,
 
-						_updated = Signal.new();
-						_saveError = Signal.new();
-						_saveSuccess = Signal.new();
-						_indexUpdated = Signal.new();
+						_updated = Signal.new(),
+						_saveError = Signal.new(),
+						_saveSuccess = Signal.new(),
+						_indexUpdated = Signal.new(),
 						--_changed = Signal.new();
 
-						created = os.time();
-						lastUpdated = os.time();
+						created = os.time(),
+						lastUpdated = os.time(),
 
 						serverData = setmetatable(Core.defaultServerData(), {
-							__metatable = "ServerData-"..userId;	
-						});
+							__metatable = "ServerData-" .. userId,
+						}),
 
-						specialProxy = service.newProxy{
+						specialProxy = service.newProxy {
 							__index = function(self, ind)
-								if rawequal(ind, "serverData") then
-									return dataCache.serverData
-								end
-								
-								if rawequal(ind, "_dataCache") and server.Studio then
-									return dataCache
-								end
+								if rawequal(ind, "serverData") then return dataCache.serverData end
 
-								if rawequal(ind, "_updated") then
-									return metaRead(dataCache._updated:wrapConnect())
-								end
+								if rawequal(ind, "_dataCache") and server.Studio then return dataCache end
+
+								if rawequal(ind, "_updated") then return metaRead(dataCache._updated:wrapConnect()) end
 
 								if rawequal(ind, "_saveError") then
 									return metaRead(dataCache._saveError:wrapConnect())
@@ -1045,56 +1200,51 @@ return function(envArgs)
 								--	return metaRead(dataCache._changed:wrapConnect())
 								--end
 
-								if rawequal(ind, "_lastUpdated") then
-									return dataCache.lastUpdated
-								end
+								if rawequal(ind, "_lastUpdated") then return dataCache.lastUpdated end
 
-								if rawequal(ind, "_autoUpdate") then
-									return dataCache._autoUpdate
-								end
+								if rawequal(ind, "_autoUpdate") then return dataCache._autoUpdate end
 
-								if rawequal(ind, "_dataUpdate") then
-									return dataCache._dataUpdate
-								end
+								if rawequal(ind, "_dataUpdate") then return dataCache._dataUpdate end
 
-								if rawequal(ind, "_dataChanged") then
-									return dataCache._dataChanged
-								end
+								if rawequal(ind, "_dataChanged") then return dataCache._dataChanged end
 
-								if rawequal(ind, "_dataCorrupted") then
-									return dataCache._dataCorrupted
-								end
+								if rawequal(ind, "_dataCorrupted") then return dataCache._dataCorrupted end
 
 								if rawequal(ind, "_tableAdd") then -- TODO: Fix this with many entries
 									return metaFunc(function(ind, val)
-										assert(type(ind)=="string" or type(ind)=="number", "Index must be a string or number")
+										assert(
+											type(ind) == "string" or type(ind) == "number",
+											"Index must be a string or number"
+										)
 
-										if not table.find({"nil", "string", "number", "table", "boolean"}, type(val)) then
+										if
+											not table.find({ "nil", "string", "number", "table", "boolean" }, type(val))
+										then
 											error("Value must be compatible (nil/string/number/table/boolean)", 0)
 											return
 										end
 
 										local dataTab = rawget(dataCache.specialTable, ind)
-										
+
 										if type(dataTab) == "table" then
 											local canDataReadAndWrite = dataCache._dataUpdate
 
 											if canDataReadAndWrite then
 												table.insert(dataCache._pendingTableAddChanges, {
-													tab = ind;
+													tab = ind,
 													--ind = #dataTab+1;
-													value = val;
+													value = val,
 												})
 												--table.insert(dataTab, val)
 												dataCache._dataChanged = true
 											else
 												table.insert(dataTab, val)
-												
+
 												if dataCache._metaTables[ind] then
 													local metaTableForIndexedData = dataCache._metaTables[ind]
 													table.insert(metaTableForIndexedData._table, val)
 												end
-												
+
 												dataCache._indexUpdated:fire(ind)
 											end
 										end
@@ -1103,30 +1253,35 @@ return function(envArgs)
 
 								if rawequal(ind, "_tableAddToSet") then
 									return metaFunc(function(ind, val)
-										assert(type(ind)=="string" or type(ind)=="number", "Index must be a string or number")
+										assert(
+											type(ind) == "string" or type(ind) == "number",
+											"Index must be a string or number"
+										)
 
-										if not table.find({"nil", "string", "number", "table", "boolean"}, type(val)) then
+										if
+											not table.find({ "nil", "string", "number", "table", "boolean" }, type(val))
+										then
 											error("Value must be compatible (nil/string/number/table/boolean)", 0)
 											return
 										end
 
 										local dataTab = rawget(dataCache.specialTable, ind)
-										
 
 										if type(dataTab) == "table" then
 											local canDataReadAndWrite = dataCache._dataUpdate
-											
+
 											if canDataReadAndWrite then
 												table.insert(dataCache._pendingTableAddChanges, {
-													tab = ind;
+													tab = ind,
 													--ind = #dataTab+1;
-													value = val;
-													onlyIfItNotExists = true;
+													value = val,
+													onlyIfItNotExists = true,
 												})
 												--table.insert(dataTab, val)
 												dataCache._dataChanged = true
 											else
-												local filterList; filterList = function()
+												local filterList
+												filterList = function()
 													for i, v in ipairs(dataTab) do
 														if checkEquality(v, val) then
 															table.remove(dataTab, i)
@@ -1137,12 +1292,12 @@ return function(envArgs)
 
 												filterList()
 												table.insert(dataTab, val)
-												
+
 												if dataCache._metaTables[ind] then
 													local metaTableForIndexedData = dataCache._metaTables[ind]
 													table.insert(metaTableForIndexedData._table, val)
 												end
-												
+
 												dataCache._indexUpdated:fire(ind)
 											end
 										end
@@ -1151,9 +1306,14 @@ return function(envArgs)
 
 								if rawequal(ind, "_tableRemove") then
 									return metaFunc(function(ind, val)
-										assert(type(ind)=="string" or type(ind)=="number", "Index must be a string or number")
+										assert(
+											type(ind) == "string" or type(ind) == "number",
+											"Index must be a string or number"
+										)
 
-										if not table.find({"nil", "string", "number", "table", "boolean"}, type(val)) then
+										if
+											not table.find({ "nil", "string", "number", "table", "boolean" }, type(val))
+										then
 											error("Value must be compatible (nil/string/number/table/boolean)", 0)
 											return
 										end
@@ -1165,8 +1325,8 @@ return function(envArgs)
 
 											if canDataReadAndWrite then
 												table.insert(dataCache._pendingTableRemoveChanges, {
-													tab = ind;
-													value = val;
+													tab = ind,
+													value = val,
 												})
 
 												--for i,v in pairs(dataTab) do
@@ -1177,21 +1337,19 @@ return function(envArgs)
 
 												dataCache._dataChanged = true
 											else
-												for ind,indVal in pairs(dataTab) do
-													if checkEquality(indVal, val) then
-														rawset(dataTab, ind, nil)
-													end
+												for ind, indVal in pairs(dataTab) do
+													if checkEquality(indVal, val) then rawset(dataTab, ind, nil) end
 												end
-												
+
 												if dataCache._metaTables[ind] then
 													local metaTableForIndexedData = dataCache._metaTables[ind]
-													for ind,indVal in pairs(metaTableForIndexedData._table) do
+													for ind, indVal in pairs(metaTableForIndexedData._table) do
 														if checkEquality(indVal, val) then
 															rawset(metaTableForIndexedData._table, ind, nil)
 														end
 													end
 												end
-												
+
 												dataCache._indexUpdated:fire(ind)
 											end
 										end
@@ -1199,9 +1357,12 @@ return function(envArgs)
 								end
 
 								if rawequal(ind, "_listenIndexChangedEvent") then
-									return metaFunc(function(focusedIndex: string|number, callback: FunctionalTest)
-										assert(type(focusedIndex)=="string" or type(focusedIndex)=="number", "Index must be a string or number")
-										assert(type(callback)=="function", "Callback must be a function")
+									return metaFunc(function(focusedIndex: string | number, callback: FunctionalTest)
+										assert(
+											type(focusedIndex) == "string" or type(focusedIndex) == "number",
+											"Index must be a string or number"
+										)
+										assert(type(callback) == "function", "Callback must be a function")
 
 										local listenSignal = Signal.new()
 										local listenLink = listenSignal:connect(callback)
@@ -1229,7 +1390,6 @@ return function(envArgs)
 									end, true)
 								end
 
-
 								if rawequal(ind, "_updateIfDead") then
 									return metaFunc(function()
 										if dataCache._dataUpdate and not dataCache._autoUpdate then
@@ -1241,9 +1401,7 @@ return function(envArgs)
 
 								if rawequal(ind, "_forceUpdate") then
 									return metaFunc(function()
-										if dataCache._dataUpdate then
-											dataCache.update(true)
-										end
+										if dataCache._dataUpdate then dataCache.update(true) end
 									end, true)
 								end
 
@@ -1257,18 +1415,14 @@ return function(envArgs)
 								--	end, true)
 								--end
 
-								if rawequal(ind, "_table") then
-									return dataCache.specialTable
-								end
+								if rawequal(ind, "_table") then return dataCache.specialTable end
 
-								local useMetaTable = tostring(ind):sub(1,2) == "__" and ind ~= "__"
+								local useMetaTable = tostring(ind):sub(1, 2) == "__" and ind ~= "__"
 
-								if useMetaTable then
-									ind = ind:sub(3)
-								end
+								if useMetaTable then ind = ind:sub(3) end
 
 								local itemSelect = rawget(dataCache.specialTable, ind)
-								
+
 								if type(itemSelect) == "table" then
 									if not useMetaTable then
 										return cloneTable(itemSelect)
@@ -1277,45 +1431,52 @@ return function(envArgs)
 											return dataCache._metaTables[ind]._specialProxy
 										end
 
-										local blacklistedInds = {"_reviveIfDead", "_recognize", "_updated"}
-										local tableFunctions = {"find", "insert", "remove", "concat", "sort", "isfrozen"}
-										local metaTabInfo; metaTabInfo = {
-											loopId = "PlayerData_"..userId.."_Table-"..getRandom();
-											alive = false;
-											lastAlive = nil;
-											lastModified = tick();
-											_didModify = false;
-											_reviving = false;
+										local blacklistedInds = { "_reviveIfDead", "_recognize", "_updated" }
+										local tableFunctions =
+											{ "find", "insert", "remove", "concat", "sort", "isfrozen" }
+										local metaTabInfo
+										metaTabInfo = {
+											loopId = "PlayerData_" .. userId .. "_Table-" .. getRandom(),
+											alive = false,
+											lastAlive = nil,
+											lastModified = tick(),
+											_didModify = false,
+											_reviving = false,
 
-											_specialProxy = service.newProxy{
+											_specialProxy = service.newProxy {
 												__index = function(self, targetInd)
-													if type(targetInd) == "string" and targetInd:sub(1,1) == "_" and table.find(tableFunctions, targetInd:sub(2)) then
+													if
+														type(targetInd) == "string"
+														and targetInd:sub(1, 1) == "_"
+														and table.find(tableFunctions, targetInd:sub(2))
+													then
 														return metaFunc(function(...)
 															local tableIndex = targetInd:sub(2)
-															local results = table.pack(table[tableIndex](metaTabInfo._table, ...))
-															
+															local results =
+																table.pack(table[tableIndex](metaTabInfo._table, ...))
+
 															return unpack(results)
 														end, true)
 													end
-													
+
 													if rawequal(targetInd, "_push") then
 														return metaFunc(function(...)
 															local tableAdd = dataCache.specialProxy._tableAdd
-															for i, arg in {...} do
+															for i, arg in { ... } do
 																tableAdd(ind, arg)
 															end
 														end, true)
 													end
-													
+
 													if rawequal(targetInd, "_pushToSet") then
 														return metaFunc(function(...)
 															local tableAdd = dataCache.specialProxy._tableAddToSet
-															for i, arg in {...} do
+															for i, arg in { ... } do
 																tableAdd(ind, arg)
 															end
 														end, true)
 													end
-													
+
 													if rawequal(targetInd, "_pull") then
 														return metaFunc(function(...)
 															local tableRemove = dataCache.specialProxy._tableRemove
@@ -1324,10 +1485,8 @@ return function(envArgs)
 															end
 														end, true)
 													end
-													
-													if rawequal(targetInd, "_table") then
-														return metaTabInfo._table
-													end
+
+													if rawequal(targetInd, "_table") then return metaTabInfo._table end
 
 													if rawequal(targetInd, "_updated") then
 														return metaRead(metaTabInfo._updated:wrapConnect())
@@ -1357,31 +1516,48 @@ return function(envArgs)
 															if not metaTabInfo._didModify then
 																local realItem = rawget(dataCache.specialTable, ind)
 
-																if type(realItem) == 'table' then
-																	local isDifferent = not checkEquality(realItem, metaTabInfo._table)
+																if type(realItem) == "table" then
+																	local isDifferent =
+																		not checkEquality(realItem, metaTabInfo._table)
 
 																	if isDifferent then
 																		metaTabInfo.lastModified = tick()
-																		
+
 																		if dataCache._dataUpdate then
 																			metaTabInfo._didModify = true
 																			dataCache._dataChanged = true
 
-																			for realItemInd, realItemVal in pairs(realItem) do
-																				local metaTabVal = metaTabInfo._table[realItemInd]
-																				if not checkEquality(metaTabVal, realItemVal) then
+																			for realItemInd, realItemVal in
+																				pairs(realItem)
+																			do
+																				local metaTabVal =
+																					metaTabInfo._table[realItemInd]
+																				if
+																					not checkEquality(
+																						metaTabVal,
+																						realItemVal
+																					)
+																				then
 																					if rawequal(metaTabVal, nil) then
-																						if not dataCache._pendingTableIndexRemovalChanges[ind] then
-																							dataCache._pendingTableIndexRemovalChanges[ind] = {}
+																						if
+																							not dataCache._pendingTableIndexRemovalChanges[ind]
+																						then
+																							dataCache._pendingTableIndexRemovalChanges[ind] =
+																								{}
 																						end
 
-																						dataCache._pendingTableIndexRemovalChanges[ind][realItemInd] = true
+																						dataCache._pendingTableIndexRemovalChanges[ind][realItemInd] =
+																							true
 																					else
-																						if not dataCache._pendingTableIndexOverwriteChanges[ind] then
-																							dataCache._pendingTableIndexOverwriteChanges[ind] = {}
+																						if
+																							not dataCache._pendingTableIndexOverwriteChanges[ind]
+																						then
+																							dataCache._pendingTableIndexOverwriteChanges[ind] =
+																								{}
 																						end
 
-																						dataCache._pendingTableIndexOverwriteChanges[ind][realItemInd] = metaTabVal
+																						dataCache._pendingTableIndexOverwriteChanges[ind][realItemInd] =
+																							metaTabVal
 																					end
 																				end
 																			end
@@ -1396,54 +1572,66 @@ return function(envArgs)
 												end,
 
 												__newindex = function(self, targetInd, targetVal)
-													if not table.find({"string", "number"}, type(targetInd)) then
+													if not table.find({ "string", "number" }, type(targetInd)) then
 														error("Invalid index (string/number expected)", 0)
 													end
 
 													local strIndex = tostring(targetInd)
-													if table.find(blacklistedInds, strIndex) or (strIndex:sub(1,1)=="_" and table.find(tableFunctions, strIndex:sub(2))) then
+													if
+														table.find(blacklistedInds, strIndex)
+														or (
+															strIndex:sub(1, 1) == "_"
+															and table.find(tableFunctions, strIndex:sub(2))
+														)
+													then
 														error("Blacklisted index.", 0)
 													end
 
 													local oldVal = rawget(metaTabInfo._table, targetInd)
-													if checkEquality(oldVal, targetVal) then
-														return
-													end
-													
+													if checkEquality(oldVal, targetVal) then return end
+
 													--warn("PData", userId, "metaTable", ind, "modified", targetInd, "->", targetVal, "<-", oldVal)
 													metaTabInfo.lastModified = tick()
-													
+
 													if dataCache._dataUpdate then
 														metaTabInfo._didModify = true
 														if rawequal(targetVal, nil) then
 															if not dataCache._pendingTableIndexRemovalChanges[ind] then
 																dataCache._pendingTableIndexRemovalChanges[ind] = {}
 															end
-															dataCache._pendingTableIndexRemovalChanges[ind][targetInd] = true
+															dataCache._pendingTableIndexRemovalChanges[ind][targetInd] =
+																true
 														else
-															if not dataCache._pendingTableIndexOverwriteChanges[ind] then
+															if
+																not dataCache._pendingTableIndexOverwriteChanges[ind]
+															then
 																dataCache._pendingTableIndexOverwriteChanges[ind] = {}
 															end
 
-															dataCache._pendingTableIndexOverwriteChanges[ind][targetInd] = targetVal
+															dataCache._pendingTableIndexOverwriteChanges[ind][targetInd] =
+																targetVal
 														end
 													end
-													
+
 													rawset(metaTabInfo._table, targetInd, targetVal)
 													--warn("Overwritten value:", metaTabInfo._table[targetInd])
 												end,
 
-												__iter = function(self)
-													return pairs, metaTabInfo._table
-												end;
+												__iter = function(self) return pairs, metaTabInfo._table end,
 
-												__len = function(self)
-													return #metaTabInfo._table
+												__len = function(self) return #metaTabInfo._table end,
+
+												__tostring = function()
+													return "ProxyDataTable_"
+														.. tostring(ind)
+														.. "-PlayerData_"
+														.. userId
 												end,
-
-												__tostring = function() return "ProxyDataTable_"..tostring(ind).."-PlayerData_"..userId end;
-												__metatable = "ProxyDataTable_"..tostring(ind).."-PlayerData_"..userId;
-											};
+												__metatable = "ProxyDataTable_"
+													.. tostring(ind)
+													.. "-PlayerData_"
+													.. userId,
+											},
 
 											_table = setmetatable(cloneTable(itemSelect), {
 												__index = function(self, ind)
@@ -1451,13 +1639,15 @@ return function(envArgs)
 													if type(realTableIndex) == "table" then
 														return realTableIndex[ind]
 													end
-													
+
 													return nil
-												end;
-												
-												__tostring = function() return "DataTable_"..tostring(ind).."-PlayerData_"..userId end;
-												__metatable = "DataTable_"..tostring(ind).."-PlayerData_"..userId;
-											});
+												end,
+
+												__tostring = function()
+													return "DataTable_" .. tostring(ind) .. "-PlayerData_" .. userId
+												end,
+												__metatable = "DataTable_" .. tostring(ind) .. "-PlayerData_" .. userId,
+											}),
 
 											startAlive = function(self)
 												if not self.alive and not table.isfrozen(self._table) then
@@ -1469,34 +1659,42 @@ return function(envArgs)
 
 													local idleTimeout = 60
 													loopTask(metaTabInfo.loopId, idleTimeout, function()
-														if (tick()-metaTabInfo.lastModified >= idleTimeout) and not metaTabInfo._didModify then
+														if
+															(tick() - metaTabInfo.lastModified >= idleTimeout)
+															and not metaTabInfo._didModify
+														then
 															metaTabInfo:stopAlive()
 															--warn("Table "..ind.." dead after not finding any new overwrites")
 														end
 													end)
 
-													self.updateEvent = dataCache._indexUpdated:connect(function(updIndex)
-														if updIndex == ind then
-															self._didModify = false
+													self.updateEvent = dataCache._indexUpdated:connect(
+														function(updIndex)
+															if updIndex == ind then
+																self._didModify = false
 
-															local updTable = rawget(dataCache.specialTable, ind)
-															if type(updTable) == "table" then
-																if not next(updTable) then
-																	for i,v in pairs(self._table) do
-																		rawset(self._table, i, nil)
-																	end
-																else
-																	for i,v in pairs(updTable) do
-																		if not table.find(blacklistedInds, i) and not checkEquality(v, self._table[i]) then
-																			rawset(self._table, i, v)
+																local updTable = rawget(dataCache.specialTable, ind)
+																if type(updTable) == "table" then
+																	if not next(updTable) then
+																		for i, v in pairs(self._table) do
+																			rawset(self._table, i, nil)
+																		end
+																	else
+																		for i, v in pairs(updTable) do
+																			if
+																				not table.find(blacklistedInds, i)
+																				and not checkEquality(v, self._table[i])
+																			then
+																				rawset(self._table, i, v)
+																			end
 																		end
 																	end
 																end
-															end
 
-															self._updated:fire(true)
+																self._updated:fire(true)
+															end
 														end
-													end)
+													)
 												end
 											end,
 
@@ -1510,9 +1708,9 @@ return function(envArgs)
 														self.updateEvent = nil
 													end
 												end
-											end;
+											end,
 
-											_updated = Signal.new();
+											_updated = Signal.new(),
 										}
 
 										dataCache._metaTables[ind] = metaTabInfo
@@ -1523,28 +1721,26 @@ return function(envArgs)
 								else
 									return itemSelect
 								end
-							end;
+							end,
 
 							__newindex = function(self, ind, val)
-								if not table.find({"string", "number"}, type(ind)) then
+								if not table.find({ "string", "number" }, type(ind)) then
 									error("Not allowed to overwrite with an incompatible index", 0)
 									return
 								end
 
-								if not table.find({"nil", "string", "number", "table", "boolean"}, type(val)) then
+								if not table.find({ "nil", "string", "number", "table", "boolean" }, type(val)) then
 									error("Not allowed to overwrite with an incompatible value", 0)
 									return
 								end
 
 								if table.find(bannedIndexes, ind) then
-									error("Not allowed to overWrite index "..tostring(ind).." in player data", 0)
+									error("Not allowed to overWrite index " .. tostring(ind) .. " in player data", 0)
 									return
 								end
 
 								if dataCache._dataUpdate then
-									if type(val) == "table" then
-										val = cloneTable(val)
-									end
+									if type(val) == "table" then val = cloneTable(val) end
 
 									if rawequal(val, nil) then
 										dataCache._removingChanges[ind] = true
@@ -1560,43 +1756,42 @@ return function(envArgs)
 									dataCache._dataChanged = true
 								else
 									rawset(dataCache.specialTable, ind, val)
-									
+
 									if dataCache._metaTables[ind] and (type(val) == "table" or type(val) == "nil") then
 										local metaTableForIndexedData = dataCache._metaTables[ind]
 										table.clear(metaTableForIndexedData._table)
-										
+
 										if type(val) == "table" then
 											for subIndex, subValue in val do
 												metaTableForIndexedData._table[subIndex] = subValue
 											end
 										end
 									end
-									
+
 									dataCache._indexUpdated:fire(ind)
 								end
+							end,
 
-							end;
-
-							__tostring = function() return "PData_"..userId end;
-							__metatable = "PlayerData_"..userId;														
-						};
+							__tostring = function() return "PData_" .. userId end,
+							__metatable = "PlayerData_" .. userId,
+						},
 
 						specialTable = setmetatable(service.cloneTable(defaultData), {
-							__tostring = function() return "PData_"..userId end;
-							__metatable = "PlayerData_"..userId;
-						});
+							__tostring = function() return "PData_" .. userId end,
+							__metatable = "PlayerData_" .. userId,
+						}),
 
-						_removingChanges = {};
-						_waitingChanges = {};
-						_pendingTableAddChanges = {};
-						_pendingTableRemoveChanges = {};
-						_pendingTableIndexOverwriteChanges = {};
-						_pendingTableIndexRemovalChanges = {};
-						_oldTable = {};
-						_metaTables = {};
+						_removingChanges = {},
+						_waitingChanges = {},
+						_pendingTableAddChanges = {},
+						_pendingTableRemoveChanges = {},
+						_pendingTableIndexOverwriteChanges = {},
+						_pendingTableIndexRemovalChanges = {},
+						_oldTable = {},
+						_metaTables = {},
 
-						_dataLoadState = false;
-						_dataLoaded = Signal.new();
+						_dataLoadState = false,
+						_dataLoaded = Signal.new(),
 					}
 
 					playerDataCache[userId] = dataCache
@@ -1605,36 +1800,35 @@ return function(envArgs)
 						local canOverwrite = false
 
 						if dataCache._dataChanged or override then
-							for waitChanInd,waitChanVal in pairs(dataCache._waitingChanges) do
+							for waitChanInd, waitChanVal in pairs(dataCache._waitingChanges) do
 								canOverwrite = true
 								break
 							end
 
-							for waitChanInd,_ in pairs(dataCache._removingChanges) do
+							for waitChanInd, _ in pairs(dataCache._removingChanges) do
 								canOverwrite = true
 								break
 							end
 
-							for i,waitChan in pairs(dataCache._pendingTableAddChanges) do
+							for i, waitChan in pairs(dataCache._pendingTableAddChanges) do
 								canOverwrite = true
 								break
 							end
 
-							for i,waitChan in pairs(dataCache._pendingTableRemoveChanges) do
+							for i, waitChan in pairs(dataCache._pendingTableRemoveChanges) do
 								canOverwrite = true
 								break
 							end
 
-							for i,waitChan in pairs(dataCache._pendingTableIndexOverwriteChanges) do
+							for i, waitChan in pairs(dataCache._pendingTableIndexOverwriteChanges) do
 								canOverwrite = true
 								break
 							end
 
-							for i,waitChan in pairs(dataCache._pendingTableIndexRemovalChanges) do
+							for i, waitChan in pairs(dataCache._pendingTableIndexRemovalChanges) do
 								canOverwrite = true
 								break
 							end
-
 
 							if not checkEquality(dataCache._oldTable, dataCache.specialTable) then
 								canOverwrite = true
@@ -1651,28 +1845,24 @@ return function(envArgs)
 							local received = Signal.new()
 
 							service.threadTask(function()
-								if not override then
-									wait(Datastore.getRequestDelay("update"))
-								end
+								if not override then wait(Datastore.getRequestDelay "update") end
 
-								local updateId;
+								local updateId
 								local updateIndexChecklist = {
-									_removingChanges = {};
-									_waitingChanges = {};
+									_removingChanges = {},
+									_waitingChanges = {},
 								}
 								local updateTableInsertCheckList = {
-									_pendingTableAddChanges = {};
-									_pendingTableRemoveChanges = {};
+									_pendingTableAddChanges = {},
+									_pendingTableRemoveChanges = {},
 								}
 								local updateTableIndexCheckList = {
-									_pendingTableIndexOverwriteChanges = {};
-									_pendingTableIndexRemovalChanges = {};
+									_pendingTableIndexOverwriteChanges = {},
+									_pendingTableIndexRemovalChanges = {},
 								}
 
-								local function pushToTable(tab: {[any]: any}, value: any): nil
-									if not table.find(tab, value) then
-										table.insert(tab, value)
-									end
+								local function pushToTable(tab: { [any]: any }, value: any): nil
+									if not table.find(tab, value) then table.insert(tab, value) end
 								end
 
 								local function resetUpdateTables()
@@ -1680,23 +1870,18 @@ return function(envArgs)
 									-- The data cache update table contents are compared with the checklist contents and automatically remove
 									-- the values that were already written from the changes table
 									for tableCheck, checkList in pairs(updateIndexChecklist) do
-										local updateIndexes: { [string] : {[string]: any} } = dataCache[tableCheck] -- List of indexes
+										local updateIndexes: { [string]: { [string]: any } } = dataCache[tableCheck] -- List of indexes
 
 										for index, val in pairs(updateIndexes) do
 											local expectedVal = checkList[index]
-											if index == "_removingChanges" then
-												expectedVal = nil
-											end
+											if index == "_removingChanges" then expectedVal = nil end
 
-											if checkList[index] == expectedVal then
-												updateIndexes[index] = nil
-											end
+											if checkList[index] == expectedVal then updateIndexes[index] = nil end
 										end
 									end
 
-
 									for tableCheck, checkList in pairs(updateTableInsertCheckList) do
-										local updateIndexes: { [number] : {} } = dataCache[tableCheck] -- List of indexes
+										local updateIndexes: { [number]: {} } = dataCache[tableCheck] -- List of indexes
 
 										local didFinishIterating
 										repeat
@@ -1709,21 +1894,19 @@ return function(envArgs)
 													break
 												end
 											end
-										until
-										didFinishIterating
+										until didFinishIterating
 									end
 
 									-- Table index checklist is a list of tables with the overwritten indexes
 									-- To ensure that the indexes were overwritten from these tables, they are compared to the data cache contents
 									for tableCheck, checkList in pairs(updateTableIndexCheckList) do
-										local dataCacheUpdateTable: { [string] : { [string]: any } } = dataCache[tableCheck] -- List of tables with overwritten indexes
+										local dataCacheUpdateTable: { [string]: { [string]: any } } =
+											dataCache[tableCheck] -- List of tables with overwritten indexes
 
 										for dataIndex, existingVal in pairs(dataCacheUpdateTable) do
 											local didCheck = false
 											local checkVal = checkList[dataIndex]
-											if tableCheck == "_pendingTableIndexRemovalChanges" then
-												checkVal = nil
-											end
+											if tableCheck == "_pendingTableIndexRemovalChanges" then checkVal = nil end
 
 											if checkEquality(existingVal, checkVal) then
 												didCheck = true
@@ -1765,9 +1948,7 @@ return function(envArgs)
 										realOldData = oldData
 									end
 
-									if type(realOldData) == "table" then
-										realOldData = cloneTable(realOldData)
-									end
+									if type(realOldData) == "table" then realOldData = cloneTable(realOldData) end
 
 									updateId = getRandom()
 
@@ -1790,10 +1971,8 @@ return function(envArgs)
 										oldData = defaultPlayerData()
 									else
 										local defData = defaultPlayerData()
-										for i,v in pairs(defData) do
-											if type(oldData[i]) ~= type(v) then
-												oldData[i] = v
-											end
+										for i, v in pairs(defData) do
+											if type(oldData[i]) ~= type(v) then oldData[i] = v end
 										end
 									end
 									--end
@@ -1801,27 +1980,27 @@ return function(envArgs)
 									local indexUpdateCheckList = {}
 
 									if canOverwrite or override then
-										for waitChanInd,waitChanVal in pairs(dataCache._waitingChanges) do
+										for waitChanInd, waitChanVal in pairs(dataCache._waitingChanges) do
 											oldData[waitChanInd] = waitChanVal
 											updateIndexChecklist._waitingChanges[waitChanInd] = waitChanVal
 											--dataCache._waitingChanges[waitChanInd] = nil
 										end
 
-										for waitChanInd,_ in pairs(dataCache._removingChanges) do
+										for waitChanInd, _ in pairs(dataCache._removingChanges) do
 											oldData[waitChanInd] = nil
 											updateIndexChecklist._removingChanges[waitChanInd] = true
 											--dataCache._removingChanges[waitChanInd] = nil
 										end
-										
+
 										-- TABLE REMOVE GOES FIRST THEN TABLE ADD
-										for i,waitChan in pairs(dataCache._pendingTableRemoveChanges) do
-											local tab,val = waitChan.tab, waitChan.value
+										for i, waitChan in pairs(dataCache._pendingTableRemoveChanges) do
+											local tab, val = waitChan.tab, waitChan.value
 
 											local oldTabVal = oldData[tab]
 											if type(oldTabVal) == "table" then
 												local didUpdate = false
 
-												for oldTabValInd,oldTabValVal in pairs(oldTabVal) do
+												for oldTabValInd, oldTabValVal in pairs(oldTabVal) do
 													if checkEquality(oldTabValVal, val) then
 														didUpdate = true
 														oldTabVal[oldTabValInd] = nil
@@ -1830,7 +2009,7 @@ return function(envArgs)
 
 												local specTabVal = rawget(dataCache.specialTable, tab)
 												if type(specTabVal) == "table" then
-													for specTabValInd,specTabValVal in pairs(specTabVal) do
+													for specTabValInd, specTabValVal in pairs(specTabVal) do
 														if checkEquality(specTabValVal, val) then
 															didUpdate = true
 															rawset(specTabVal, specTabValInd, nil)
@@ -1840,7 +2019,10 @@ return function(envArgs)
 
 												if didUpdate then
 													indexUpdateCheckList[tab] = true
-													pushToTable(updateTableInsertCheckList._pendingTableRemoveChanges, waitChan)
+													pushToTable(
+														updateTableInsertCheckList._pendingTableRemoveChanges,
+														waitChan
+													)
 												end
 
 												waitChan.dataUpdateId = updateId
@@ -1851,16 +2033,16 @@ return function(envArgs)
 											--dataCache._pendingTableRemoveChanges[i] = nil
 										end
 
-										for i,waitChan in pairs(dataCache._pendingTableAddChanges) do
-											local tab,addInd,val,onlyIfItNotExists = waitChan.tab, waitChan.ind, waitChan.value,
-											waitChan.onlyIfItNotExists
+										for i, waitChan in pairs(dataCache._pendingTableAddChanges) do
+											local tab, addInd, val, onlyIfItNotExists =
+												waitChan.tab, waitChan.ind, waitChan.value, waitChan.onlyIfItNotExists
 
 											local oldTabVal = oldData[tab]
 											if type(oldTabVal) ~= "table" then
 												oldTabVal = {}
 												rawset(oldData, tab, oldTabVal)
 											end
-											
+
 											--warn(`TABLE ADD CHANGE FOUND`, waitChan)
 
 											--if not checkEquality(addInd, oldTabVal[addInd]) then
@@ -1870,13 +2052,14 @@ return function(envArgs)
 											--rawset(dataCache.specialTable, #oldTabVal+1, val)
 											if not onlyIfItNotExists then
 												table.insert(oldTabVal, val)
-												pushToTable(updateTableInsertCheckList._pendingTableAddChanges, waitChan)
+												pushToTable(
+													updateTableInsertCheckList._pendingTableAddChanges,
+													waitChan
+												)
 											else
 												local canPushToTable = (function()
 													for tabInd, tabVal in pairs(oldTabVal) do
-														if checkEquality(tabVal, val) then
-															return false
-														end
+														if checkEquality(tabVal, val) then return false end
 													end
 
 													return true
@@ -1888,7 +2071,10 @@ return function(envArgs)
 												--warn("Table:", oldTabVal)
 												if canPushToTable then
 													table.insert(oldTabVal, val)
-													pushToTable(updateTableInsertCheckList._pendingTableAddChanges, waitChan)
+													pushToTable(
+														updateTableInsertCheckList._pendingTableAddChanges,
+														waitChan
+													)
 												end
 												--warn("Now table:", oldTabVal)
 											end
@@ -1899,13 +2085,15 @@ return function(envArgs)
 											waitChan.dataUpdateId = updateId
 											--dataCache._pendingTableAddChanges[i] = nil
 										end
-										
+
 										for tabInd, indList in pairs(dataCache._pendingTableIndexRemovalChanges) do
 											if type(oldData[tabInd]) == "table" then
-												local checkIndList = updateTableIndexCheckList._pendingTableIndexRemovalChanges[tabInd]
+												local checkIndList =
+													updateTableIndexCheckList._pendingTableIndexRemovalChanges[tabInd]
 												if not checkIndList then
 													checkIndList = {}
-													updateTableIndexCheckList._pendingTableIndexRemovalChanges[tabInd] = checkIndList
+													updateTableIndexCheckList._pendingTableIndexRemovalChanges[tabInd] =
+														checkIndList
 												end
 
 												for ind, val in pairs(indList) do
@@ -1921,10 +2109,12 @@ return function(envArgs)
 
 										for tabInd, indList in pairs(dataCache._pendingTableIndexOverwriteChanges) do
 											if type(oldData[tabInd]) == "table" then
-												local checkIndList = updateTableIndexCheckList._pendingTableIndexOverwriteChanges[tabInd]
+												local checkIndList =
+													updateTableIndexCheckList._pendingTableIndexOverwriteChanges[tabInd]
 												if not checkIndList then
 													checkIndList = {}
-													updateTableIndexCheckList._pendingTableIndexOverwriteChanges[tabInd] = checkIndList
+													updateTableIndexCheckList._pendingTableIndexOverwriteChanges[tabInd] =
+														checkIndList
 												end
 
 												for ind, val in pairs(indList) do
@@ -1939,29 +2129,32 @@ return function(envArgs)
 											--dataCache._pendingTableIndexOverwriteChanges[tabInd] = nil
 										end
 
-										Logs.addLog("Process", "Applied overwrite changes for pData "..userId)
+										Logs.addLog("Process", "Applied overwrite changes for pData " .. userId)
 									end
 
-									for ind,val in pairs(oldData) do
+									for ind, val in pairs(oldData) do
 										local specTabVal = rawget(dataCache.specialTable, ind)
 										local equality = checkEquality(specTabVal, val)
 
 										if not table.find(bannedIndexes, ind) and not equality then
 											rawset(dataCache.specialTable, ind, val)
 											indexUpdateCheckList[ind] = true
-											
+
 											if type(val) == "table" then
 												local metaTabSets = metaIndexSettings[ind] or {}
 												local metaTabMaxEntries = metaTabSets.maxEntries or 0
-												
+
 												local isTableInNumericOrder = #val == service.tableCount(val)
-												
+
 												if isTableInNumericOrder then
-													if metaTabMaxEntries > 0 and #val > 0 and #val > metaTabMaxEntries then
+													if
+														metaTabMaxEntries > 0
+														and #val > 0
+														and #val > metaTabMaxEntries
+													then
 														repeat
 															table.remove(val, 1)
-														until
-															#val <= metaTabMaxEntries
+														until #val <= metaTabMaxEntries
 													end
 												end
 											end
@@ -1969,15 +2162,15 @@ return function(envArgs)
 									end
 
 									for index, stat in pairs(indexUpdateCheckList) do
-										if dataCache._metaTables[index] and type(oldData[index]) == 'table' then
+										if dataCache._metaTables[index] and type(oldData[index]) == "table" then
 											local dataMetaTable = dataCache._metaTables[index]
 											local dataMetaSpecTable = dataMetaTable._table
 											task.defer(dataMetaTable.startAlive, dataMetaTable)
-											
-											for i,v in pairs(dataMetaSpecTable) do
+
+											for i, v in pairs(dataMetaSpecTable) do
 												rawset(dataMetaSpecTable, i, nil)
 											end
-											
+
 											for i, v in pairs(oldData[index]) do
 												rawset(dataMetaSpecTable, i, v)
 											end
@@ -1986,7 +2179,7 @@ return function(envArgs)
 										dataCache._indexUpdated:fire(index)
 									end
 
-									for _,banIndex in pairs(bannedIndexes) do
+									for _, banIndex in pairs(bannedIndexes) do
 										rawset(dataCache.specialTable, banIndex, nil)
 									end
 
@@ -2009,9 +2202,9 @@ return function(envArgs)
 									--warn("Current data:", oldData)
 
 									if canCompress then
-										oldData = luaParser.Encode({oldData})
+										oldData = luaParser.Encode { oldData }
 										oldData = compression.Deflate.Compress(oldData, Datastore.compressConfig)
-										oldData = base64Encode(oldData)	
+										oldData = base64Encode(oldData)
 									end
 
 									received:fire(true)
@@ -2023,10 +2216,19 @@ return function(envArgs)
 								if playerData_EncryptData then
 									Datastore.encryptUpdate(dataAccessKey, originalDataKey, encryptKey, updateCallback)
 								else
-									for i = 1,3 do
-										local suc, err = pcall(writeDatastore.UpdateAsync, writeDatastore, hashedDataKey, updateCallback)
+									for i = 1, 3 do
+										local suc, err = pcall(
+											writeDatastore.UpdateAsync,
+											writeDatastore,
+											hashedDataKey,
+											updateCallback
+										)
 										if not suc and err and string.match(err, "Callbacks cannot yield") then
-											warn("Failed to save player data "..userId.." due to update callback yielding")
+											warn(
+												"Failed to save player data "
+													.. userId
+													.. " due to update callback yielding"
+											)
 											break
 										elseif not suc then
 											if server.Studio then
@@ -2040,7 +2242,7 @@ return function(envArgs)
 								end
 							end)
 
-							local didReceive = received:wait(nil, 90+(playerData_EncryptData and 20 or 0))
+							local didReceive = received:wait(nil, 90 + (playerData_EncryptData and 20 or 0))
 
 							if not didReceive then
 								dataCache._saveError:fire()
@@ -2052,15 +2254,19 @@ return function(envArgs)
 									dataCache._dataCorrupted = false
 									dataCache._saveSuccess:fire()
 								end
-								
+
 								-- Update player data policies
 								do
 									local ingamePlayer = service.getPlayer(userId)
-									
+
 									if ingamePlayer then
 										local parsedPlayer = Parser:apifyPlayer(ingamePlayer)
 										if parsedPlayer then
-											task.defer(server.PolicyManager._updatePlayerDataClientPolicies, server.PolicyManager, parsedPlayer)
+											task.defer(
+												server.PolicyManager._updatePlayerDataClientPolicies,
+												server.PolicyManager,
+												parsedPlayer
+											)
 										end
 									end
 								end
@@ -2074,34 +2280,33 @@ return function(envArgs)
 					end
 					dataCache.update = updateData
 
-					local updateTaskId = service.getRandom().."_UPDATE-DATA_"..userId
+					local updateTaskId = service.getRandom() .. "_UPDATE-DATA_" .. userId
 					local checkLoopSeconds = 30
-					
+
 					--warn(`DATASTORE CANREAD: {Datastore.canRead()} | DATASTORE CANWRITE: {Datastore.canWrite()} | PDATASTORE ENABLED: {playerDataStoreEnabled}`)
-					if datastore_Allow and playerDataStoreEnabled and (Datastore.canRead() and Datastore.canWrite()) and userId > 0 then
+					if
+						datastore_Allow
+						and playerDataStoreEnabled
+						and (Datastore.canRead() and Datastore.canWrite())
+						and userId > 0
+					then
 						loopTask(updateTaskId, checkLoopSeconds, function()
-							if os.time()-dataCache.created < 5 or not server.Running then
-								return
-							end
+							if os.time() - dataCache.created < 5 or not server.Running then return end
 
 							if dataCache._dataUpdate and dataCache._autoUpdate then
 								local ingamePlayer = service.getPlayer(userId)
 
-								if not ingamePlayer then
-									dataCache._autoUpdate = false
-								end
+								if not ingamePlayer then dataCache._autoUpdate = false end
 
 								--warn("Updating pData "..userId)
-								local canCheckNewData = os.time()-dataCache.lastUpdated >= 60
+								local canCheckNewData = os.time() - dataCache.lastUpdated >= 60
 								updateData(canCheckNewData)
 							end
 						end)
 
 						server.Closing:connectOnce(function()
 							service.stopLoop(updateTaskId)
-							if dataCache._dataChanged then
-								updateData(true)
-							end
+							if dataCache._dataChanged then updateData(true) end
 						end)
 					else
 						dataCache._dataUpdate = false
@@ -2110,28 +2315,27 @@ return function(envArgs)
 
 					-- Load in the existing data
 					dataCache._loadingExistingData = Promise.promisify(function()
-						local savedPData;
-						
+						local savedPData
+
 						if userId > 0 then
 							if playerData_EncryptData then
-								savedPData = Datastore.encryptRead(dataAccessKey, originalDataKey, false, encryptKey) or defaultData
+								savedPData = Datastore.encryptRead(dataAccessKey, originalDataKey, false, encryptKey)
+									or defaultData
 							else
 								savedPData = Datastore.read(dataAccessKey, originalDataKey) or defaultData
 							end
 						end
-						
-						if type(savedPData) ~= "table" then
-							savedPData = defaultData
-						end
 
-						for ind,val in pairs(defaultData) do
+						if type(savedPData) ~= "table" then savedPData = defaultData end
+
+						for ind, val in pairs(defaultData) do
 							if type(savedPData[ind]) ~= type(val) then
 								savedPData[ind] = val
 								dataCache.specialProxy[ind] = val
 							end
 						end
 
-						for i,v in pairs(savedPData) do
+						for i, v in pairs(savedPData) do
 							rawset(dataCache.specialTable, i, v)
 						end
 
@@ -2139,43 +2343,35 @@ return function(envArgs)
 						dataCache._dataLoaded:fire(true)
 						dataCache._oldTable = cloneTable(dataCache.specialTable)
 					end)()
-					
-					if not ignoreLoading then
-						dataCache._loadingExistingData:await()
-					end
+
+					if not ignoreLoading then dataCache._loadingExistingData:await() end
 				else
-					if not dataCache._dataLoadState and not ignoreLoading then
-						dataCache._dataLoaded:wait()
-					end
+					if not dataCache._dataLoadState and not ignoreLoading then dataCache._dataLoaded:wait() end
 				end
 
 				return dataCache.specialProxy
 			end
-		end;
+		end,
 
 		savePlayerData = function(userId, pData)
-			if type(userId) ~= "number" then
-				return "Invalid_UserId"
-			end
+			if type(userId) ~= "number" then return "Invalid_UserId" end
 
-			if type(pData) ~= "table" then
-				pData = Core.defaultPlayerData()
-			end
+			if type(pData) ~= "table" then pData = Core.defaultPlayerData() end
 
 			Datastore.overWrite(DS_PlayerData, tostring(userId), pData)
-		end;
+		end,
 
 		loadSavedSettings = function(savedSets)
 			local ignoreSettings = {
-				Datastore_Allow = true;
-				Datastore_Key = true;
-				Datastore_PlayerData = true;
+				Datastore_Allow = true,
+				Datastore_Key = true,
+				Datastore_PlayerData = true,
 
-				BanList = true;
-				allowSavedSettings = true;
+				BanList = true,
+				allowSavedSettings = true,
 			}
 
-			for i,set in pairs(savedSets) do
+			for i, set in pairs(savedSets) do
 				if type(set) == "table" then
 					local typ = set.type
 
@@ -2183,25 +2379,21 @@ return function(envArgs)
 						local tab = set.Table or ""
 						local value = set.Value
 						local setting = (not ignoreSettings[tab] and settings[tab]) or nil
-						local canAdd = (type(setting)=="table" and value) or false
+						local canAdd = (type(setting) == "table" and value) or false
 
-						if canAdd then
-							table.insert(setting, value)
-						end
+						if canAdd then table.insert(setting, value) end
 					end
 
 					if typ == "TableRemove" then
 						local tab = set.Table or ""
 						local value = set.Value
 						local setting = (not ignoreSettings[tab] and settings[tab]) or nil
-						local canRemove = (type(setting)=="table") or false
+						local canRemove = (type(setting) == "table") or false
 
 						if canRemove then
 							local index = table.find(setting, value)
 
-							if index then
-								table.remove(setting, index)
-							end
+							if index then table.remove(setting, index) end
 						end
 					end
 
@@ -2210,20 +2402,18 @@ return function(envArgs)
 						local index = set.Index
 						local value = set.Value
 						local setting = (not ignoreSettings[tab] and settings[tab]) or nil
-						local canSet = (type(setting)=="table" and index and value) or false
+						local canSet = (type(setting) == "table" and index and value) or false
 
-						if canSet then
-							setting[index] = value
-						end
+						if canSet then setting[index] = value end
 					end
 
 					if typ == "TableClear" then
 						local tab = set.Table or ""
 						local setting = (not ignoreSettings[tab] and settings[tab]) or nil
-						local canClear = (type(setting)=="table") or false
+						local canClear = (type(setting) == "table") or false
 
 						if canClear then
-							for i,v in pairs(setting) do
+							for i, v in pairs(setting) do
 								rawset(setting, i, nil)
 							end
 						end
@@ -2243,7 +2433,7 @@ return function(envArgs)
 					end
 				end
 			end
-		end;
+		end,
 
 		resetPlayerData = function(userId)
 			local defaultData = Core.defaultPlayerData()
@@ -2253,127 +2443,119 @@ return function(envArgs)
 				Datastore.write(DS_PlayerData, key, defaultData)
 				Core.playerData[key] = defaultData
 			end
-		end;
+		end,
 
-		resetSavedSettings = function()
+		resetSavedSettings = function() end,
 
-		end;
-
-		resetSave = function()
-
-		end;
+		resetSave = function() end,
 
 		checkCommandUsability = function(player, cmd, ignoreCooldown, processData, ignorePermCheck)
 			processData = processData or {}
 
-			local disabled 					= cmd.Disabled
-			local playerCooldown 			= tonumber(cmd.PlayerCooldown)
-			local serverCooldown 			= tonumber(cmd.ServerCooldown)
-			local crossCooldown 			= tonumber(cmd.CrossCooldown)
-			local cmdPermissions 			= cmd.Permissions or {}
-			local listedRoles				= cmd.Roles or {}
-			local whitelist 				= cmd.Whitelist or {}
-			local blacklist					= cmd.Blacklist or {}
-			local conditionals				= cmd.Conditionals or {}
-			local socialMediaPolicies 		= cmd.SocialMediaPolicies or {}
-			local playerDebounceEnabled 	= cmd.PlayerDebounce or cmd.Debounce or false
-			local serverDebounceEnabled 	= cmd.ServerDebounce or false
-			local crossCmdDisabled			= cmd.CrossDisabled or cmd.CrossServerDenied
-			local noPermissionsBypass		= cmd.NoPermissionsBypass
-			local noRepeatedUseInBatch		= cmd.NoRepeatedUseInBatch
-			local noRepeatedUseInLoop		= cmd.NoRepeatedUseInLoop
-			
-			local canIgnoreNoPermissionsBypass = noPermissionsBypass and Roles:checkMemberInRoles(player, {"creator"})
-			local globalBlacklist 	= variables.commandBlacklist or {}
+			local disabled = cmd.Disabled
+			local playerCooldown = tonumber(cmd.PlayerCooldown)
+			local serverCooldown = tonumber(cmd.ServerCooldown)
+			local crossCooldown = tonumber(cmd.CrossCooldown)
+			local cmdPermissions = cmd.Permissions or {}
+			local listedRoles = cmd.Roles or {}
+			local whitelist = cmd.Whitelist or {}
+			local blacklist = cmd.Blacklist or {}
+			local conditionals = cmd.Conditionals or {}
+			local socialMediaPolicies = cmd.SocialMediaPolicies or {}
+			local playerDebounceEnabled = cmd.PlayerDebounce or cmd.Debounce or false
+			local serverDebounceEnabled = cmd.ServerDebounce or false
+			local crossCmdDisabled = cmd.CrossDisabled or cmd.CrossServerDenied
+			local noPermissionsBypass = cmd.NoPermissionsBypass
+			local noRepeatedUseInBatch = cmd.NoRepeatedUseInBatch
+			local noRepeatedUseInLoop = cmd.NoRepeatedUseInLoop
 
-			local cmdFullName = cmd._fullName or (function()
-				local aliases = cmd.Aliases or cmd.Commands or {}
-				cmd._fullName = cmd.Prefix..(aliases[1] or service.getRandom().."-RANDOM_COMMAND")
-				return cmd._fullName
-			end)()
+			local canIgnoreNoPermissionsBypass = noPermissionsBypass and Roles:checkMemberInRoles(player, { "creator" })
+			local globalBlacklist = variables.commandBlacklist or {}
 
-			local pCooldown_Cache = cmd._playerCooldownCache or (function()
-				local tab = {}
-				cmd._playerCooldownCache = tab
-				return tab
-			end)()
+			local cmdFullName = cmd._fullName
+				or (function()
+					local aliases = cmd.Aliases or cmd.Commands or {}
+					cmd._fullName = cmd.Prefix .. (aliases[1] or service.getRandom() .. "-RANDOM_COMMAND")
+					return cmd._fullName
+				end)()
 
-			local sCooldown_Cache = cmd._serverCooldownCache or (function()
-				local tab = {}
-				cmd._serverCooldownCache = tab
-				return tab
-			end)()
+			local pCooldown_Cache = cmd._playerCooldownCache
+				or (function()
+					local tab = {}
+					cmd._playerCooldownCache = tab
+					return tab
+				end)()
 
-			local crossCooldown_Cache = cmd._crossCooldownCache or (function()
-				local tab = {}
-				cmd._crossCooldownCache = tab
-				return tab
-			end)()
+			local sCooldown_Cache = cmd._serverCooldownCache
+				or (function()
+					local tab = {}
+					cmd._serverCooldownCache = tab
+					return tab
+				end)()
 
-			local playerDebounceCache = cmd._playerDebounceCache or (function()
-				local cache = {}
-				cmd._playerDebounceCache = cache
-				return cache
-			end)()
+			local crossCooldown_Cache = cmd._crossCooldownCache
+				or (function()
+					local tab = {}
+					cmd._crossCooldownCache = tab
+					return tab
+				end)()
 
-			local serverDebounceCache = cmd._serverDebounceCache or (function()
-				local cache = {}
-				cmd._serverDebounceCache = cache
-				return cache
-			end)()
+			local playerDebounceCache = cmd._playerDebounceCache
+				or (function()
+					local cache = {}
+					cmd._playerDebounceCache = cache
+					return cache
+				end)()
+
+			local serverDebounceCache = cmd._serverDebounceCache
+				or (function()
+					local cache = {}
+					cmd._serverDebounceCache = cache
+					return cache
+				end)()
 
 			if disabled then
-				return false,"Disabled"
+				return false, "Disabled"
 			else
 				if player then
 					local serverAdmin = Moderation.checkAdmin(player)
 
 					-- Command blacklist
 					if Identity.checkTable(player, blacklist) and not serverAdmin then
-						return false,"CommandBlacklist"
-					end	
+						return false, "CommandBlacklist"
+					end
 
 					if Identity.checkTable(player, globalBlacklist) and not serverAdmin then
-						return false,"GlobalBlacklist"
-					end	
+						return false, "GlobalBlacklist"
+					end
 
 					-- Global blacklist
 					local playerData = Core.getPlayerData(player.UserId)
-					if playerData and playerData.systemBlacklist then
-						return false,"GlobalBlacklist"
-					end
+					if playerData and playerData.systemBlacklist then return false, "GlobalBlacklist" end
 
 					-- Do the check validations
-					local didPass,passType,passMissingRet = (function()
-						if ignorePermCheck then
-							return true,"IgnorePermCheck"
-						end
+					local didPass, passType, passMissingRet = (function()
+						if ignorePermCheck then return true, "IgnorePermCheck" end
 
-						if serverAdmin and not noPermissionsBypass then
-							return true,"Admin"
-						end
+						if serverAdmin and not noPermissionsBypass then return true, "Admin" end
 
 						if whitelist and #whitelist > 0 and Identity.checkTable(player, whitelist) then
-							return true,"Whitelist"
+							return true, "Whitelist"
 						end
 
-						local rolesMatch,missingRoles = server.Roles:checkMemberInRoles(player, listedRoles, true)
+						local rolesMatch, missingRoles = server.Roles:checkMemberInRoles(player, listedRoles, true)
 
-						if rolesMatch then
-							return true,"Roles"
-						end
+						if rolesMatch then return true, "Roles" end
 
-						local permsCheck,missingPerms = server.Roles:hasPermissionFromMember(player, cmdPermissions)
+						local permsCheck, missingPerms = server.Roles:hasPermissionFromMember(player, cmdPermissions)
 
 						if permsCheck then
-							return true,"Permissions"
+							return true, "Permissions"
 						elseif not permsCheck and #missingPerms > 0 then
-							return false,"MissingPerms",missingPerms
+							return false, "MissingPerms", missingPerms
 						end
 
-						if not rolesMatch and #missingPerms > 0 then
-							return false,"MissingRoles",missingPerms
-						end
+						if not rolesMatch and #missingPerms > 0 then return false, "MissingRoles", missingPerms end
 					end)()
 
 					if didPass then
@@ -2381,141 +2563,152 @@ return function(envArgs)
 						local pCooldown_playerCache = pCooldown_Cache[cooldownIndex]
 						local sCooldown_playerCache = sCooldown_Cache[cooldownIndex]
 
-						if not ignoreCooldown and ((noPermissionsBypass and not canIgnoreNoPermissionsBypass) or not serverAdmin) then
+						if
+							not ignoreCooldown
+							and ((noPermissionsBypass and not canIgnoreNoPermissionsBypass) or not serverAdmin)
+						then
 							if playerCooldown and pCooldown_playerCache then
-								local secsTillPass = os.clock()-pCooldown_playerCache
+								local secsTillPass = os.clock() - pCooldown_playerCache
 								local passCooldown = secsTillPass >= playerCooldown
 
 								if not passCooldown then
-									return false,"PlayerCooldown",math.floor(playerCooldown-secsTillPass)
+									return false, "PlayerCooldown", math.floor(playerCooldown - secsTillPass)
 								end
 							end
 
 							if serverCooldown and sCooldown_playerCache then
-								local secsTillPass = os.clock()-sCooldown_playerCache
+								local secsTillPass = os.clock() - sCooldown_playerCache
 								local passCooldown = secsTillPass >= serverCooldown
 
 								if not passCooldown then
-									return false,"ServerCooldown",math.floor(serverCooldown-secsTillPass)
+									return false, "ServerCooldown", math.floor(serverCooldown - secsTillPass)
 								end
 							end
 
 							if crossCooldown and player:isReal() then
 								local playerData = Core.getPlayerData(player.UserId)
-								local crossCooldown_Cache = playerData._crossCooldownCache or (function()
-									local tab = {}
-									playerData._crossCooldownCache = tab
-									return tab
-								end)()
+								local crossCooldown_Cache = playerData._crossCooldownCache
+									or (function()
+										local tab = {}
+										playerData._crossCooldownCache = tab
+										return tab
+									end)()
 								local crossCooldown_playerCache = crossCooldown_Cache[cmdFullName]
 
 								if crossCooldown_playerCache then
-									local secsTillPass = os.clock()-crossCooldown_playerCache
+									local secsTillPass = os.clock() - crossCooldown_playerCache
 									local passCooldown = secsTillPass >= crossCooldown
 
 									if not passCooldown then
-										return false,"CrossCooldown",math.floor(crossCooldown-secsTillPass)
+										return false, "CrossCooldown", math.floor(crossCooldown - secsTillPass)
 									end
 								end
 							end
 						end
 
 						if playerDebounceEnabled and playerDebounceCache[player.UserId] then
-							return false,"PlayerDebounce"
+							return false, "PlayerDebounce"
 						end
 
 						if serverDebounceEnabled and serverDebounceCache[player.UserId] then
-							return false,"ServerDebounce"
+							return false, "ServerDebounce"
 						end
 
-						if (processData.chatted or processData.Chat) and (cmd.Chattable==false or cmd.NotChat or cmd.DisabledOnChat) then
-							return false,"Chat"
+						if
+							(processData.chatted or processData.Chat)
+							and (cmd.Chattable == false or cmd.NotChat or cmd.DisabledOnChat)
+						then
+							return false, "Chat"
 						end
 
 						if (processData.ranCross or processData.CrossServer) and crossCmdDisabled then
-							return false,"Cross"
+							return false, "Cross"
 						end
-						
+
 						if socialMediaPolicies and #socialMediaPolicies > 0 then
-							if (processData.ranCross or processData.CrossServer) then
-								return false, "Cross"
-							end
-							
+							if processData.ranCross or processData.CrossServer then return false, "Cross" end
+
 							if player:isReal() then
 								local disallowedPolicies = {}
-								
+
 								for i, policy in socialMediaPolicies do
-									if not player:isAllowedToUseSocialMedia(policy) and not table.find(disallowedPolicies, policy) then
+									if
+										not player:isAllowedToUseSocialMedia(policy)
+										and not table.find(disallowedPolicies, policy)
+									then
 										table.insert(disallowedPolicies, policy)
 									end
 								end
-								
+
 								if #disallowedPolicies > 0 then
 									return false, "SocialMediaPoliciesDisallowed", disallowedPolicies
 								end
 							end
 						end
-						
+
 						if noRepeatedUseInBatch then
 							local ranPlayerCommands = processData._ranPlayerCommands
 							if ranPlayerCommands and table.find(ranPlayerCommands, cmd.Id) then
 								return false, "RanTwice"
 							end
 						end
-						
-						if noRepeatedUseInLoop and processData.loop then
-							return false, "LoopDisallowed"
-						end
 
-						return didPass,passType
+						if noRepeatedUseInLoop and processData.loop then return false, "LoopDisallowed" end
+
+						return didPass, passType
 					else
-						return didPass,passType,passMissingRet
+						return didPass, passType, passMissingRet
 					end
 				else
-					return true,"System"
+					return true, "System"
 				end
 			end
-		end;
+		end,
 
 		manageCommandUsability = function(player, cmd, usableType, usableValue)
-			local playerCooldown 			= tonumber(cmd.PlayerCooldown)
-			local serverCooldown 			= tonumber(cmd.ServerCooldown)
-			local cmdPermissions 			= cmd.Permissions or {}
-			local listedRoles				= cmd.Roles or {}
-			local blacklist					= cmd.Blacklist or {}
-			local playerDebounceEnabled 	= cmd.PlayerDebounce or cmd.Debounce or false
-			local serverDebounceEnabled 	= cmd.ServerDebounce or false
-			local executions				= cmd.Executions or 0
+			local playerCooldown = tonumber(cmd.PlayerCooldown)
+			local serverCooldown = tonumber(cmd.ServerCooldown)
+			local cmdPermissions = cmd.Permissions or {}
+			local listedRoles = cmd.Roles or {}
+			local blacklist = cmd.Blacklist or {}
+			local playerDebounceEnabled = cmd.PlayerDebounce or cmd.Debounce or false
+			local serverDebounceEnabled = cmd.ServerDebounce or false
+			local executions = cmd.Executions or 0
 
-			local cmdFullName = cmd._fullName or (function()
-				local aliases = cmd.Aliases or cmd.Commands or {}
-				cmd._fullName = cmd.Prefix..(aliases[1] or service.getRandom().."-RANDOM_COMMAND")
-				return cmd._fullName
-			end)()
+			local cmdFullName = cmd._fullName
+				or (function()
+					local aliases = cmd.Aliases or cmd.Commands or {}
+					cmd._fullName = cmd.Prefix .. (aliases[1] or service.getRandom() .. "-RANDOM_COMMAND")
+					return cmd._fullName
+				end)()
 
-			local pCooldown_Cache = cmd._playerCooldownCache or (function()
-				local tab = {}
-				cmd._playerCooldownCache = tab
-				return tab
-			end)()
+			local pCooldown_Cache = cmd._playerCooldownCache
+				or (function()
+					local tab = {}
+					cmd._playerCooldownCache = tab
+					return tab
+				end)()
 
-			local sCooldown_Cache = cmd._serverCooldownCache or (function()
-				local tab = {}
-				cmd._serverCooldownCache = tab
-				return tab
-			end)()
+			local sCooldown_Cache = cmd._serverCooldownCache
+				or (function()
+					local tab = {}
+					cmd._serverCooldownCache = tab
+					return tab
+				end)()
 
-			local playerDebounceCache = cmd._playerDebounceCache or (function()
-				local cache = {}
-				cmd._playerDebounceCache = cache
-				return cache
-			end)()
+			local playerDebounceCache = cmd._playerDebounceCache
+				or (function()
+					local cache = {}
+					cmd._playerDebounceCache = cache
+					return cache
+				end)()
 
-			local serverDebounceCache = cmd._serverDebounceCache or (function()
-				local cache = {}
-				cmd._serverDebounceCache = cache
-				return cache
-			end)()
+			local serverDebounceCache = cmd._serverDebounceCache
+				or (function()
+					local cache = {}
+					cmd._serverDebounceCache = cache
+					return cache
+				end)()
 
 			local cooldownIndex = tostring(player.UserId)
 
@@ -2523,65 +2716,69 @@ return function(envArgs)
 				pCooldown_Cache[cooldownIndex] = nil
 
 				local playerData = Core.getPlayerData(player.UserId)
-				local crossCooldown_Cache = playerData._crossCooldownCache or (function()
-					local tab = {}
-					playerData._crossCooldownCache = tab
-					return tab
-				end)()
+				local crossCooldown_Cache = playerData._crossCooldownCache
+					or (function()
+						local tab = {}
+						playerData._crossCooldownCache = tab
+						return tab
+					end)()
 				local crossCooldown_playerCache = crossCooldown_Cache[cmdFullName]
 
-				if crossCooldown_playerCache then
-					crossCooldown_Cache[cmdFullName] = nil
-				end
+				if crossCooldown_playerCache then crossCooldown_Cache[cmdFullName] = nil end
 			elseif usableType == "ResetServerCooldown" then
 				sCooldown_Cache[cooldownIndex] = nil
 			elseif usableType == "ResetCooldown" then
 				pCooldown_Cache[cooldownIndex] = nil
 				sCooldown_Cache[cooldownIndex] = nil
 			end
-		end;
+		end,
 
 		trackCommandStartUsability = function(player, cmd, data)
-			local disabled 					= cmd.Disabled
-			local playerCooldown 			= tonumber(cmd.PlayerCooldown)
-			local serverCooldown 			= tonumber(cmd.ServerCooldown)
-			local crossCooldown 			= tonumber(cmd.CrossCooldown)
-			local cmdPermissions 			= cmd.Permissions or {}
-			local listedRoles				= cmd.Roles or {}
-			local blacklist					= cmd.Blacklist or {}
-			local playerDebounceEnabled 	= cmd.PlayerDebounce or cmd.Debounce or false
-			local serverDebounceEnabled 	= cmd.ServerDebounce or false
-			local executions				= cmd.Executions or 0
+			local disabled = cmd.Disabled
+			local playerCooldown = tonumber(cmd.PlayerCooldown)
+			local serverCooldown = tonumber(cmd.ServerCooldown)
+			local crossCooldown = tonumber(cmd.CrossCooldown)
+			local cmdPermissions = cmd.Permissions or {}
+			local listedRoles = cmd.Roles or {}
+			local blacklist = cmd.Blacklist or {}
+			local playerDebounceEnabled = cmd.PlayerDebounce or cmd.Debounce or false
+			local serverDebounceEnabled = cmd.ServerDebounce or false
+			local executions = cmd.Executions or 0
 
-			local cmdFullName = cmd._fullName or (function()
-				local aliases = cmd.Aliases or cmd.Commands or {}
-				cmd._fullName = cmd.Prefix..(aliases[1] or service.getRandom().."-RANDOM_COMMAND")
-				return cmd._fullName
-			end)()
+			local cmdFullName = cmd._fullName
+				or (function()
+					local aliases = cmd.Aliases or cmd.Commands or {}
+					cmd._fullName = cmd.Prefix .. (aliases[1] or service.getRandom() .. "-RANDOM_COMMAND")
+					return cmd._fullName
+				end)()
 
-			local pCooldown_Cache = cmd._playerCooldownCache or (function()
-				local tab = {}
-				cmd._playerCooldownCache = tab
-				return tab
-			end)()
+			local pCooldown_Cache = cmd._playerCooldownCache
+				or (function()
+					local tab = {}
+					cmd._playerCooldownCache = tab
+					return tab
+				end)()
 
-			local sCooldown_Cache = cmd._serverCooldownCache or (function()
-				local tab = {}
-				cmd._serverCooldownCache = tab
-				return tab
-			end)()
+			local sCooldown_Cache = cmd._serverCooldownCache
+				or (function()
+					local tab = {}
+					cmd._serverCooldownCache = tab
+					return tab
+				end)()
 
-			local playerDebounceCache = cmd._playerDebounceCache or (function()
-				local cache = {}
-				cmd._playerDebounceCache = cache
-				return cache
-			end)()
+			local playerDebounceCache = cmd._playerDebounceCache
+				or (function()
+					local cache = {}
+					cmd._playerDebounceCache = cache
+					return cache
+				end)()
 
-			local serverDebounceCache = cmd._serverDebounceCache or (function()
-				local cache = {}
-				cmd._serverDebounceCache = cache
-				return cache
-			end)()
+			local serverDebounceCache = cmd._serverDebounceCache
+				or (function()
+					local cache = {}
+					cmd._serverDebounceCache = cache
+					return cache
+				end)()
 
 			-- If the player is a a server administrator or blacklisted, don't track usability
 			--if server.Moderation.checkAdmin(player) then
@@ -2592,13 +2789,9 @@ return function(envArgs)
 			local cacheIndex = tostring(player.UserId)
 			local lastUsed = os.clock()
 
-			if playerCooldown then
-				pCooldown_Cache[cacheIndex] = lastUsed
-			end
+			if playerCooldown then pCooldown_Cache[cacheIndex] = lastUsed end
 
-			if serverCooldown then
-				sCooldown_Cache[cacheIndex] = lastUsed
-			end
+			if serverCooldown then sCooldown_Cache[cacheIndex] = lastUsed end
 
 			if player:isReal() then
 				local playerData = Core.getPlayerData(player.UserId)
@@ -2612,59 +2805,58 @@ return function(envArgs)
 				end
 			end
 
-			if playerDebounceEnabled and player:isReal() then
-				playerDebounceCache[player.UserId] = true
-			end
+			if playerDebounceEnabled and player:isReal() then playerDebounceCache[player.UserId] = true end
 
-			if serverDebounceEnabled and player:isReal() then
-				serverDebounceCache[player.UserId] = true
-			end
+			if serverDebounceEnabled and player:isReal() then serverDebounceCache[player.UserId] = true end
 
 			executions += 1
 			cmd.Executions = executions
-			
-			if data._ranPlayerCommands then
-				table.insert(data._ranPlayerCommands, cmd.Id)
-			end
-		end;
+
+			if data._ranPlayerCommands then table.insert(data._ranPlayerCommands, cmd.Id) end
+		end,
 
 		trackCommandEndUsability = function(player, cmd, data)
-			local disabled 					= cmd.Disabled
-			local playerCooldown 			= tonumber(cmd.PlayerCooldown)
-			local serverCooldown 			= tonumber(cmd.ServerCooldown)
-			local crossCooldown 			= tonumber(cmd.CrossCooldown)
-			local playerDebounceEnabled 	= cmd.PlayerDebounce or cmd.Debounce or false
-			local serverDebounceEnabled 	= cmd.ServerDebounce or false
+			local disabled = cmd.Disabled
+			local playerCooldown = tonumber(cmd.PlayerCooldown)
+			local serverCooldown = tonumber(cmd.ServerCooldown)
+			local crossCooldown = tonumber(cmd.CrossCooldown)
+			local playerDebounceEnabled = cmd.PlayerDebounce or cmd.Debounce or false
+			local serverDebounceEnabled = cmd.ServerDebounce or false
 
-			local cmdFullName = cmd._fullName or (function()
-				local aliases = cmd.Aliases or cmd.Commands or {}
-				cmd._fullName = cmd.Prefix..(aliases[1] or service.getRandom().."-RANDOM_COMMAND")
-				return cmd._fullName
-			end)()
+			local cmdFullName = cmd._fullName
+				or (function()
+					local aliases = cmd.Aliases or cmd.Commands or {}
+					cmd._fullName = cmd.Prefix .. (aliases[1] or service.getRandom() .. "-RANDOM_COMMAND")
+					return cmd._fullName
+				end)()
 
-			local pCooldown_Cache = cmd._playerCooldownCache or (function()
-				local tab = {}
-				cmd._playerCooldownCache = tab
-				return tab
-			end)()
+			local pCooldown_Cache = cmd._playerCooldownCache
+				or (function()
+					local tab = {}
+					cmd._playerCooldownCache = tab
+					return tab
+				end)()
 
-			local sCooldown_Cache = cmd._serverCooldownCache or (function()
-				local tab = {}
-				cmd._serverCooldownCache = tab
-				return tab
-			end)()
+			local sCooldown_Cache = cmd._serverCooldownCache
+				or (function()
+					local tab = {}
+					cmd._serverCooldownCache = tab
+					return tab
+				end)()
 
-			local playerDebounceCache = cmd._playerDebounceCache or (function()
-				local cache = {}
-				cmd._playerDebounceCache = cache
-				return cache
-			end)()
+			local playerDebounceCache = cmd._playerDebounceCache
+				or (function()
+					local cache = {}
+					cmd._playerDebounceCache = cache
+					return cache
+				end)()
 
-			local serverDebounceCache = cmd._serverDebounceCache or (function()
-				local cache = {}
-				cmd._serverDebounceCache = cache
-				return cache
-			end)()
+			local serverDebounceCache = cmd._serverDebounceCache
+				or (function()
+					local cache = {}
+					cmd._serverDebounceCache = cache
+					return cache
+				end)()
 
 			-- If the player is a a server administrator or blacklisted, don't track usability
 			--if server.Moderation.checkAdmin(player) then
@@ -2679,53 +2871,57 @@ return function(envArgs)
 				playerDebounceCache[player.UserId] = nil
 				serverDebounceCache[player.UserId] = nil
 
-				if playerCooldown then
-					pCooldown_Cache[cacheIndex] = lastUsed
-				end
+				if playerCooldown then pCooldown_Cache[cacheIndex] = lastUsed end
 
-				if serverCooldown then
-					sCooldown_Cache[cacheIndex] = lastUsed
-				end
+				if serverCooldown then sCooldown_Cache[cacheIndex] = lastUsed end
 
 				if crossCooldown and player:isReal() then
 					local playerData = Core.getPlayerData(player.UserId)
-					local crossCooldown_Cache = playerData._crossCooldownCache or (function()
-						local tab = {}
-						playerData._crossCooldownCache = tab
-						return tab
-					end)()
+					local crossCooldown_Cache = playerData._crossCooldownCache
+						or (function()
+							local tab = {}
+							playerData._crossCooldownCache = tab
+							return tab
+						end)()
 
 					crossCooldown_Cache[cmdFullName] = lastUsed
 				end
 			end
 
 			return true
-		end;
+		end,
 
 		executeCommand = function(plr, command, suppliedArgs)
 			local cmdMatch
 			local cmdType = type(command)
 
 			if cmdType == "table" then
-				cmdMatch = command.Prefix..tostring(command.Aliases[1])
+				cmdMatch = command.Prefix .. tostring(command.Aliases[1])
 			elseif cmdType == "string" then
-				command,cmdMatch = Commands.get(command)
+				command, cmdMatch = Commands.get(command)
 			end
 
-			plr = (type(plr)=="string" and Parser:apifyPlayer({
-				Name = plr;
-				UserId = service.playerIdFromName(plr) or 0;
-			}, true)) or (typeof(plr)=="Instance" and plr:IsA"Player" and Parser:apifyPlayer(plr)) or plr
+			plr = (
+				type(plr) == "string"
+				and Parser:apifyPlayer({
+					Name = plr,
+					UserId = service.playerIdFromName(plr) or 0,
+				}, true)
+			)
+				or (typeof(plr) == "Instance" and plr:IsA "Player" and Parser:apifyPlayer(plr))
+				or plr
 
-			suppliedArgs = (type(suppliedArgs)=="string" and Parser:getArguments(suppliedArgs, settings.delimiter)) or
-				(type(suppliedArgs)=="table" and suppliedArgs) or suppliedArgs
+			suppliedArgs = (type(suppliedArgs) == "string" and Parser:getArguments(suppliedArgs, settings.delimiter))
+				or (type(suppliedArgs) == "table" and suppliedArgs)
+				or suppliedArgs
 
 			if command then
 				local cmdName = server.Commands.getName(command) or tostring(command)
 				local cmdArgs = command.Args or command.Arguments or {}
-				local parsedArgs,missingArg,missingArgType = Parser:filterArguments(suppliedArgs, cmdArgs, settings.delimiter or " ", plr)
+				local parsedArgs, missingArg, missingArgType =
+					Parser:filterArguments(suppliedArgs, cmdArgs, settings.delimiter or " ", plr)
 				local runData = {
-					forceExecute = true;	
+					forceExecute = true,
 				}
 
 				if parsedArgs then
@@ -2733,27 +2929,33 @@ return function(envArgs)
 
 					if cmdFunction then
 						server.Events.commandRan:fire((not plr and "System") or "Player", plr, {
-							command = command;
-							forceExecute = true;
-							data = cloneTable(runData);
-							arguments = cloneTable(parsedArgs);
-							messageArgs = cloneTable(suppliedArgs);
-							didHideFromLogs = true;
+							command = command,
+							forceExecute = true,
+							data = cloneTable(runData),
+							arguments = cloneTable(parsedArgs),
+							messageArgs = cloneTable(suppliedArgs),
+							didHideFromLogs = true,
 						})
 
-						local success,error = service.trackTask("_EXECUTE_COMMAND_"..cmdName:upper(), false, cmdFunction, plr, parsedArgs)
+						local success, error = service.trackTask(
+							"_EXECUTE_COMMAND_" .. cmdName:upper(),
+							false,
+							cmdFunction,
+							plr,
+							parsedArgs
+						)
 
 						if not success then
-							return false,error
+							return false, error
 						else
 							return true
 						end
 					end
 				else
-					return false,"Missing argument "..tostring(missingArg)..": "..tostring(missingArgType)
+					return false, "Missing argument " .. tostring(missingArg) .. ": " .. tostring(missingArgType)
 				end
 			end
-		end;
+		end,
 
 		getCmdAliasFromBatch = function(plr, messageBatch)
 			local pData = Core.getPlayerData(plr.UserId) or {}
@@ -2763,15 +2965,11 @@ return function(envArgs)
 
 			for aliasName, commandLine in pairs(cmdAliases) do
 				local commandFromAliasName = Commands.get(aliasName)
-				if commandFromAliasName then
-					continue
-				end
+				if commandFromAliasName then continue end
 
-				if aliasName:lower() == trimMessage:lower() then
-					return commandLine, aliasName
-				end
+				if aliasName:lower() == trimMessage:lower() then return commandLine, aliasName end
 			end
-		end;
+		end,
 
 		getCommandFromBatch = function(plr, messageBatch)
 			local pData = Core.getPlayerData(plr.UserId) or {}
@@ -2780,51 +2978,45 @@ return function(envArgs)
 			local trimMessage = Parser:trimString(messageBatch)
 
 			for aliasName, cmdName in pairs(customCmdNames) do
-				local command,cmdMatch = Commands.get(aliasName)
-				if command then
-					continue
-				end
+				local command, cmdMatch = Commands.get(aliasName)
+				if command then continue end
 
-				if aliasName:lower() == trimMessage:sub(1,#aliasName):lower() then
-					return Commands.get(cmdName),cmdName,aliasName
+				if aliasName:lower() == trimMessage:sub(1, #aliasName):lower() then
+					return Commands.get(cmdName), cmdName, aliasName
 				end
 			end
 		end,
 
 		loadstring = function(source, env)
-			local loadFunc,bytecode = server.Loadstring(source, env or getfenv(2))
-			return loadFunc,bytecode
-		end;
+			local loadFunc, bytecode = server.Loadstring(source, env or getfenv(2))
+			return loadFunc, bytecode
+		end,
 
 		bytecode = function(source, env)
-			local func,byte = Core.loadstring(source, env or {})
+			local func, byte = Core.loadstring(source, env or {})
 
-			if type(func) == "function" then
-				return byte
-			end
-		end;
+			if type(func) == "function" then return byte end
+		end,
 
 		getGameServers = function()
-			local canUpdateCache = not Core.lastGSRetrieved or os.time()-Core.lastGSRetrieved > 60
+			local canUpdateCache = not Core.lastGSRetrieved or os.time() - Core.lastGSRetrieved > 60
 
 			if canUpdateCache then
 				if not Core.retrievingGameServers then
 					Core.retrievingGameServers = true
 
 					local crossEvent = Signal.new()
-					local eventId = "GetGS-"..service.getRandom()
+					local eventId = "GetGS-" .. service.getRandom()
 					variables.crossEvents[eventId] = crossEvent
 
 					local gameServers = {}
-					crossEvent:connect(function(jobId, serverInfo)
-						table.insert(gameServers, serverInfo)
-					end)
+					crossEvent:connect(function(jobId, serverInfo) table.insert(gameServers, serverInfo) end)
 					Cross.send("RetrieveServerInfo", eventId)
 
 					-- Wait up to 15 seconds
 					if server.Studio then
 						wait(5)
-					else	
+					else
 						wait(15)
 					end
 					crossEvent:disconnect()
@@ -2835,12 +3027,14 @@ return function(envArgs)
 
 					return gameServers
 				else
-					repeat wait(1) until not Core.retrievingGameServers
+					repeat
+						wait(1)
+					until not Core.retrievingGameServers
 					return cloneTable(Core.latestGSCache or {})
 				end
 			end
 
 			return cloneTable(Core.latestGSCache)
-		end;
+		end,
 	}
 end

@@ -13,7 +13,7 @@ local MockDataStoreManager = require(script.Parent.MockDataStoreManager)
 local MockDataStorePages = require(script.Parent.MockDataStorePages)
 local Utils = require(script.Parent.MockDataStoreUtils)
 local Constants = require(script.Parent.MockDataStoreConstants)
-local HttpService = game:GetService("HttpService") -- for json encode/decode
+local HttpService = game:GetService "HttpService" -- for json encode/decode
 
 local rand = Random.new()
 
@@ -26,16 +26,23 @@ function MockOrderedDataStore:OnUpdate(key, callback)
 	elseif #key == 0 then
 		error("bad argument #1 to 'OnUpdate' (key name can't be empty)", 2)
 	elseif #key > Constants.MAX_LENGTH_KEY then
-		error(("bad argument #1 to 'OnUpdate' (key name exceeds %d character limit)"):format(Constants.MAX_LENGTH_KEY), 2)
+		error(
+			("bad argument #1 to 'OnUpdate' (key name exceeds %d character limit)"):format(Constants.MAX_LENGTH_KEY),
+			2
+		)
 	end
 
-	Utils.simulateErrorCheck("OnUpdate")
+	Utils.simulateErrorCheck "OnUpdate"
 
 	local success = MockDataStoreManager.YieldForBudget(
 		function()
-			warn(("OnUpdate request was throttled due to lack of budget. Try sending fewer requests. Key = %s"):format(key))
+			warn(
+				("OnUpdate request was throttled due to lack of budget. Try sending fewer requests. Key = %s"):format(
+					key
+				)
+			)
 		end,
-		{Enum.DataStoreRequestType.OnUpdate}
+		{ Enum.DataStoreRequestType.OnUpdate }
 	)
 
 	if not success then
@@ -61,20 +68,25 @@ function MockOrderedDataStore:GetAsync(key)
 	elseif #key == 0 then
 		error("bad argument #1 to 'GetAsync' (key name can't be empty)", 2)
 	elseif #key > Constants.MAX_LENGTH_KEY then
-		error(("bad argument #1 to 'GetAsync' (key name exceeds %d character limit)"):format(Constants.MAX_LENGTH_KEY), 2)
+		error(
+			("bad argument #1 to 'GetAsync' (key name exceeds %d character limit)"):format(Constants.MAX_LENGTH_KEY),
+			2
+		)
 	end
 
-	if self.__getCache[key] and tick() - self.__getCache[key] < Constants.GET_COOLDOWN then
-		return self.__data[key]
-	end
+	if self.__getCache[key] and tick() - self.__getCache[key] < Constants.GET_COOLDOWN then return self.__data[key] end
 
-	Utils.simulateErrorCheck("GetAsync")
+	Utils.simulateErrorCheck "GetAsync"
 
 	local success = MockDataStoreManager.YieldForBudget(
 		function()
-			warn(("GetAsync request was throttled due to lack of budget. Try sending fewer requests. Key = %s"):format(key))
+			warn(
+				("GetAsync request was throttled due to lack of budget. Try sending fewer requests. Key = %s"):format(
+					key
+				)
+			)
 		end,
-		{Enum.DataStoreRequestType.GetAsync}
+		{ Enum.DataStoreRequestType.GetAsync }
 	)
 
 	if not success then
@@ -101,33 +113,44 @@ function MockOrderedDataStore:IncrementAsync(key, delta)
 	elseif #key == 0 then
 		error("bad argument #1 to 'IncrementAsync' (key name can't be empty)", 2)
 	elseif #key > Constants.MAX_LENGTH_KEY then
-		error(("bad argument #1 to 'IncrementAsync' (key name exceeds %d character limit)")
-			:format(Constants.MAX_LENGTH_KEY), 2)
+		error(
+			("bad argument #1 to 'IncrementAsync' (key name exceeds %d character limit)"):format(
+				Constants.MAX_LENGTH_KEY
+			),
+			2
+		)
 	end
 
-	Utils.simulateErrorCheck("IncrementAsync")
+	Utils.simulateErrorCheck "IncrementAsync"
 
 	local success
 
 	if self.__writeLock[key] or tick() - (self.__writeCache[key] or 0) < Constants.WRITE_COOLDOWN then
 		success = MockDataStoreManager.YieldForWriteLockAndBudget(
 			function()
-				warn(("IncrementAsync request was throttled, a key can only be written to once every %d seconds. Key = %s")
-					:format(Constants.WRITE_COOLDOWN, key))
+				warn(
+					("IncrementAsync request was throttled, a key can only be written to once every %d seconds. Key = %s"):format(
+						Constants.WRITE_COOLDOWN,
+						key
+					)
+				)
 			end,
 			key,
 			self.__writeLock,
 			self.__writeCache,
-			{Enum.DataStoreRequestType.SetIncrementSortedAsync}
+			{ Enum.DataStoreRequestType.SetIncrementSortedAsync }
 		)
 	else
 		self.__writeLock[key] = true
 		success = MockDataStoreManager.YieldForBudget(
 			function()
-				warn(("IncrementAsync request was throttled due to lack of budget. Try sending fewer requests. Key = %s")
-					:format(key))
+				warn(
+					("IncrementAsync request was throttled due to lack of budget. Try sending fewer requests. Key = %s"):format(
+						key
+					)
+				)
 			end,
-			{Enum.DataStoreRequestType.SetIncrementSortedAsync}
+			{ Enum.DataStoreRequestType.SetIncrementSortedAsync }
 		)
 		self.__writeLock[key] = nil
 	end
@@ -145,11 +168,11 @@ function MockOrderedDataStore:IncrementAsync(key, delta)
 
 	self.__writeLock[key] = true
 
-	delta = delta and math.floor(delta + .5) or 1
+	delta = delta and math.floor(delta + 0.5) or 1
 
 	if old == nil then
 		self.__data[key] = delta
-		self.__ref[key] = {Key = key, Value = self.__data[key]}
+		self.__ref[key] = { Key = key, Value = self.__data[key] }
 		table.insert(self.__sorted, self.__ref[key])
 		self.__changed = true
 		self.__event:Fire(key, self.__data[key])
@@ -181,32 +204,42 @@ function MockOrderedDataStore:RemoveAsync(key)
 	elseif #key == 0 then
 		error("bad argument #1 to 'RemoveAsync' (key name can't be empty)", 2)
 	elseif #key > Constants.MAX_LENGTH_KEY then
-		error(("bad argument #1 to 'RemoveAsync' (key name exceeds %d character limit)"):format(Constants.MAX_LENGTH_KEY), 2)
+		error(
+			("bad argument #1 to 'RemoveAsync' (key name exceeds %d character limit)"):format(Constants.MAX_LENGTH_KEY),
+			2
+		)
 	end
 
-	Utils.simulateErrorCheck("RemoveAsync")
+	Utils.simulateErrorCheck "RemoveAsync"
 
 	local success
 
 	if self.__writeLock[key] or tick() - (self.__writeCache[key] or 0) < Constants.WRITE_COOLDOWN then
 		success = MockDataStoreManager.YieldForWriteLockAndBudget(
 			function()
-				warn(("RemoveAsync request was throttled, a key can only be written to once every %d seconds. Key = %s")
-					:format(Constants.WRITE_COOLDOWN, key))
+				warn(
+					("RemoveAsync request was throttled, a key can only be written to once every %d seconds. Key = %s"):format(
+						Constants.WRITE_COOLDOWN,
+						key
+					)
+				)
 			end,
 			key,
 			self.__writeLock,
 			self.__writeCache,
-			{Enum.DataStoreRequestType.SetIncrementSortedAsync}
+			{ Enum.DataStoreRequestType.SetIncrementSortedAsync }
 		)
 	else
 		self.__writeLock[key] = true
 		success = MockDataStoreManager.YieldForBudget(
 			function()
-				warn(("RemoveAsync request was throttled due to lack of budget. Try sending fewer requests. Key = %s")
-					:format(key))
+				warn(
+					("RemoveAsync request was throttled due to lack of budget. Try sending fewer requests. Key = %s"):format(
+						key
+					)
+				)
 			end,
-			{Enum.DataStoreRequestType.SetIncrementSortedAsync}
+			{ Enum.DataStoreRequestType.SetIncrementSortedAsync }
 		)
 		self.__writeLock[key] = nil
 	end
@@ -222,7 +255,7 @@ function MockOrderedDataStore:RemoveAsync(key)
 	if value ~= nil then
 		self.__data[key] = nil
 		self.__ref[key] = nil
-		for i,v in pairs(self.__sorted) do
+		for i, v in pairs(self.__sorted) do
 			if v.Key == key then
 				table.remove(self.__sorted, i)
 				break
@@ -248,36 +281,46 @@ function MockOrderedDataStore:SetAsync(key, value)
 	elseif #key == 0 then
 		error("bad argument #1 to 'SetAsync' (key name can't be empty)", 2)
 	elseif #key > Constants.MAX_LENGTH_KEY then
-		error(("bad argument #1 to 'SetAsync' (key name exceeds %d character limit)"):format(Constants.MAX_LENGTH_KEY), 2)
+		error(
+			("bad argument #1 to 'SetAsync' (key name exceeds %d character limit)"):format(Constants.MAX_LENGTH_KEY),
+			2
+		)
 	elseif type(value) ~= "number" then
 		error(("bad argument #2 to 'SetAsync' (number expected, got %s)"):format(typeof(value)), 2)
 	elseif value % 1 ~= 0 then
 		error("bad argument #2 to 'SetAsync' (cannot store non-integer values in OrderedDataStore)", 2)
 	end
 
-	Utils.simulateErrorCheck("SetAsync")
+	Utils.simulateErrorCheck "SetAsync"
 
 	local success
 
 	if self.__writeLock[key] or tick() - (self.__writeCache[key] or 0) < Constants.WRITE_COOLDOWN then
 		success = MockDataStoreManager.YieldForWriteLockAndBudget(
 			function()
-				warn(("SetAsync request was throttled, a key can only be written to once every %d seconds. Key = %s")
-					:format(Constants.WRITE_COOLDOWN, key))
+				warn(
+					("SetAsync request was throttled, a key can only be written to once every %d seconds. Key = %s"):format(
+						Constants.WRITE_COOLDOWN,
+						key
+					)
+				)
 			end,
 			key,
 			self.__writeLock,
 			self.__writeCache,
-			{Enum.DataStoreRequestType.SetIncrementSortedAsync}
+			{ Enum.DataStoreRequestType.SetIncrementSortedAsync }
 		)
 	else
 		self.__writeLock[key] = true
 		success = MockDataStoreManager.YieldForBudget(
 			function()
-				warn(("SetAsync request was throttled due to lack of budget. Try sending fewer requests. Key = %s")
-					:format(key))
+				warn(
+					("SetAsync request was throttled due to lack of budget. Try sending fewer requests. Key = %s"):format(
+						key
+					)
+				)
 			end,
-			{Enum.DataStoreRequestType.SetIncrementSortedAsync}
+			{ Enum.DataStoreRequestType.SetIncrementSortedAsync }
 		)
 		self.__writeLock[key] = nil
 	end
@@ -292,7 +335,7 @@ function MockOrderedDataStore:SetAsync(key, value)
 
 	if old == nil then
 		self.__data[key] = value
-		self.__ref[key] = {Key = key, Value = value}
+		self.__ref[key] = { Key = key, Value = value }
 		table.insert(self.__sorted, self.__ref[key])
 		self.__changed = true
 		self.__event:Fire(key, self.__data[key])
@@ -322,36 +365,46 @@ function MockOrderedDataStore:UpdateAsync(key, transformFunction)
 	elseif #key == 0 then
 		error("bad argument #1 to 'UpdateAsync' (key name can't be empty)", 2)
 	elseif #key > Constants.MAX_LENGTH_KEY then
-		error(("bad argument #1 to 'UpdateAsync' (key name exceeds %d character limit)"):format(Constants.MAX_LENGTH_KEY), 2)
+		error(
+			("bad argument #1 to 'UpdateAsync' (key name exceeds %d character limit)"):format(Constants.MAX_LENGTH_KEY),
+			2
+		)
 	end
 
-	Utils.simulateErrorCheck("UpdateAsync")
+	Utils.simulateErrorCheck "UpdateAsync"
 
 	local success
 
 	if self.__writeLock[key] or tick() - (self.__writeCache[key] or 0) < Constants.WRITE_COOLDOWN then
 		success = MockDataStoreManager.YieldForWriteLockAndBudget(
 			function()
-				warn(("UpdateAsync request was throttled, a key can only be written to once every %d seconds. Key = %s")
-					:format(Constants.WRITE_COOLDOWN, key))
+				warn(
+					("UpdateAsync request was throttled, a key can only be written to once every %d seconds. Key = %s"):format(
+						Constants.WRITE_COOLDOWN,
+						key
+					)
+				)
 			end,
 			key,
 			self.__writeLock,
 			self.__writeCache,
-			{Enum.DataStoreRequestType.SetIncrementSortedAsync}
+			{ Enum.DataStoreRequestType.SetIncrementSortedAsync }
 		)
 	else
 		self.__writeLock[key] = true
 		local budget
 		if self.__getCache[key] and tick() - self.__getCache[key] < Constants.GET_COOLDOWN then
-			budget = {Enum.DataStoreRequestType.SetIncrementSortedAsync}
+			budget = { Enum.DataStoreRequestType.SetIncrementSortedAsync }
 		else
-			budget = {Enum.DataStoreRequestType.GetAsync, Enum.DataStoreRequestType.SetIncrementSortedAsync}
+			budget = { Enum.DataStoreRequestType.GetAsync, Enum.DataStoreRequestType.SetIncrementSortedAsync }
 		end
 		success = MockDataStoreManager.YieldForBudget(
 			function()
-				warn(("UpdateAsync request was throttled due to lack of budget. Try sending fewer requests. Key = %s")
-					:format(key))
+				warn(
+					("UpdateAsync request was throttled due to lack of budget. Try sending fewer requests. Key = %s"):format(
+						key
+					)
+				)
 			end,
 			budget
 		)
@@ -379,7 +432,7 @@ function MockOrderedDataStore:UpdateAsync(key, transformFunction)
 
 	if old == nil then
 		self.__data[key] = value
-		self.__ref[key] = {Key = key, Value = value}
+		self.__ref[key] = { Key = key, Value = value }
 		table.insert(self.__sorted, self.__ref[key])
 		self.__changed = true
 		self.__event:Fire(key, self.__data[key])
@@ -409,10 +462,14 @@ function MockOrderedDataStore:GetSortedAsync(ascending, pageSize, minValue, maxV
 		error(("bad argument #2 to 'GetSortedAsync' (number expected, got %s)"):format(typeof(pageSize)), 2)
 	end
 
-	pageSize = math.floor(pageSize + .5)
+	pageSize = math.floor(pageSize + 0.5)
 	if pageSize <= 0 or pageSize > Constants.MAX_PAGE_SIZE then
-		error(("bad argument #2 to 'GetSortedAsync' (page size must be an integer above 0 and below or equal to %d)")
-			:format(Constants.MAX_PAGE_SIZE), 2)
+		error(
+			("bad argument #2 to 'GetSortedAsync' (page size must be an integer above 0 and below or equal to %d)"):format(
+				Constants.MAX_PAGE_SIZE
+			),
+			2
+		)
 	end
 
 	if minValue ~= nil then
@@ -435,13 +492,11 @@ function MockOrderedDataStore:GetSortedAsync(ascending, pageSize, minValue, maxV
 		maxValue = math.huge
 	end
 
-	Utils.simulateErrorCheck("GetSortedAsync")
+	Utils.simulateErrorCheck "GetSortedAsync"
 
 	local success = MockDataStoreManager.YieldForBudget(
-		function()
-			warn("GetSortedAsync request was throttled due to lack of budget. Try sending fewer requests.")
-		end,
-		{Enum.DataStoreRequestType.GetSortedAsync}
+		function() warn "GetSortedAsync request was throttled due to lack of budget. Try sending fewer requests." end,
+		{ Enum.DataStoreRequestType.GetSortedAsync }
 	)
 
 	if not success then
@@ -454,7 +509,7 @@ function MockOrderedDataStore:GetSortedAsync(ascending, pageSize, minValue, maxV
 	end
 
 	if self.__changed then
-		table.sort(self.__sorted, function(a,b) return a.Value < b.Value end)
+		table.sort(self.__sorted, function(a, b) return a.Value < b.Value end)
 		self.__changed = false
 	end
 
@@ -466,7 +521,7 @@ function MockOrderedDataStore:GetSortedAsync(ascending, pageSize, minValue, maxV
 			i = i + 1
 		end
 		while self.__sorted[i] and self.__sorted[i].Value <= maxValue do
-			table.insert(results, {key = self.__sorted[i].Key, value = self.__sorted[i].Value})
+			table.insert(results, { key = self.__sorted[i].Key, value = self.__sorted[i].Value })
 			i = i + 1
 		end
 	else
@@ -475,7 +530,7 @@ function MockOrderedDataStore:GetSortedAsync(ascending, pageSize, minValue, maxV
 			i = i - 1
 		end
 		while i > 0 and self.__sorted[i].Value >= minValue do
-			table.insert(results, {key = self.__sorted[i].Key, value = self.__sorted[i].Value})
+			table.insert(results, { key = self.__sorted[i].Key, value = self.__sorted[i].Value })
 			i = i - 1
 		end
 	end
@@ -485,25 +540,21 @@ function MockOrderedDataStore:GetSortedAsync(ascending, pageSize, minValue, maxV
 	Utils.logMethod(self, "GetSortedAsync")
 
 	return setmetatable({
-		__datastore = self;
-		__currentPage = 1;
-		__pageSize = pageSize;
-		__results = results;
-		IsFinished = (#results <= pageSize);
+		__datastore = self,
+		__currentPage = 1,
+		__pageSize = pageSize,
+		__results = results,
+		IsFinished = (#results <= pageSize),
 	}, MockDataStorePages)
 end
 
-function MockOrderedDataStore:ExportToJSON()
-	return HttpService:JSONEncode(self.__data)
-end
+function MockOrderedDataStore:ExportToJSON() return HttpService:JSONEncode(self.__data) end
 
 function MockOrderedDataStore:ImportFromJSON(json, verbose)
 	local content
 	if type(json) == "string" then
 		local parsed, value = pcall(function() return HttpService:JSONDecode(json) end)
-		if not parsed then
-			error("bad argument #1 to 'ImportFromJSON' (string is not valid json)", 2)
-		end
+		if not parsed then error("bad argument #1 to 'ImportFromJSON' (string is not valid json)", 2) end
 		content = value
 	elseif type(json) == "table" then
 		content = json -- No need to deepcopy, OrderedDataStore only contains numbers which are passed by value

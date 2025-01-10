@@ -18,24 +18,22 @@ function MockDataStorePages:GetCurrentPage()
 	local minimumIndex = math.max(1, (self.__currentPage - 1) * self.__pageSize + 1)
 	local maximumIndex = math.min(self.__currentPage * self.__pageSize, #self.__results)
 	for i = minimumIndex, maximumIndex do
-		table.insert(retValue, {key = self.__results[i].key, value = self.__results[i].value})
+		table.insert(retValue, { key = self.__results[i].key, value = self.__results[i].value })
 	end
 
 	return retValue
 end
 
 function MockDataStorePages:AdvanceToNextPageAsync()
-	if self.IsFinished then
-		error("AdvanceToNextPageAsync rejected with error (no pages to advance to)", 2)
-	end
+	if self.IsFinished then error("AdvanceToNextPageAsync rejected with error (no pages to advance to)", 2) end
 
-	Utils.simulateErrorCheck("AdvanceToNextPageAsync")
+	Utils.simulateErrorCheck "AdvanceToNextPageAsync"
 
 	local success = MockDataStoreManager.YieldForBudget(
 		function()
-			warn("AdvanceToNextPageAsync request was throttled due to lack of budget. Try sending fewer requests.")
+			warn "AdvanceToNextPageAsync request was throttled due to lack of budget. Try sending fewer requests."
 		end,
-		{Enum.DataStoreRequestType.GetAsync}
+		{ Enum.DataStoreRequestType.GetAsync }
 	)
 
 	if not success then
@@ -44,13 +42,10 @@ function MockDataStorePages:AdvanceToNextPageAsync()
 
 	Utils.simulateYield()
 
-	if #self.__results > self.__currentPage * self.__pageSize then
-		self.__currentPage = self.__currentPage + 1
-	end
+	if #self.__results > self.__currentPage * self.__pageSize then self.__currentPage = self.__currentPage + 1 end
 	self.IsFinished = #self.__results <= self.__currentPage * self.__pageSize
 
 	Utils.logMethod(self.__datastore, "AdvanceToNextPageAsync")
-
 end
 
 return MockDataStorePages

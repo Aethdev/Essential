@@ -4,28 +4,24 @@ local TableAssist = {}
 TableAssist.prototype = {}
 TableAssist.__index = TableAssist.prototype
 
-local _rawlen = rawlen or function(tab: {[any]: any}): number	
-	local count: number = 0
-	for i, v in ipairs(tab) do
-		count += 1
+local _rawlen = rawlen
+	or function(tab: { [any]: any }): number
+		local count: number = 0
+		for i, v in ipairs(tab) do
+			count += 1
+		end
+		return count
 	end
-	return count
-end
 
-local _isTableAListOf = function(tab: {[any]: any}, valueType: string): boolean
+local _isTableAListOf = function(tab: { [any]: any }, valueType: string): boolean
 	local isValid = true
-	
+
 	for i, v in pairs(tab) do
-		
 	end
 end
 
-function TableAssist.prototype:at(): number
-	return _rawlen(self.linkedTable)
-end
+function TableAssist.prototype:at(): number return _rawlen(self.linkedTable) end
 
-function TableAssist.prototype:concat(otherTableAssist): number
-	return _rawlen(self.linkedTable)
-end
+function TableAssist.prototype:concat(otherTableAssist): number return _rawlen(self.linkedTable) end
 
 return TableAssist

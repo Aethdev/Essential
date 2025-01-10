@@ -1,11 +1,11 @@
 -- Essential changelog
 
 return {
-	lastUpdated = 1691049152;
-	updateDuration = 60*60*24*7; -- 1 week
-	updateVers = "0.6.2 pre-release 1";
+	lastUpdated = 1691049152,
+	updateDuration = 60 * 60 * 24 * 7, -- 1 week
+	updateVers = "0.6.2 pre-release 1",
 	updateInformation = {
-		"Check back later during the full release to see the full changelog of the update";
+		"Check back later during the full release to see the full changelog of the update",
 		--"<u>Utility</u>";
 		--"- Increased player cooldown for {$actionprefix}cmds to 4 seconds instead of 2 seconds";
 		--"- Hidden commands are no longer shown in the console bar";
@@ -53,11 +53,11 @@ return {
 		--"Keep in mind that these commands are only functionable/executable on shortcuts and keybinds.";
 		--"<i>Prerequisite: The client has enabled Mute on AFK via client settings</i>";
 		--"";
-		"<u>⭐ Credits & Attributions</u>";
-		"Attributions has arrived to Essential. View the contributors of Essential by opening {$selfprefix}credits";
-		"";
-		"<font size=\"15\"><b> To open client settings, hover over the E button, colored in dark blue, on the top right corner of your screen, and press Client Settings. Alternatively, you can " ..
-		"press P on your keyboard to toggle the visiblity of E. Quick actions.</b></font>";
+		"<u>⭐ Credits & Attributions</u>",
+		"Attributions has arrived to Essential. View the contributors of Essential by opening {$selfprefix}credits",
+		"",
+		'<font size="15"><b> To open client settings, hover over the E button, colored in dark blue, on the top right corner of your screen, and press Client Settings. Alternatively, you can '
+			.. "press P on your keyboard to toggle the visiblity of E. Quick actions.</b></font>",
 		-- 2022 update
 		--"<u>Datastore</u>";
 		--"- Added datastore compression to Essential. Compression has enhanced the availability to store more data thanks to ZLib.";
@@ -98,18 +98,18 @@ return {
 		--"- Opening the dm marks it on read which stops from notifying again";
 		--"- 10 minutes is the duration of the direct message before its gone after opening it";
 		--"";
-		"";
-		"";
-		"<i>Thank you for utilizing Essential. To see this changelog again, do {$selfprefix}changelog.</i>. View the attributions and credits of Essential by doing {$selfprefix}credits";
-		"";
-		"<b>Background Information</b>";
-		"Essential is <u>NOT</u> open-source nor sold for robux/third-party payments. It's a private administration system, cooperated by trzistan, enhancing";
-		"-the utility and administration for players with the use of minimal performance. Unlike Adonis and other admin systems, Essential runs in a hidden background";
-		"-and safely hides script errors to prevent compromising its script location. It's designed to run each core and dependency using their cloned version.";
-		"Therefore, none of the plugins and important modules become compromised to other scripts (scripts that aren't affiliated with Essential).";
-		"";
-		"We also value the security of our players and networks to ensure scripts are not disruptly interfering with players' connection to the main network. Players";
-		"have a wider chance of utilizing Essential freely. Each player is assigned to a random network (40 main networks). In addition, scripts have a hard time finding";
-		"a main network shared by all players and start firing malicious calls."
-	}
+		"",
+		"",
+		"<i>Thank you for utilizing Essential. To see this changelog again, do {$selfprefix}changelog.</i>. View the attributions and credits of Essential by doing {$selfprefix}credits",
+		"",
+		"<b>Background Information</b>",
+		"Essential is <u>NOT</u> open-source nor sold for robux/third-party payments. It's a private administration system, cooperated by trzistan, enhancing",
+		"-the utility and administration for players with the use of minimal performance. Unlike Adonis and other admin systems, Essential runs in a hidden background",
+		"-and safely hides script errors to prevent compromising its script location. It's designed to run each core and dependency using their cloned version.",
+		"Therefore, none of the plugins and important modules become compromised to other scripts (scripts that aren't affiliated with Essential).",
+		"",
+		"We also value the security of our players and networks to ensure scripts are not disruptly interfering with players' connection to the main network. Players",
+		"have a wider chance of utilizing Essential freely. Each player is assigned to a random network (40 main networks). In addition, scripts have a hard time finding",
+		"a main network shared by all players and start firing malicious calls.",
+	},
 }

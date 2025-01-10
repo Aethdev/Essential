@@ -9,15 +9,13 @@
 local MockDataStoreUtils = {}
 
 local Constants = require(script.Parent.MockDataStoreConstants)
-local HttpService = game:GetService("HttpService") -- for json encode/decode
-local RunService = game:GetService("RunService")
+local HttpService = game:GetService "HttpService" -- for json encode/decode
+local RunService = game:GetService "RunService"
 
 local rand = Random.new()
 
 local function shorten(s, num)
-	if #s > num then
-		return s:sub(1,num-2) .. ".."
-	end
+	if #s > num then return s:sub(1, num - 2) .. ".." end
 	return s
 end
 
@@ -42,9 +40,7 @@ end
 ]]
 
 local function logMethod(self, method, key, value, increment)
-	if not Constants.LOGGING_ENABLED or type(Constants.LOGGING_FUNCTION) ~= "function" then
-		return
-	end
+	if not Constants.LOGGING_ENABLED or type(Constants.LOGGING_FUNCTION) ~= "function" then return end
 
 	local name = self.__name
 	local scope = self.__scope
@@ -74,13 +70,12 @@ local function logMethod(self, method, key, value, increment)
 	end
 
 	Constants.LOGGING_FUNCTION(prefix .. " " .. message)
-
 end
 
 local function deepcopy(t)
 	if type(t) == "table" then
 		local n = {}
-		for i,v in pairs(t) do
+		for i, v in pairs(t) do
 			n[i] = deepcopy(v)
 		end
 		return n
@@ -90,10 +85,8 @@ local function deepcopy(t)
 end
 
 local function scanValidity(tbl, passed, path) -- Credit to Corecii (edited)
-	if type(tbl) ~= "table" then
-		return scanValidity({input = tbl}, {}, {})
-	end
-	passed, path = passed or {}, path or {"root"}
+	if type(tbl) ~= "table" then return scanValidity({ input = tbl }, {}, {}) end
+	passed, path = passed or {}, path or { "root" }
 	passed[tbl] = true
 	local tblType
 	do
@@ -123,9 +116,7 @@ local function scanValidity(tbl, passed, path) -- Credit to Corecii (edited)
 			return false, path, "dictionary has key that is invalid UTF-8"
 		end
 		if tblType == "Array" then
-			if last ~= key - 1 then
-				return false, path, "array has non-sequential indices"
-			end
+			if last ~= key - 1 then return false, path, "array has non-sequential indices" end
 			last = key
 		end
 		if type(value) == "userdata" or type(value) == "function" or type(value) == "thread" then
@@ -134,13 +125,9 @@ local function scanValidity(tbl, passed, path) -- Credit to Corecii (edited)
 			return false, path, "cannot store strings that are invalid UTF-8"
 		end
 		if type(value) == "table" then
-			if passed[value] then
-				return false, path, "cannot store cyclic tables"
-			end
+			if passed[value] then return false, path, "cannot store cyclic tables" end
 			local isValid, keyPath, reason = scanValidity(value, passed, path)
-			if not isValid then
-				return isValid, keyPath, reason
-			end
+			if not isValid then return isValid, keyPath, reason end
 		end
 		path[#path] = nil
 	end
@@ -148,49 +135,95 @@ local function scanValidity(tbl, passed, path) -- Credit to Corecii (edited)
 	return true
 end
 
-local function getStringPath(path)
-	return table.concat(path, '.')
-end
+local function getStringPath(path) return table.concat(path, ".") end
 
 -- Import into a single datastore:
 local function importPairsFromTable(origin, destination, interface, warnFunc, methodName, prefix, isOrdered)
 	for key, value in pairs(origin) do
 		if type(key) ~= "string" then
-			warnFunc(("%s: ignored %s > '%s' (key is not a string, but a %s)")
-				:format(methodName, prefix, tostring(key), typeof(key)))
+			warnFunc(
+				("%s: ignored %s > '%s' (key is not a string, but a %s)"):format(
+					methodName,
+					prefix,
+					tostring(key),
+					typeof(key)
+				)
+			)
 		elseif not utf8.len(key) then
-			warnFunc(("%s: ignored %s > '%s' (key is not valid UTF-8)")
-				:format(methodName, prefix, tostring(key)))
+			warnFunc(("%s: ignored %s > '%s' (key is not valid UTF-8)"):format(methodName, prefix, tostring(key)))
 		elseif #key > Constants.MAX_LENGTH_KEY then
-			warnFunc(("%s: ignored %s > '%s' (key exceeds %d character limit)")
-				:format(methodName, prefix, key, Constants.MAX_LENGTH_KEY))
+			warnFunc(
+				("%s: ignored %s > '%s' (key exceeds %d character limit)"):format(
+					methodName,
+					prefix,
+					key,
+					Constants.MAX_LENGTH_KEY
+				)
+			)
 		elseif type(value) == "string" and #value > Constants.MAX_LENGTH_DATA then
-			warnFunc(("%s: ignored %s > '%s' (length of value exceeds %d character limit)")
-				:format(methodName, prefix, key, Constants.MAX_LENGTH_DATA))
+			warnFunc(
+				("%s: ignored %s > '%s' (length of value exceeds %d character limit)"):format(
+					methodName,
+					prefix,
+					key,
+					Constants.MAX_LENGTH_DATA
+				)
+			)
 		elseif type(value) == "table" and #HttpService:JSONEncode(value) > Constants.MAX_LENGTH_DATA then
-			warnFunc(("%s: ignored %s > '%s' (length of encoded value exceeds %d character limit)")
-				:format(methodName, prefix, key, Constants.MAX_LENGTH_DATA))
+			warnFunc(
+				("%s: ignored %s > '%s' (length of encoded value exceeds %d character limit)"):format(
+					methodName,
+					prefix,
+					key,
+					Constants.MAX_LENGTH_DATA
+				)
+			)
 		elseif type(value) == "function" or type(value) == "userdata" or type(value) == "thread" then
-			warnFunc(("%s: ignored %s > '%s' (cannot store value '%s' of type %s)")
-				:format(methodName, prefix, key, tostring(value), type(value)))
+			warnFunc(
+				("%s: ignored %s > '%s' (cannot store value '%s' of type %s)"):format(
+					methodName,
+					prefix,
+					key,
+					tostring(value),
+					type(value)
+				)
+			)
 		elseif isOrdered and type(value) ~= "number" then
-			warnFunc(("%s: ignored %s > '%s' (cannot store value '%s' of type %s in OrderedDataStore)")
-				:format(methodName, prefix, key, tostring(value), type(value)))
+			warnFunc(
+				("%s: ignored %s > '%s' (cannot store value '%s' of type %s in OrderedDataStore)"):format(
+					methodName,
+					prefix,
+					key,
+					tostring(value),
+					type(value)
+				)
+			)
 		elseif isOrdered and value % 1 ~= 0 then
-			warnFunc(("%s: ignored %s > '%s' (cannot store non-integer value '%s' in OrderedDataStore)")
-				:format(methodName, prefix, key, tostring(value)))
+			warnFunc(
+				("%s: ignored %s > '%s' (cannot store non-integer value '%s' in OrderedDataStore)"):format(
+					methodName,
+					prefix,
+					key,
+					tostring(value)
+				)
+			)
 		elseif type(value) == "string" and not utf8.len(value) then
-			warnFunc(("%s: ignored %s > '%s' (string value is not valid UTF-8)")
-				:format(methodName, prefix, key, tostring(value), type(value)))
+			warnFunc(
+				("%s: ignored %s > '%s' (string value is not valid UTF-8)"):format(
+					methodName,
+					prefix,
+					key,
+					tostring(value),
+					type(value)
+				)
+			)
 		else
 			local isValid = true
 			local keyPath, reason
 			if type(value) == "table" then
 				isValid, keyPath, reason = scanValidity(value)
 			end
-			if isOrdered then
-				value = math.floor(value + .5)
-			end
+			if isOrdered then value = math.floor(value + 0.5) end
 			if isValid then
 				local old = destination[key]
 				destination[key] = value
@@ -200,7 +233,7 @@ local function importPairsFromTable(origin, destination, interface, warnFunc, me
 							interface.__ref[key].Value = value
 							interface.__changed = true
 						else
-							interface.__ref[key] = {Key = key, Value = interface.__data[key]}
+							interface.__ref[key] = { Key = key, Value = interface.__data[key] }
 							table.insert(interface.__sorted, interface.__ref[key])
 							interface.__changed = true
 						end
@@ -208,8 +241,15 @@ local function importPairsFromTable(origin, destination, interface, warnFunc, me
 					interface.__event:Fire(key, value)
 				end
 			else
-				warnFunc(("%s: ignored %s > '%s' (table has invalid entry at <%s>: %s)")
-					:format(methodName, prefix, key, getStringPath(keyPath), reason))
+				warnFunc(
+					("%s: ignored %s > '%s' (table has invalid entry at <%s>: %s)"):format(
+						methodName,
+						prefix,
+						key,
+						getStringPath(keyPath),
+						reason
+					)
+				)
 			end
 		end
 	end

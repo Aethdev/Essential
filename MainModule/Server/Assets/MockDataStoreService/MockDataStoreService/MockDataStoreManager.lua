@@ -10,23 +10,23 @@ local MockDataStoreManager = {}
 
 local Utils = require(script.Parent.MockDataStoreUtils)
 local Constants = require(script.Parent.MockDataStoreConstants)
-local HttpService = game:GetService("HttpService") -- for json encode/decode
-local Players = game:GetService("Players") -- for restoring budgets
-local RunService = game:GetService("RunService") -- for checking if running context is on server
+local HttpService = game:GetService "HttpService" -- for json encode/decode
+local Players = game:GetService "Players" -- for restoring budgets
+local RunService = game:GetService "RunService" -- for checking if running context is on server
 
 local ConstantsMapping = {
-	[Enum.DataStoreRequestType.GetAsync] = Constants.BUDGET_GETASYNC;
-	[Enum.DataStoreRequestType.GetSortedAsync] = Constants.BUDGET_GETSORTEDASYNC;
-	[Enum.DataStoreRequestType.OnUpdate] = Constants.BUDGET_ONUPDATE;
-	[Enum.DataStoreRequestType.SetIncrementAsync] = Constants.BUDGET_SETINCREMENTASYNC;
-	[Enum.DataStoreRequestType.SetIncrementSortedAsync] = Constants.BUDGET_SETINCREMENTSORTEDASYNC;
+	[Enum.DataStoreRequestType.GetAsync] = Constants.BUDGET_GETASYNC,
+	[Enum.DataStoreRequestType.GetSortedAsync] = Constants.BUDGET_GETSORTEDASYNC,
+	[Enum.DataStoreRequestType.OnUpdate] = Constants.BUDGET_ONUPDATE,
+	[Enum.DataStoreRequestType.SetIncrementAsync] = Constants.BUDGET_SETINCREMENTASYNC,
+	[Enum.DataStoreRequestType.SetIncrementSortedAsync] = Constants.BUDGET_SETINCREMENTSORTEDASYNC,
 }
 
 -- Bookkeeping of all data:
 local Data = {
-	GlobalDataStore = {};
-	DataStore = {};
-	OrderedDataStore = {};
+	GlobalDataStore = {},
+	DataStore = {},
+	OrderedDataStore = {},
 }
 
 -- Bookkeeping of all active GlobalDataStore/OrderedDataStore interfaces indexed by data table:
@@ -36,57 +36,40 @@ local Interfaces = {}
 local Budgets = {}
 
 local budgetRequestQueues = {
-	[Enum.DataStoreRequestType.GetAsync] = {};
-	[Enum.DataStoreRequestType.GetSortedAsync] = {};
-	[Enum.DataStoreRequestType.OnUpdate] = {};
-	[Enum.DataStoreRequestType.SetIncrementAsync] = {};
-	[Enum.DataStoreRequestType.SetIncrementSortedAsync] = {};
+	[Enum.DataStoreRequestType.GetAsync] = {},
+	[Enum.DataStoreRequestType.GetSortedAsync] = {},
+	[Enum.DataStoreRequestType.OnUpdate] = {},
+	[Enum.DataStoreRequestType.SetIncrementAsync] = {},
+	[Enum.DataStoreRequestType.SetIncrementSortedAsync] = {},
 }
 
 local function initBudget()
 	for requestType, const in pairs(ConstantsMapping) do
 		Budgets[requestType] = const.START
 	end
-	Budgets[Enum.DataStoreRequestType.UpdateAsync] = math.min(
-		Budgets[Enum.DataStoreRequestType.GetAsync],
-		Budgets[Enum.DataStoreRequestType.SetIncrementAsync]
-	)
+	Budgets[Enum.DataStoreRequestType.UpdateAsync] =
+		math.min(Budgets[Enum.DataStoreRequestType.GetAsync], Budgets[Enum.DataStoreRequestType.SetIncrementAsync])
 end
 
 local function updateBudget(req, const, dt, n)
-	if not Constants.BUDGETING_ENABLED then
-		return
-	end
+	if not Constants.BUDGETING_ENABLED then return end
 	local rate = const.RATE + n * const.RATE_PLR
-	Budgets[req] = math.min(
-		Budgets[req] + dt * rate,
-		const.MAX_FACTOR * rate
-	)
+	Budgets[req] = math.min(Budgets[req] + dt * rate, const.MAX_FACTOR * rate)
 end
 
 local function stealBudget(budget)
-	if not Constants.BUDGETING_ENABLED then
-		return
-	end
+	if not Constants.BUDGETING_ENABLED then return end
 	for _, requestType in pairs(budget) do
-		if Budgets[requestType] then
-			Budgets[requestType] = math.max(0, Budgets[requestType] - 1)
-		end
+		if Budgets[requestType] then Budgets[requestType] = math.max(0, Budgets[requestType] - 1) end
 	end
-	Budgets[Enum.DataStoreRequestType.UpdateAsync] = math.min(
-		Budgets[Enum.DataStoreRequestType.GetAsync],
-		Budgets[Enum.DataStoreRequestType.SetIncrementAsync]
-	)
+	Budgets[Enum.DataStoreRequestType.UpdateAsync] =
+		math.min(Budgets[Enum.DataStoreRequestType.GetAsync], Budgets[Enum.DataStoreRequestType.SetIncrementAsync])
 end
 
 local function checkBudget(budget)
-	if not Constants.BUDGETING_ENABLED then
-		return true
-	end
+	if not Constants.BUDGETING_ENABLED then return true end
 	for _, requestType in pairs(budget) do
-		if Budgets[requestType] and Budgets[requestType] < 1 then
-			return false
-		end
+		if Budgets[requestType] and Budgets[requestType] < 1 then return false end
 	end
 	return true
 end
@@ -126,7 +109,10 @@ if RunService:IsServer() then
 					local lock = request.Lock
 					local cache = request.Cache
 
-					if not (lock and (lock[key] or tick() - (cache[key] or 0) < Constants.WRITE_COOLDOWN)) and checkBudget(budget) then
+					if
+						not (lock and (lock[key] or tick() - (cache[key] or 0) < Constants.WRITE_COOLDOWN))
+						and checkBudget(budget)
+					then
 						table.remove(budgetRequestQueue, i)
 						stealBudget(budget)
 						coroutine.resume(thread)
@@ -138,33 +124,22 @@ if RunService:IsServer() then
 
 	game:BindToClose(function()
 		for requestType, const in pairs(ConstantsMapping) do
-			Budgets[requestType] = math.max(
-				Budgets[requestType],
-				Constants.BUDGET_ONCLOSE_BASE * (const.RATE / Constants.BUDGET_BASE)
-			)
+			Budgets[requestType] =
+				math.max(Budgets[requestType], Constants.BUDGET_ONCLOSE_BASE * (const.RATE / Constants.BUDGET_BASE))
 		end
-		Budgets[Enum.DataStoreRequestType.UpdateAsync] = math.min(
-			Budgets[Enum.DataStoreRequestType.GetAsync],
-			Budgets[Enum.DataStoreRequestType.SetIncrementAsync]
-		)
+		Budgets[Enum.DataStoreRequestType.UpdateAsync] =
+			math.min(Budgets[Enum.DataStoreRequestType.GetAsync], Budgets[Enum.DataStoreRequestType.SetIncrementAsync])
 	end)
-
 end
 
-function MockDataStoreManager.GetGlobalData()
-	return Data.GlobalDataStore
-end
+function MockDataStoreManager.GetGlobalData() return Data.GlobalDataStore end
 
 function MockDataStoreManager.GetData(name, scope)
 	assert(type(name) == "string")
 	assert(type(scope) == "string")
 
-	if not Data.DataStore[name] then
-		Data.DataStore[name] = {}
-	end
-	if not Data.DataStore[name][scope] then
-		Data.DataStore[name][scope] = {}
-	end
+	if not Data.DataStore[name] then Data.DataStore[name] = {} end
+	if not Data.DataStore[name][scope] then Data.DataStore[name][scope] = {} end
 
 	return Data.DataStore[name][scope]
 end
@@ -173,19 +148,13 @@ function MockDataStoreManager.GetOrderedData(name, scope)
 	assert(type(name) == "string")
 	assert(type(scope) == "string")
 
-	if not Data.OrderedDataStore[name] then
-		Data.OrderedDataStore[name] = {}
-	end
-	if not Data.OrderedDataStore[name][scope] then
-		Data.OrderedDataStore[name][scope] = {}
-	end
+	if not Data.OrderedDataStore[name] then Data.OrderedDataStore[name] = {} end
+	if not Data.OrderedDataStore[name][scope] then Data.OrderedDataStore[name][scope] = {} end
 
 	return Data.OrderedDataStore[name][scope]
 end
 
-function MockDataStoreManager.GetDataInterface(data)
-	return Interfaces[data]
-end
+function MockDataStoreManager.GetDataInterface(data) return Interfaces[data] end
 
 function MockDataStoreManager.SetDataInterface(data, interface)
 	assert(type(data) == "table")
@@ -211,22 +180,14 @@ function MockDataStoreManager.SetBudget(requestType, budget)
 		Budgets[Enum.DataStoreRequestType.GetAsync] = budget
 	end
 
-	if Budgets[requestType] then
-		Budgets[requestType] = budget
-	end
+	if Budgets[requestType] then Budgets[requestType] = budget end
 end
 
-function MockDataStoreManager.ResetBudget()
-	initBudget()
-end
+function MockDataStoreManager.ResetBudget() initBudget() end
 
-function MockDataStoreManager.FreezeBudgetUpdates()
-	isFrozen = true
-end
+function MockDataStoreManager.FreezeBudgetUpdates() isFrozen = true end
 
-function MockDataStoreManager.ThawBudgetUpdates()
-	isFrozen = false
-end
+function MockDataStoreManager.ThawBudgetUpdates() isFrozen = false end
 
 function MockDataStoreManager.YieldForWriteLockAndBudget(callback, key, writeLock, writeCache, budget)
 	assert(type(callback) == "function")
@@ -244,11 +205,11 @@ function MockDataStoreManager.YieldForWriteLockAndBudget(callback, key, writeLoc
 	callback() -- would i.e. trigger a warning in output
 
 	table.insert(budgetRequestQueues[mainRequestType], 1, {
-		Key = key;
-		Lock = writeLock;
-		Cache = writeCache;
-		Thread = coroutine.running();
-		Budget = budget;
+		Key = key,
+		Lock = writeLock,
+		Cache = writeCache,
+		Thread = coroutine.running(),
+		Budget = budget,
 	})
 	coroutine.yield()
 
@@ -269,9 +230,9 @@ function MockDataStoreManager.YieldForBudget(callback, budget)
 		callback() -- would i.e. trigger a warning in output
 
 		table.insert(budgetRequestQueues[mainRequestType], 1, {
-			After = 0; -- no write lock
-			Thread = coroutine.running();
-			Budget = budget;
+			After = 0, -- no write lock
+			Thread = coroutine.running(),
+			Budget = budget,
 		})
 		coroutine.yield()
 	end
@@ -295,38 +256,73 @@ end
 local function importDataStoresFromTable(origin, destination, warnFunc, methodName, prefix, isOrdered)
 	for name, scopes in pairs(origin) do
 		if type(name) ~= "string" then
-			warnFunc(("%s: ignored %s > %q (name is not a string, but a %s)")
-				:format(methodName, prefix, tostring(name), typeof(name)))
+			warnFunc(
+				("%s: ignored %s > %q (name is not a string, but a %s)"):format(
+					methodName,
+					prefix,
+					tostring(name),
+					typeof(name)
+				)
+			)
 		elseif type(scopes) ~= "table" then
-			warnFunc(("%s: ignored %s > %q (scope list is not a table, but a %s)")
-				:format(methodName, prefix, name, typeof(scopes)))
+			warnFunc(
+				("%s: ignored %s > %q (scope list is not a table, but a %s)"):format(
+					methodName,
+					prefix,
+					name,
+					typeof(scopes)
+				)
+			)
 		elseif #name == 0 then
-			warnFunc(("%s: ignored %s > %q (name is an empty string)")
-				:format(methodName, prefix, name))
+			warnFunc(("%s: ignored %s > %q (name is an empty string)"):format(methodName, prefix, name))
 		elseif #name > Constants.MAX_LENGTH_NAME then
-			warnFunc(("%s: ignored %s > %q (name exceeds %d character limit)")
-				:format(methodName, prefix, name, Constants.MAX_LENGTH_NAME))
+			warnFunc(
+				("%s: ignored %s > %q (name exceeds %d character limit)"):format(
+					methodName,
+					prefix,
+					name,
+					Constants.MAX_LENGTH_NAME
+				)
+			)
 		else
 			for scope, data in pairs(scopes) do
 				if type(scope) ~= "string" then
-					warnFunc(("%s: ignored %s > %q > %q (scope is not a string, but a %s)")
-						:format(methodName, prefix, name, tostring(scope), typeof(scope)))
+					warnFunc(
+						("%s: ignored %s > %q > %q (scope is not a string, but a %s)"):format(
+							methodName,
+							prefix,
+							name,
+							tostring(scope),
+							typeof(scope)
+						)
+					)
 				elseif type(data) ~= "table" then
-					warnFunc(("%s: ignored %s > %q > %q (data list is not a table, but a %s)")
-						:format(methodName, prefix, name, scope, typeof(data)))
+					warnFunc(
+						("%s: ignored %s > %q > %q (data list is not a table, but a %s)"):format(
+							methodName,
+							prefix,
+							name,
+							scope,
+							typeof(data)
+						)
+					)
 				elseif #scope == 0 then
-					warnFunc(("%s: ignored %s > %q > %q (scope is an empty string)")
-						:format(methodName, prefix, name, scope))
+					warnFunc(
+						("%s: ignored %s > %q > %q (scope is an empty string)"):format(methodName, prefix, name, scope)
+					)
 				elseif #scope > Constants.MAX_LENGTH_SCOPE then
-					warnFunc(("%s: ignored %s > %q > %q (scope exceeds %d character limit)")
-						:format(methodName, prefix, name, scope, Constants.MAX_LENGTH_SCOPE))
+					warnFunc(
+						("%s: ignored %s > %q > %q (scope exceeds %d character limit)"):format(
+							methodName,
+							prefix,
+							name,
+							scope,
+							Constants.MAX_LENGTH_SCOPE
+						)
+					)
 				else
-					if not destination[name] then
-						destination[name] = {}
-					end
-					if not destination[name][scope] then
-						destination[name][scope] = {}
-					end
+					if not destination[name] then destination[name] = {} end
+					if not destination[name][scope] then destination[name][scope] = {} end
 					Utils.importPairsFromTable(
 						data,
 						destination[name][scope],
@@ -363,14 +359,7 @@ function MockDataStoreManager.ImportFromJSON(content, verbose)
 		)
 	end
 	if type(content.DataStore) == "table" then
-		importDataStoresFromTable(
-			content.DataStore,
-			Data.DataStore,
-			warnFunc,
-			"ImportFromJSON",
-			"DataStore",
-			false
-		)
+		importDataStoresFromTable(content.DataStore, Data.DataStore, warnFunc, "ImportFromJSON", "DataStore", false)
 	end
 	if type(content.OrderedDataStore) == "table" then
 		importDataStoresFromTable(
@@ -385,7 +374,7 @@ function MockDataStoreManager.ImportFromJSON(content, verbose)
 end
 
 local function clearTable(t)
-	for i,_ in pairs(t) do
+	for i, _ in pairs(t) do
 		t[i] = nil
 	end
 end
@@ -400,9 +389,9 @@ function MockDataStoreManager.ResetData()
 		interface.__writeCache = {}
 		interface.__writeLock = {}
 		if interface.__sorted then
-			interface.__sorted = {};
-            interface.__ref = {};
-            interface.__changed = false;
+			interface.__sorted = {}
+			interface.__ref = {}
+			interface.__changed = false
 		end
 	end
 

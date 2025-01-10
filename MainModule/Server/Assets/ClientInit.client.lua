@@ -1,10 +1,10 @@
 local parent = script.Parent
-local fromLoading = rawequal(parent, game:GetService("ReplicatedFirst")) or false
-local fromGui = (parent and parent:IsA"ScreenGui") or nil
+local fromLoading = rawequal(parent, game:GetService "ReplicatedFirst") or false
+local fromGui = (parent and parent:IsA "ScreenGui") or nil
 local script = script
-local folder = script:FindFirstChildOfClass"Folder" or nil
+local folder = script:FindFirstChildOfClass "Folder" or nil
 
-local testService = game:GetService("TestService")
+local testService = game:GetService "TestService"
 local testError = testService.Error
 --local error = function(...) testError(testService, ...) end
 local type = type
@@ -22,22 +22,22 @@ if folder then
 	folder = folder:Clone()
 	task.defer(oldFolder.Destroy, oldFolder)
 	if not folder then
-		error("Folder failed to clone")
+		error "Folder failed to clone"
 		return
 	end
 end
 
-local players = game:GetService("Players")
+local players = game:GetService "Players"
 local player = players.LocalPlayer
 local plrKick = player.Kick
 
 if fromLoading then
 	script:Destroy()
 elseif not (fromLoading or fromGui) then
-	error("ESSC: Init failed to detect the location")
-	return;
+	error "ESSC: Init failed to detect the location"
+	return
 elseif fromGui then
-	wait(.5)
+	wait(0.5)
 	script:Destroy()
 end
 
@@ -48,35 +48,43 @@ end
 
 do
 	if not folder then
-		error("ESSC: Init failed to find directory")
-		return;
+		error "ESSC: Init failed to find directory"
+		return
 	end
-	
-	local runner = folder:FindFirstChild"Runner" or folder:FindFirstChild"Client"
-	
-	if not (runner or (runner and runner:IsA"ModuleScript")) then
-		error("ESSC: Missing runner")
+
+	local runner = folder:FindFirstChild "Runner" or folder:FindFirstChild "Client"
+
+	if not (runner or (runner and runner:IsA "ModuleScript")) then
+		error "ESSC: Missing runner"
 	else
-		local suc,ret = pcall(require, runner)
+		local suc, ret = pcall(require, runner)
 		local retType = type(ret)
-		
+
 		if not suc or retType ~= "userdata" then
-			error("ESSC Runner encountered an error: ("..retType..") "..tostring(ret))
+			error("ESSC Runner encountered an error: (" .. retType .. ") " .. tostring(ret))
 		else
-			local trace = ''
-			local errMsg = ''
-			local ran,ret = xpcall(ret, function(failMsg)
+			local trace = ""
+			local errMsg = ""
+			local ran, ret = xpcall(ret, function(failMsg)
 				trace = debug.traceback(nil, 2)
 				errMsg = failMsg
 			end, {
-				VerifyId = (fromGui and getAttribute(script, "VerifyId")) or nil;
-			} )
-			
+				VerifyId = (fromGui and getAttribute(script, "VerifyId")) or nil,
+			})
+
 			if not ran then
 				--pcall(plrKick or function() end, player, "ESSCL encountered an error: "..tostring(ret).."\n"..trace)
 				--wait(.2)
 				--while true do spawn(function() warn(math.random()) end) end
-				error("Essential client encountered an error: "..tostring(ret).."\n"..tostring(errMsg).."\n"..tostring(trace), 0)
+				error(
+					"Essential client encountered an error: "
+						.. tostring(ret)
+						.. "\n"
+						.. tostring(errMsg)
+						.. "\n"
+						.. tostring(trace),
+					0
+				)
 			end
 		end
 	end

@@ -3,7 +3,7 @@
 local Init = {}
 local table = table
 
-setfenv(1, setmetatable({}, {__metatable = "The metatable is locked"}))
+setfenv(1, setmetatable({}, { __metatable = "The metatable is locked" }))
 
 function Init:Create(oneVariable: any)
 	if table.isfrozen(Init) then return end
