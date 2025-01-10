@@ -1,0 +1,88 @@
+name: In General Bug Report2
+description:
+title: "[Bug]: "
+labels: ["bug", "triage"]
+projects: []
+assignees:
+  - @Alphron/Maintenance
+body:
+  - type: dropdown
+    id: location-of-the-bug
+    attributes:
+      label: Bug Location
+      description: Where is this bug occuring?
+      options:
+        - Commands
+        - User Interface
+        - External system (_G)
+        - Internal system (Core modules)
+        - Other
+      default: 2
+    validations:
+      required: true
+
+
+  - type: input
+    id: frequency
+    attributes:
+      label: Frequency of the bug occurrence
+      description: How frequently does this bug reproduce?
+      placeholder: ex. every few minutes during gameplay / occassionally
+    validations:
+      required: true
+      
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
+      value: "A bug happened!"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduct
+    attributes:
+      label: How did you reproduce the bug?
+      description: Tell us in a procedure of how you reproduced the bug. (1. I did this, 2. - I also did this, so and so on..)
+      placeholder: |
+          1. ...
+          2. ..
+          3. ..
+      value: |
+          1. ...
+          2. ..
+          3. ..
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: version
+    attributes:
+      label: Version
+      description: What version of Essential are you using? This is located inside your command panel.
+      options:
+        - 0.8.0 (Latest)
+        - 0.7.X
+        - 0.6.X
+      default: 0
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: client-or-server
+    attributes:
+      label: In addition to the bug, is this bug reproducible in the server side or client side?
+      multiple: false
+      options:
+        - Server
+        - Client
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com). 
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
