@@ -1,10 +1,10 @@
 name: In General Bug Report2
-description:
+description: Bug Report
 title: "[Bug]: "
 labels: ["bug", "triage"]
 projects: []
 assignees:
-  - @Alphron/Maintenance
+  - @Alphron/Maintainers
 body:
   - type: dropdown
     id: location-of-the-bug
