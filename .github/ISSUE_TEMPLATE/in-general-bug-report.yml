@@ -4,7 +4,7 @@ title: "[Bug]: "
 labels: ["bug", "triage"]
 projects: []
 assignees:
-  - @Alphron/Maintainers
+  - TheLegendarySpark
 body:
   - type: dropdown
     id: location-of-the-bug
