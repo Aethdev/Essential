@@ -63,7 +63,9 @@ body:
       multiple: false
       options:
         - Server-side (Happens in the server and has no effect on my OWN device)
-        - Client (Happens in your OWN device while playing the game)
+        - Client (Happens in your OWN device while playing the game)\
+    validations:
+      required: true
 
   - type: textarea
     id: steps-to-reproduct
