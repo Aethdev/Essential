@@ -44,7 +44,7 @@ TODO
 
 ## Open Source Projects Used
 Essential used several FOSS projects to create the fundamental system of administration
-- [Epix Corporation/Adonis] - List UI and Window UI (used in the early versions of Essential)
+- [Epix Corporation/Adonis](https://github.com/Epix-Incorporated/Adonis) - List UI and Window UI (used in the early versions of Essential)
 - [eryn/Promise](https://github.com/evaera/roblox-lua-promise) - Asynchronous task management
 - [howmanysmall/Janitor](https://github.com/howmanysmall/Janitor) - Cleaning up objects after use
 - [Rerumu/LuaON](https://github.com/Rerumu/LuaON) - Parsing lua tables with Color3, Vector3, etc..
