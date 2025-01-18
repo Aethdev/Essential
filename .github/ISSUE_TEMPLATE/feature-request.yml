@@ -1,0 +1,40 @@
+name: Feature Request
+description: What would you like to add?
+title: "[Feature]: "
+labels: ["feature"]
+projects: []
+body:
+  - type: dropdown
+    id: client-or-server
+    attributes:
+      label: In addition to the feature, where should we add the feature?
+      multiple: false
+      options:
+        - Server-side (Happens in the server and has no effect on my OWN device)
+        - Client (Happens in your OWN device while playing the game)
+        - Both
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What is your feature about? What does it do? 
+      description: Give a brief summary about your feature.
+      placeholder: |
+          This feature is about...
+      value: |
+          This feature is about...
+    validations:
+      required: true
+      
+  - type: textarea
+    id: additional-information
+    attributes:
+      label: Do you have any additional information you would like to add onto this feature?
+      description: |
+        You may provide visual presentation by uploading links (not shortened links), images, and videos where you may have gotten inspired or not for inspiration. You could discuss about the context and explain the benefits of this feature.
+      placeholder: Tell us what you see!
+      value: "Additionally it's about [this] and how [other this] helps with ..."
+    validations:
+      required: true
