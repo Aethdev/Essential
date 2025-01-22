@@ -1,3 +1,4 @@
+--!nocheck
 local utility = {}
 local server, service, variables
 local hashLib
@@ -450,7 +451,7 @@ function utility:checkRate(
 			-- Check cache
 			local nowOs = tick()
 			local rateCache = cacheLib[rateKey]
-			local throttleCache
+			
 			if not rateCache then
 				rateCache = {
 					Rate = 0,
@@ -476,7 +477,7 @@ function utility:checkRate(
 
 			local didThrottle = canThrottle and rateCache.Throttle + 1 <= throttleMax
 			local throttleResetOs = rateCache.ThrottleReset
-			local canResetThrottle = throttleResetOs and nowOs - throttleResetOs <= 0
+			local canResetThrottle = throttleResetOs and nowOs - throttleResetOs <= throttleReset
 
 			rateCache.Rate += 1
 
@@ -620,7 +621,7 @@ function utility:checkRateInPlayerData(
 			LastThrottled: number?,
 		} | nil =
 			playerDataRateLimits[hashedRateLimitId]
-		local throttleCache
+		
 		if not rateCache then
 			rateCache = {
 				Rate = 0,
@@ -651,7 +652,7 @@ function utility:checkRateInPlayerData(
 
 		local didThrottle = canThrottle and rateCache.Throttle + 1 <= throttleMax
 		local throttleResetOs = rateCache.ThrottleReset
-		local canResetThrottle = throttleResetOs and nowOs - throttleResetOs <= 0
+		local canResetThrottle = throttleResetOs and nowOs - throttleResetOs <= throttleReset
 
 		rateCache.Rate += 1
 
@@ -1799,8 +1800,7 @@ utility.teleportCompressConfig = {
 
 function utility:encryptDataForTeleport(userId: number, data: {}, dataName: string?): {}
 	dataName = dataName or "data"
-
-	local hashLib = server.HashLib
+	
 	local base64 = server.Base64
 	local luaParser = server.LuaParser
 	local tulirAES = server.TulirAES
@@ -1817,14 +1817,13 @@ end
 
 function utility:decryptDataForTeleport(userId: number, encryptedData: string, dataName: string?): {}
 	dataName = dataName or "data"
-
-	local hashLib = server.HashLib
+	
 	local base64 = server.Base64
 	local luaParser = server.LuaParser
 	local tulirAES = server.TulirAES
 	local compression = server.Compression
 
-	local encryptKey = tostring(userId) .. "_TeleportData-" .. dataName
+	local encryptKey = tostring(userId) .. "_TeleportData-" ..  dataName
 	local decryptValue1 = base64.decode(encryptedData)
 	local decompressedValue = compression.Deflate.Decompress(decryptValue1, self.teleportCompressConfig)
 	local decryptValue2 = tulirAES.decrypt(encryptKey, decompressedValue)

@@ -1,3 +1,4 @@
+--!nocheck
 local utility, sounds = {}, {}
 local Promise
 
@@ -126,6 +127,10 @@ function utility:checkRate(
 			local throttleReset = rateLimit.ThrottleReset
 			local throttleMax = math.floor(math.abs(rateData.ThrottleMax or 1))
 
+			-- DEBUG SETTINGS
+			local debugLogRates = rateLimit.DebugLogRates
+			local debugMaxLogs = 100
+
 			-- Ensure minimum requirement is followed
 			maxRate = (maxRate > 1 and maxRate) or 1
 			-- Max rate must have at least one rate else anything below 1 returns false for all rate checks
@@ -142,7 +147,7 @@ function utility:checkRate(
 			-- Check cache
 			local nowOs = tick()
 			local rateCache = cacheLib[rateKey]
-			local throttleCache
+			
 			if not rateCache then
 				rateCache = {
 					Rate = 0,
@@ -168,9 +173,27 @@ function utility:checkRate(
 
 			local didThrottle = canThrottle and rateCache.Throttle + 1 <= throttleMax
 			local throttleResetOs = rateCache.ThrottleReset
-			local canResetThrottle = throttleResetOs and nowOs - throttleResetOs <= 0
+			local canResetThrottle = throttleResetOs and nowOs - throttleResetOs <= throttleReset
 
 			rateCache.Rate += 1
+
+			-- DEBUG
+			if ratePass and debugLogRates then
+				local rateDebugLogs = rateLimit.DebugRateLogs
+
+				if not rateDebugLogs then
+					rateDebugLogs = {}
+					rateLimit.DebugRateLogs = rateDebugLogs
+				end
+
+				if #rateDebugLogs + 1 > debugMaxLogs and debugMaxLogs > 1 then
+					repeat
+						table.remove(rateDebugLogs, 1)
+					until #rateDebugLogs <= debugMaxLogs
+				end
+
+				table.insert(rateDebugLogs, rateCache.Rate)
+			end
 
 			-- Check can throttle and whether throttle could be reset
 			if canThrottle and canResetThrottle then rateCache.Throttle = 0 end
@@ -207,6 +230,7 @@ function utility:checkRate(
 
 			rateLimit.deferWaitLevel -= 1
 		end)
+
 		coroutine.yield()
 		return unpack(stuff)
 	else
