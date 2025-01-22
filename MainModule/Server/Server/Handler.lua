@@ -1,4 +1,4 @@
---!nolint DeprecatedGlobal
+--!nocheck
 --[[
 
 		ESSENTIAL INITIALIZER
@@ -149,19 +149,14 @@ return {
 			initLoader.Order = initOrder
 			loadingOrders[initOrder] = loadOrder
 
-			table.sort(
-				loadingOrders,
-				function(a, b) return table.find(loadingOrders, a) < table.find(loadingOrders, b) end
-			)
-
 			if not table.find(loadOrder, initLoader.Runner) then table.insert(loadOrder, initLoader) end
 		end
 
 		for ind, orderList in ipairs(loadingOrders) do
 			-- local loadOrderStartLoad = tick()
-			--warn("Loading loading order "..tostring(ind))
+			-- warn("Loading loading order "..tostring(ind))
 			for d, func in ipairs(orderList) do
-				local initFuncStart = tick()
+				-- local initFuncStart = tick()
 				--warn("> Running init "..tostring(func.Name), d)
 				--warn(service.nonThreadTask(func.Runner))
 				if not func.RunAfterInit then func.Runner() end
@@ -269,7 +264,7 @@ return {
 		self.RunAfterDeps = nil
 	end,
 
-	LoadClientPlugins = function(self)
+	LoadClientInit = function(self)
 		local isStudio = server.Studio
 		local clientFolder = server.ClientFolder
 
@@ -288,50 +283,7 @@ return {
 			end
 		end
 
-		if not isStudio then
-			for i, plug in pairs(clientFolder.Plugins:GetChildren()) do
-				if plug:IsA "Folder" or plug:IsA "ModuleScript" then plug.Name = service.getRandom() end
-			end
-		end
-	end,
-
-	RunPlugins = function(self)
-		local clientFolder = server.ClientFolder
-
-		--warn("Loading plugins..")
-		-- Run plugins
-		for i, obj in pairs(loadData.serverPlugins) do
-			local function scan(plug)
-				local plugEnabled = plug:GetAttribute "Enabled"
-				local plugDisabled = (plugEnabled ~= nil and plugEnabled == false) or plug:GetAttribute "Disabled"
-				local noEnvironment = plug:GetAttribute "NoEnvironment" or plug:GetAttribute "NoEnv"
-
-				if not plugDisabled then
-					server.Events.pluginAdded:fire(plug)
-					local retPlug = loadModule(plug, { script = plug }, true, (noEnvironment and true))
-					local moduleName = plug:GetAttribute "PluginName" or string.match(plug.Name, "[^%s]+")
-					--warn("Loaded plugin "..moduleName)
-
-					if retPlug and moduleName then
-						server.Events.pluginInitialized:fire(moduleName, retPlug, plug)
-						server["_" .. moduleName] = retPlug
-					end
-				end
-			end
-
-			if obj:IsA "Folder" or obj:IsA "Model" then
-				local doIgnore = obj:GetAttribute "Ignore"
-
-				if doIgnore then continue end
-
-				for d, otherObj in pairs(obj:GetChildren()) do
-					if otherObj:IsA "ModuleScript" then scan(otherObj) end
-				end
-			elseif obj:IsA "ModuleScript" then
-				scan(obj)
-			end
-		end
-
+		
 		for i, element in pairs(loadData.uiElements) do
 			local cloneElement = element:Clone()
 
@@ -363,22 +315,61 @@ return {
 			for i, uiItem in pairs(uiTheme:GetChildren()) do
 				local cloneItem = uiItem:Clone()
 
+				warn(`Detected ui item {uiTheme.Name}.{uiItem.Name}`)
 				if
 					cloneItem
-					and (cloneItem:IsA "ScreenGui" or cloneItem:IsA "GuiObject" or cloneItem:IsA "ModuleScript")
+					and (uiItem:IsA "ScreenGui" or uiItem:IsA "GuiObject" or uiItem:IsA "ModuleScript")
 				then
-					local anotherItem = clientFolder.UI.Library:FindFirstChild(cloneItem.Name)
+					warn(`did pass`)
+					local anotherItem = clientFolder.UI.Library:FindFirstChild(uiItem.Name)
 
 					if anotherItem then
 						warn(
 							"UI "
-								.. cloneItem.Name
+								.. uiItem.Name
 								.. " already exists from the UI library folder. Try renaming it to something else."
 						)
 					else
 						cloneItem.Parent = themeFromFolder
+						warn(`Cloned ui item {uiTheme.Name}.{uiItem.Name}: {cloneItem:GetFullName()}`)
 					end
 				end
+			end
+		end
+	end,
+
+	RunPlugins = function(self)
+		--warn("Loading plugins..")
+		-- Run plugins
+		for i, obj in pairs(loadData.serverPlugins) do
+			local function scan(plug)
+				local plugEnabled = plug:GetAttribute "Enabled"
+				local plugDisabled = (plugEnabled ~= nil and plugEnabled == false) or plug:GetAttribute "Disabled"
+				local noEnvironment = plug:GetAttribute "NoEnvironment" or plug:GetAttribute "NoEnv"
+
+				if not plugDisabled then
+					server.Events.pluginAdded:fire(plug)
+					local retPlug = loadModule(plug, { script = plug }, true, (noEnvironment and true))
+					local moduleName = plug:GetAttribute "PluginName" or string.match(plug.Name, "[^%s]+")
+					--warn("Loaded plugin "..moduleName)
+
+					if retPlug and moduleName then
+						server.Events.pluginInitialized:fire(moduleName, retPlug, plug)
+						server["_" .. moduleName] = retPlug
+					end
+				end
+			end
+
+			if obj:IsA "Folder" or obj:IsA "Model" then
+				local doIgnore = obj:GetAttribute "Ignore"
+
+				if doIgnore then continue end
+
+				for d, otherObj in pairs(obj:GetChildren()) do
+					if otherObj:IsA "ModuleScript" then scan(otherObj) end
+				end
+			elseif obj:IsA "ModuleScript" then
+				scan(obj)
 			end
 		end
 	end,
@@ -532,7 +523,7 @@ return {
 			Order = 2,
 			Runner = function()
 				-- Create the remote networks
-				service.trackTask("RemoteNetworkCreation", false, server.Core.createRemote)
+				server.Core.createRemote()
 			end,
 		},
 		{
@@ -576,9 +567,9 @@ return {
 				-- Load in the players and create the playerAdded & playerRemoved events
 				for i, plr in pairs(service.getPlayers()) do
 					local suc, ers = service.trackTask("_LOADING_EXISTINGCLIENT-" .. plr.UserId, true, function()
-						if onStudio then warn(`Loading player {plr.Name} ({plr.UserId}`) end
+						-- if onStudio then warn(`Loading player {plr.Name} ({plr.UserId}`) end
 						server.Process.playerAdded(plr)
-						if onStudio then warn(`Loaded player {plr.Name} ({plr.UserId}`) end
+						-- if onStudio then warn(`Loaded player {plr.Name} ({plr.UserId}`) end
 					end)
 
 					if not suc then
