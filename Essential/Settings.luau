@@ -327,6 +327,7 @@ settings.Permissions = {
 settings.DefaultRolePermissions = {
 	-- List of Permissions here. Refer to "Roles Accessibility & Management" section above.
 	-- Here's an example..
+	Use_Utility = true;
 }
 
 -- MUSIC SETTINGS --
@@ -358,7 +359,7 @@ settings.PServer_CommandsBlacklist = {} -- List of commands disabled in private 
 settings.PServer_GearBlacklist = {} -- List of gears banned in private servers
 
 -- WHITELIST SETTINGS --
-settings.Whitelist_Enabled = true -- Whitelist enabled?
+settings.Whitelist_Enabled = false -- Whitelist enabled?
 settings.WhiteList_Players = {}	-- List of members whitelisted to join a whitelist server. Players with permission "Manage_Game" or "Manage_Server" are also whitelisted.
 
 -- ACTION MESSAGES --
