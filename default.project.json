@@ -6,13 +6,8 @@
     "ServerStorage": {
       "$className": "ServerStorage",
 
-      "Essential": {
+      "RojoEssential": {
         "$className": "Folder",
-        "$properties": {
-          "Attributes": {
-            "Rojo": {"Bool": true}
-          }
-        },
         "MainModule": {
           "$path": "MainModule/"
         }
@@ -25,9 +20,15 @@
         "LoadStringEnabled": true
       },
 
-      "Essential": {
+      "RojoEssential": {
         "$className": "Folder",
-        "$path": "Essential/"
+        "$path": "Essential/",
+        
+        "$properties": {
+          "Attributes": {
+            "Rojo": {"Bool": true}
+          }
+        }
       }
     }
   }
