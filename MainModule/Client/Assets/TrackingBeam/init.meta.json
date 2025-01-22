@@ -1,0 +1,24 @@
+{
+    "className": "Beam",
+    "properties": {
+        "Color": {
+            "ColorSequence": {
+                "keypoints": [
+                    {
+                        "time": 0.0,
+                        "color": [0.74902, 0.160784, 1]
+                    },
+                    {
+                        "time": 1.0,
+                        "color": [0.74902, 0.160784, 1]
+                    }
+                ]
+            }
+        },
+        "LightInfluence": 1,
+        "Texture": "rbxassetid://8089221405",
+        "TextureLength": 20,
+        "TextureSpeed": 2,
+        "FaceCamera": true
+    }
+}
