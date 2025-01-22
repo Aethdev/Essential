@@ -1,3 +1,4 @@
+--!nocheck
 --=======================================================================
 --
 --	ESSENTIAL ADMIN
@@ -99,7 +100,6 @@ local sharedFolder = module:FindFirstChild "Shared" or Instance.new "Folder"
 local promiseModule = require(sharedFolder.Util.PromiseHelper)
 
 local realWait = wait
-local realTypeof = typeof
 local realRawset = rawset
 local realPrint = print
 local realWarn = warn
@@ -656,7 +656,7 @@ return service.newProxy {
 		initPackage:RunAfterDeps()
 		initPackage:RunAfterCores()
 
-		if not initDisablePlugins then initPackage:LoadClientPlugins() end
+		initPackage:LoadClientInit(loaderData.disablePlugins)
 
 		initPackage:LoadInits()
 
