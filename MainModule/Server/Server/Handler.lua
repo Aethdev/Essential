@@ -264,20 +264,22 @@ return {
 		self.RunAfterDeps = nil
 	end,
 
-	LoadClientInit = function(self)
+	LoadClientInit = function(self, disablePlugins: boolean?)
 		local isStudio = server.Studio
 		local clientFolder = server.ClientFolder
 
-		for i, plug in pairs(loadData.clientPlugins) do
-			local clonePlug = plug
+		if not disablePlugins then
+			for i, plug in pairs(loadData.clientPlugins) do
+				local clonePlug = plug
 
-			if clonePlug then
-				clonePlug.Name = if isStudio then plug.Name else service.getRandom()
-				clonePlug.Parent = clientFolder.Plugins
+				if clonePlug then
+					clonePlug.Name = if isStudio then plug.Name else service.getRandom()
+					clonePlug.Parent = clientFolder.Plugins
 
-				if not isStudio and (clonePlug:IsA "Folder" or clonePlug:IsA "Model") then
-					for d, subPlug in pairs(clonePlug:GetChildren()) do
-						subPlug.Name = service.getRandom()
+					if not isStudio and (clonePlug:IsA "Folder" or clonePlug:IsA "Model") then
+						for d, subPlug in pairs(clonePlug:GetChildren()) do
+							subPlug.Name = service.getRandom()
+						end
 					end
 				end
 			end
