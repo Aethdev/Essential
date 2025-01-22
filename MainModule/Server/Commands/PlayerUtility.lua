@@ -634,14 +634,14 @@ return function(envArgs)
 					required = true,
 				},
 			},
-			Permissions = { "Use_Utility" },
+			Permissions = { "Use_Utility", "HandTo_Utility" },
 			Roles = {},
 
 			Description = "Gives current item to the target.",
 			PlayerCooldown = 5,
 
 			Function = function(plr, args)
-				local hasOverridePerm = Roles:hasPermissionFromMember(plr, { "HandTo_Utility" })
+				local hasOverridePerm = Moderation.checkAdmin(plr)
 				local target = args[1][1]
 
 				if not hasOverridePerm and (target:getVar "HandToPrompt" or plr:getVar "HandToPrompt") then
@@ -662,7 +662,6 @@ return function(envArgs)
 				-- Proximity check
 				if not hasOverridePerm then
 					local targetChar = target.Character
-					local playerChar = plr.Character
 
 					local targetTorso = targetChar
 						and (targetChar:FindFirstChild "Torso" or targetChar:FindFirstChild "HumanoidRootPart")
@@ -744,8 +743,10 @@ return function(envArgs)
 						local requestTime = 30
 						local openedNotif = target:customGetData(requestTime + 2, "MakeUI", "Notification", {
 							title = "HandTo request",
-							desc = "From " .. target.DisplayName .. " (@" .. plr.Name .. ")",
+							desc = "From " .. plr.DisplayName .. " (@" .. plr.Name .. ")",
+							actionText = "Review confirmation",
 							time = requestTime,
+							returnStateOnInteraction = true
 						})
 
 						if openedNotif then
