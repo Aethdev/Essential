@@ -1,3 +1,4 @@
+--!nocheck
 return function(envArgs)
 	local server = envArgs.server
 	local service = envArgs.service
@@ -493,7 +494,7 @@ return function(envArgs)
 					end
 				end,
 			})
-
+			
 			Core.remoteNetwork1 = remoteNetwork1
 			Core.remoteNetwork2 = remoteNetwork2
 			Core.remoteTrustChecker = trustChecker

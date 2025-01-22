@@ -316,13 +316,11 @@ return {
 
 			for i, uiItem in pairs(uiTheme:GetChildren()) do
 				local cloneItem = uiItem:Clone()
-
-				warn(`Detected ui item {uiTheme.Name}.{uiItem.Name}`)
+			
 				if
 					cloneItem
 					and (uiItem:IsA "ScreenGui" or uiItem:IsA "GuiObject" or uiItem:IsA "ModuleScript")
 				then
-					warn(`did pass`)
 					local anotherItem = clientFolder.UI.Library:FindFirstChild(uiItem.Name)
 
 					if anotherItem then
@@ -333,7 +331,6 @@ return {
 						)
 					else
 						cloneItem.Parent = themeFromFolder
-						warn(`Cloned ui item {uiTheme.Name}.{uiItem.Name}: {cloneItem:GetFullName()}`)
 					end
 				end
 			end

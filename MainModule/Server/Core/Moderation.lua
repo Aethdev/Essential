@@ -1,3 +1,4 @@
+--!nocheck
 return function(envArgs)
 	local server = envArgs.server
 	local service = envArgs.service
@@ -1868,7 +1869,7 @@ return function(envArgs)
 
 		checkAdmin = function(check)
 			check = (typeof(check) == "Instance" and check:IsA "Player" and check.UserId)
-				or (getmetatable(check) == "EP-" .. check.UserId and check.UserId)
+				or (type(check) == "userdata" and getmetatable(check) == "EP-" .. check.UserId and check.UserId)
 				or check
 
 			local checkType = type(check)
@@ -1889,6 +1890,8 @@ return function(envArgs)
 
 				return result
 			end
+
+			return nil
 		end,
 
 		hasPermissions = function(check, perms) return server.Roles:hasPermissionFromMember(check, perms) end,
