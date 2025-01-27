@@ -31,5 +31,5 @@ If the bug is major (critically important), join [Aeth Dev's discord server](htt
 - Affects the overall gameplay of the player or game
 - Syntax error (often if one of the loader scripts fails to follow the syntax of LuaU)
 
-**If your bug DOES NOT satisfy one of the requirements in the minor or major category, it is not CONSIDERED a bug and DO NOT attempt to report that.**
-**If you're not sure whether your situation has a bug, always reach out us at [Aeth Development's discord server](https://discord.gg/BZFw65wgtR).**
+**If your bug DOES NOT satisfy one of the requirements in the minor or major category, it is NOT considered a bug and DO NOT attempt to report that.**
+**If you're not sure whether your situation has a bug, reach out to us at [Aeth Development's discord server](https://discord.gg/BZFw65wgtR).**
