@@ -18,41 +18,42 @@ return function(envArgs)
 
 	local cmdPrefix = "debug-"
 	local cmdsList = {
-		viewRunningNetworks = {
-			Disabled = true,
-			Prefix = settings.actionPrefix,
-			Aliases = { cmdPrefix .. "networks" },
-			Arguments = {},
-			Permissions = {},
-			Roles = { "developer" },
-			PlayerCooldown = 1,
-			NoPermissionsBypass = true,
+		-- This was used for testing purposes
+		-- viewRunningNetworks = {
+		-- 	Disabled = true,
+		-- 	Prefix = settings.actionPrefix,
+		-- 	Aliases = { cmdPrefix .. "networks" },
+		-- 	Arguments = {},
+		-- 	Permissions = {},
+		-- 	Roles = { "developer" },
+		-- 	PlayerCooldown = 1,
+		-- 	NoPermissionsBypass = true,
 
-			Description = "Gives boombox to specific players",
+		-- 	Description = "Gives boombox to specific players",
 
-			Function = function(plr, args)
-				local tabResults = {}
-				local fireNetworks = Core.remoteNetwork1
-				local invokeNetworks = Core.remoteNetwork2
+		-- 	Function = function(plr, args)
+		-- 		local tabResults = {}
+		-- 		local fireNetworks = Core.remoteNetwork1
+		-- 		local invokeNetworks = Core.remoteNetwork2
 
-				table.insert(tabResults, "Players: ---------")
-				for i, target in pairs(service.getPlayers(true)) do
-					local cliData = target:getClientData()
+		-- 		table.insert(tabResults, "Players: ---------")
+		-- 		for i, target in pairs(service.getPlayers(true)) do
+		-- 			local cliData = target:getClientData()
 
-					if cliData then
-						if not cliData.trustChecked then
-							table.insert(tabResults, tostring(target) .. ": *waiting to trust check*")
-						else
-						end
-					end
-				end
+		-- 			if cliData then
+		-- 				if not cliData.trustChecked then
+		-- 					table.insert(tabResults, tostring(target) .. ": *waiting to trust check*")
+		-- 				else
+		-- 				end
+		-- 			end
+		-- 		end
 
-				plr:makeUI("ADONIS_LIST", {
-					Title = "E. Network system",
-					Table = tabResults,
-				})
-			end,
-		},
+		-- 		plr:makeUI("ADONIS_LIST", {
+		-- 			Title = "E. Network system",
+		-- 			Table = tabResults,
+		-- 		})
+		-- 	end,
+		-- },
 	}
 
 	for cmdName, cmdTab in pairs(cmdsList) do
