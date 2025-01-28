@@ -1,3 +1,4 @@
+--!nocheck
 local filter = {}
 filter.cache = {}
 
