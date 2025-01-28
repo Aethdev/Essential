@@ -457,12 +457,12 @@ function utility:setupConsole()
 		end
 
 		--service.ContextActionService:BindActionAtPriority("ConsoleHotkey-"..service.getRandom(), makeConsole, false, 50, unpack(consoleKeybinds))
-		local consoleKeybind = utility.Keybinds:register(`System.LegacyConsole`, {
-			keys = { Enum.KeyCode.LeftBracket },
+		local consoleKeybind = utility.Keybinds:register(`System.Console`, {
+			keys = consoleKeybinds,
 			--holdDuration = 1;
-			description = `Toggles the visiblity of FortuneX Window`,
+			description = `Toggles the visiblity of the legacy Console bar`,
 			locked = false,
-			saveId = "SKLC", --// SK ackronym for System Keybind
+			saveId = "SKC", --// SK ackronym for System Keybind
 		})
 
 		consoleKeybind._event:connect(function(event: "Triggered" | "OnHold" | "RateLimited" | "Canceled")
@@ -518,6 +518,8 @@ do
 		for i, keybindData: { _name: string } in self.registeredKeybinds do
 			if keybindData._name == bindName then return keybindData end
 		end
+
+		return nil
 	end
 
 	function utility.Keybinds:deregister(bindName: string)
