@@ -38,16 +38,7 @@ return function(envArgs)
 	local defaultPlayerData
 	local endToEndEncryption = settings.endToEndEncryption or settings.remoteClientToServerEncryption
 	local maxActivityLogs = settings.playerData_MaxActivityLogs
-
-	local function checkRemoteSignature(str: string): boolean
-		-- Signature byte is determined by hex decimals and decimals
-		-- Convert decimal/byte to hex decimal to get the hex code
-
-		if string.sub(str, 1, 10) ~= "\28EssRemote" then return false end
-		if string.byte(string.sub(str, 11, 11)) ~= 0x1E then return false end
-		return true
-	end
-
+	
 	local remoteEncryptCompressionConfig = {
 		level = 1,
 		strategy = "dynamic",
