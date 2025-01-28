@@ -1709,12 +1709,6 @@ return function(envArgs)
 						List = warnings,
 						AutoUpdateListData = "Remote",
 					})
-
-					--plr:makeUI("ADONIS_LIST", {
-					--	Title = "E. Warnings from "..targetName;
-					--	Table = list;
-					--	RichText = true;
-					--})
 				end
 			end,
 		},
