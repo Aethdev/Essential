@@ -22,7 +22,7 @@ If the bug is minor, create a [bug report](https://github.com/Aethdev/Essential/
 
 ### What is considerd a minor bug? Must follow all.
 - Produces an error in occassional reproduction (must be the same error message and start with `_: Essential :_`)
-- Does not affect the overall gameplay of the player or game
+- Does not affect or slightly affects the overall gameplay of the player or game
 
 If the bug is major (critically important), join [Aeth Dev's discord server](https://discord.gg/BZFw65wgtR) IMMEDIATELY and file a ticket under Major Bug report category.
 
