@@ -18,7 +18,7 @@ Essential Admin is an administration system inspired from Basic Admin Essentials
 
 ## Installation
 
-Essential only has one installation method currently. Roblox Marketplace will come soon hopefully in Spring 2025.
+Essential currently has two installation methods: Rojo, Github Releases. Roblox Marketplace will come soon hopefully in Spring 2025.
 
 ### Rojo (intermediate knowledge)
 
@@ -35,6 +35,9 @@ rojo serve
 
 For Rojo installation and additional information, refer to https://rojo.space/docs/v7/help/
 
+### Github Releases (MOST RECOMMENDED)
+
+Once a month, Aethdev releases a new version of Essential in the [Github releases](https://github.com/Aethdev/Essential/releases). Major breaking changes or bugs may push the update to release earlier than a month.
 
 ## Contribution
 
@@ -44,7 +47,9 @@ TODO
 
 ## Open Source Projects Used
 Essential used several FOSS projects to create the fundamental system of administration
-- [Epix Corporation/Adonis](https://github.com/Epix-Incorporated/Adonis) - List UI and Window UI (used in the early versions of Essential)
+- [Epix Corporation/Adonis](https://github.com/Epix-Incorporated/Adonis) - List UI and Window UI (used in the early versions of Essential) + System-like module setup
+- [Commander by 7kayoh](https://devforum.roblox.com/t/commander-open-sourced-admin-panel/503290) - Simplicity of User interface inspo
+- [SimpleAdmin by crywink](https://devforum.roblox.com/t/simpleadmin-a-modern-administration-utility-for-your-game/660937) - Role permissions and User interface inspo
 - [eryn/Promise](https://github.com/evaera/roblox-lua-promise) - Asynchronous task management
 - [howmanysmall/Janitor](https://github.com/howmanysmall/Janitor) - Cleaning up objects after use
 - [Rerumu/LuaON](https://github.com/Rerumu/LuaON) - Parsing lua tables with Color3, Vector3, etc..
@@ -57,7 +62,7 @@ Essential used several FOSS projects to create the fundamental system of adminis
 - [Rerumu/FiOne](https://github.com/Rerumu/FiOne) - Creating/loading bytecode of lua code
 - [Yueliang by Kein-Hong Man](http://yueliang.luaforge.net/)
 - [1ForeverHD/TopbarPlus](https://github.com/1ForeverHD/TopbarPlus) - Used to make topbar icons
-- 
+
 ## License
 
 Mozilla Public License, Version 2.0
