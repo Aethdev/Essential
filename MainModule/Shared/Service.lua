@@ -1886,7 +1886,12 @@ return function(specificTab, errHandler, Promise)
 				end
 			end,
 
-			roundNumber = function(number, increment) return math.floor(number / increment + 0.5) * increment end,
+			roundNumber = function(number, increment, numOfDecimalDigits)
+				numOfDecimalDigits = numOfDecimalDigits or 5
+				local rounded = math.floor(number / increment + 0.5) * increment
+				return tonumber(string.format("%."..numOfDecimalDigits.."f", rounded))
+			end,
+
 
 			-- Adonis's encrypt function (@Sceleratis)
 			--// Modifier: trzistan
