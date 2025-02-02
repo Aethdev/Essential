@@ -1,3 +1,4 @@
+--!nocheck
 return function(envArgs)
 	local server = envArgs.server
 	local service = envArgs.service
@@ -3078,100 +3079,49 @@ return function(envArgs)
 							end
 
 							if foundServer then
-								local timeData = server.Parser:getTime(foundServer.started)
-								local formatTime =
-									server.Parser:formatTime(timeData.hours, timeData.mins, timeData.secs)
-
 								local serverId = (foundServer.private and foundServer.privateId) or foundServer.id
+								plr:makeUI("List", {
+									Title = `Server Management - {serverId}`,
+									MainSize = Vector2.new(500, 150),
+									MinimumSize = Vector2.new(350, 250),
+									List = {
+										{
+											type = "Label",
+											label = `Created on \{\{t:{foundServer.started}\}\}`,
+											specialMarkdownSupported = true,
+										},
+										{
+											type = "Label",
+											label = `Server Type: <b>{tostring(
+												foundServer.type
+											)}</b>`,
+											richText = true,
+											selectable = true,
+										},
+										{
+											type = "Label",
+											label = `Id: <b>{tostring(
+												(foundServer.private and foundServer.privateId)
+														or tostring(foundServer.id)
+											)}</b>`,
+											richText = true,
+											selectable = true,
+										},
+										{
+											type = "Action",
+											label = ``,
 
-								plr:makeUI("ADONIS_WINDOW", {
-									Name = "SM Session",
-									Title = "Server Management - " .. serverId,
-									Size = { 500, 150 },
-									MinSize = { 350, 250 },
-									Content = {
-										{
-											Class = "TextLabel",
-											Size = UDim2.new(1, -10, 0, 30),
-											Position = UDim2.new(0, 5, 0, 30 * 1),
-											BackgroundTransparency = 1,
-											TextXAlignment = "Left",
-											Text = " Started:",
-											Children = {
+											options = {
 												{
-													Class = "TextBox",
-													Size = UDim2.new(0, 300, 1, -4),
-													Position = UDim2.new(1, -302, 0, 2),
-													BackgroundTransparency = 0.4,
-													BackgroundColor3 = Color3.fromRGB(77, 77, 77),
-													TextColor3 = Color3.fromRGB(222, 222, 222),
-													Text = Parser:osDate(foundServer.started),
-													TextEditable = false,
-													ClearTextOnFocus = false,
+													label = "Shutdown",
+													labelColor = Color3.fromRGB(196, 58, 58),
+													onExecute = `sessionevent://main:{manageGSSession.id}-{shutdownServerEvent.id}||{server.LuaParser.Encode {
+														serverId
+													}}`,
 												},
 											},
 										},
-										{
-											Class = "TextLabel",
-											Size = UDim2.new(1, -10, 0, 30),
-											Position = UDim2.new(0, 5, 0, 30 * 2),
-											BackgroundTransparency = 1,
-											TextXAlignment = "Left",
-											Text = " Server Type:",
-											Children = {
-												{
-													Class = "TextBox",
-													Size = UDim2.new(0, 300, 1, -4),
-													Position = UDim2.new(1, -302, 0, 2),
-													BackgroundTransparency = 0.4,
-													BackgroundColor3 = Color3.fromRGB(77, 77, 77),
-													TextColor3 = Color3.fromRGB(222, 222, 222),
-													Text = tostring(foundServer.type),
-													TextEditable = false,
-													ClearTextOnFocus = false,
-												},
-											},
-										},
-										{
-											Class = "TextLabel",
-											Size = UDim2.new(1, -10, 0, 30),
-											Position = UDim2.new(0, 5, 0, 30 * 3),
-											BackgroundTransparency = 1,
-											TextXAlignment = "Left",
-											Text = " Id:",
-											Children = {
-												{
-													Class = "TextBox",
-													Size = UDim2.new(0, 300, 1, -4),
-													Position = UDim2.new(1, -302, 0, 2),
-													BackgroundTransparency = 0.4,
-													BackgroundColor3 = Color3.fromRGB(77, 77, 77),
-													TextColor3 = Color3.fromRGB(222, 222, 222),
-													Text = (foundServer.private and foundServer.privateId)
-														or tostring(foundServer.id),
-													TextEditable = false,
-													ClearTextOnFocus = false,
-												},
-											},
-										},
-										not foundServer.studio
-												and {
-													Class = "TextButton",
-													Size = UDim2.new(1, -10, 0, 30),
-													Position = UDim2.new(0, 5, 0, 30 * 4),
-													BackgroundTransparency = 0.4,
-													BackgroundColor3 = Color3.fromRGB(77, 77, 77),
-													TextColor3 = (foundServer.studio and Color3.fromRGB(162, 162, 162))
-														or Color3.fromRGB(222, 222, 222),
-													TextXAlignment = "Center",
-													Text = "Shutdown",
-													OnClick = Core.bytecode([[
-													client.Network:fire("ManageSession", "]] .. manageGSSession.id .. [[", "FireEvent", "]] .. shutdownServerEvent.id .. [[", "]] .. serverId .. [[")
-												]]),
-												}
-											or nil,
 									},
-									Ready = true,
 								})
 							end
 						end
@@ -3195,50 +3145,39 @@ return function(envArgs)
 						) or variables.serverInfo.id == serverId
 
 						table.insert(tabList, {
-							Class = "TextLabel",
-							Size = UDim2.new(1, -10, 0, 30),
-							Position = UDim2.new(0, 5, 0, 30 * #tabList),
-							BackgroundTransparency = 1,
-							TextXAlignment = "Left",
-							Text = (isCurrentServer and "🔸 ")
-								or ""
-									.. "["
-									.. formatTime
-									.. "] "
-									.. (serverInfo.studio and "[studio server]" or serverId),
-							TextColor3 = if isCurrentServer then Color3.fromRGB(255, 141, 26) else nil,
-							ToolTip = if isCurrentServer then "You are currently in this server" else nil,
-							Children = {
+							type = "Action",
+							label = (isCurrentServer and "🔸 ")
+							or ""
+								.. "["
+								.. formatTime
+								.. "] "
+								.. (serverInfo.studio and "[studio server]" or serverId),
+
+							optionsLayoutStyle = "Log",
+							options = {
 								{
-									Class = "TextButton",
-									Size = UDim2.new(0, 80, 1, -4),
-									Position = UDim2.new(1, -82, 0, 2),
-									Text = "View",
-									OnClick = Core.bytecode([[
-											client.Network:fire("ManageSession", "]] .. manageGSSession.id .. [[", "FireEvent", "]] .. viewServerEvent.id .. [[", "]] .. serverId .. [[")
-										]]),
+									label = "View",
+									onExecute = `sessionevent://main:{manageGSSession.id}-{viewServerEvent.id}||{server.LuaParser.Encode {
+										serverId
+									}}`,
 								},
 								{
-									Class = "TextButton",
-									Size = UDim2.new(0, 80, 1, -4),
-									Position = UDim2.new(1, -164, 0, 2),
-									Text = "Shutdown",
-									OnClick = Core.bytecode([[
-											client.Network:fire("ManageSession", "]] .. manageGSSession.id .. [[", "FireEvent", "]] .. shutdownServerEvent.id .. [[", "]] .. serverId .. [[")
-										]]),
+									label = "Shutdown",
+									labelColor = Color3.fromRGB(196, 58, 58),
+									onExecute = `sessionevent://main:{manageGSSession.id}-{shutdownServerEvent.id}||{server.LuaParser.Encode {
+										serverId
+									}}`,
 								},
 							},
 						})
 					end
 				end
 
-				plr:makeUI("ADONIS_WINDOW", {
-					Name = "Game servers",
-					Title = "Game servers",
-					Size = { 500, 400 },
-					MinSize = { 350, 210 },
-					Content = tabList,
-					Ready = true,
+				plr:makeUI("List", {
+					Title = `Game Servers`,
+					MainSize = Vector2.new(500, 400),
+					MinimumSize = Vector2.new(350, 210),
+					List = tabList
 				})
 			end,
 		},
