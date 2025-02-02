@@ -1,3 +1,4 @@
+--!nocheck
 local policyManager = {}
 policyManager._playerPolicies = {}
 
@@ -112,7 +113,7 @@ function policyManager:_updateDynamicClientPolicies(
 	inheritedPolicies: { [string]: string | boolean | { [any]: any } }?
 )
 	inheritedPolicies = inheritedPolicies or self:_getClientPolicies(player)
-
+	
 	policyManager:setPoliciesForPlayer(player, {
 		{
 			"MINIMIZED_TOPBARICONS",
