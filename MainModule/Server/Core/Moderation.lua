@@ -1800,7 +1800,14 @@ return function(envArgs)
 			--end
 		end,
 
-		warnPlayer = function(player: ParsedPlayer, warnOptions: { [any]: any })
+		warnPlayer = function(
+			player: ParsedPlayer,
+			warnOptions: { 
+				reason: string,
+				category: string,
+				moderator: {name: string, userId: number}
+			}
+		)
 			local pData = player:getPData()
 
 			local moderatorData = warnOptions.moderator or {}
