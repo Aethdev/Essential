@@ -1572,6 +1572,7 @@ return function(envArgs, data)
 			buttonTopbarIcon:setLabel(buttonName)
 			buttonTopbarIcon.selected:Connect(function()
 				buttonTopbarIcon:deselect()
+				if client.Policies._clientPolicies.SHORTCUTS_ALLOWED.value ~= true then return end
 				Network:fire("RunCommandButton", buttonName)
 			end)
 			if client.shortcutsIcon and not shortcutTopbarIcons[buttonName] then
@@ -1709,9 +1710,12 @@ return function(envArgs, data)
 			createActionButton.label.Text = #buttonActionObjs .. " shortcut(s) created"
 			sortButtonInteractions()
 
+			warn('did show shortcut?')
 			if client.shortcutsIcon and not client.shortcutsIcon.enabled then
+				warn("fr?")
 				client.shortcutsIcon:deselect()
 				if client.Policies._clientPolicies.SHORTCUTS_ALLOWED.value == true then
+					warn("so did?")
 					client.shortcutsIcon:setEnabled(true)
 				end
 			end
@@ -1794,7 +1798,8 @@ return function(envArgs, data)
 								plainText = "Button " .. buttonName .. " has successfully been created.",
 								expireOs = osTime() + 8,
 							})
-							if windowGuiData.active then createButtonInteraction(buttonName, buttonCommandLine) end
+							warn(pcall(function() createButtonInteraction(buttonName, buttonCommandLine) end))
+							-- if windowGuiData.active then warn(pcall(function() createButtonInteraction(buttonName, buttonCommandLine) end)) end
 						end
 					end
 					managingButton = false
