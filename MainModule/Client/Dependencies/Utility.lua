@@ -466,7 +466,7 @@ function utility:setupConsole()
 		})
 
 		consoleKeybind._event:connect(function(event: "Triggered" | "OnHold" | "RateLimited" | "Canceled")
-			if event == `Triggered` then makeConsole() end
+			if event == `Triggered` then task.delay(0.4, makeConsole) end
 		end)
 	end
 
@@ -1015,10 +1015,11 @@ utility.Notifications = {}
 function utility.Notifications:setup()
 	local TopbarIcon = client.UI
 		.makeElement("TopbarIcon")
+		:setEnabled(false)
 		:modifyTheme(client.TopbarIconTheme.Base)
+		-- :joinMenu(client.quickAction)
 		:setImage("rbxassetid://83961147818491")
 		:setCaption(`Notifications`)
-		:align(`Right`)
 		:setOrder(300)
 		:oneClick()
 
@@ -1041,11 +1042,13 @@ function utility.Notifications:clear(notificationId: string)
 	local notif = notifHandler:findNotificationById(notificationId)
 
 	if notif then notifHandler:remove(notif) end
+	return self
 end
 
 function utility.Notifications:clearAll()
 	local notifHandler = variables.notifV2Container or client.UI.construct(`Handlers.Notifications`)
 	notifHandler:clear()
+	return self
 end
 
 -- Selection system (get players by mouse)
@@ -1057,7 +1060,6 @@ utility.Tracking = {
 	maxPlayersToTrack = 20,
 }
 
---TODO: Create a list window for managing tracking
 
 function utility.Tracking:trackPlayer(player: Player)
 	if self._players[player.UserId] then
