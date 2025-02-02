@@ -132,7 +132,7 @@ if loadData.RojoEnabled then
 
 	warn(`_EssentialL_ Now using Rojo version`)
 	ServerScriptService:SetAttribute("RojoEssential", true)
-	task.wait(10)
+	task.wait(1)
 else
 	-- Check if there are Rojo Essential models enabled before running
 	for i, object in modelParent:GetChildren() do
