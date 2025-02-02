@@ -14,7 +14,7 @@ policies._policyChangeEvents = {}
 local client, service
 local Signal
 
-local function trimString(str: string): string | nil return string.match(str, "^%s*(.-)%s*$") end
+local function trimString(str: string) if not str then return "" end; return string.match(str, "^%s*(.-)%s*$") end
 
 --[[
 	DEFAULT CLIENT POLICIES
@@ -35,7 +35,7 @@ function policies:setup()
 			policyValue: string | number | boolean | { [number]: any } | nil,
 			policyType: string
 		)
-			if policyName == "_BULK_" then
+			if policyName == "_BULK_" and type(policyValue) == "table" then
 				for policyName, policyInfo: { type: string, value: string | number | boolean | { [number]: any } } in
 					policyValue
 				do
@@ -62,6 +62,7 @@ function policies:setup()
 
 	local currentlySetPolicies: { [string]: { type: string, value: string | number | boolean | { [number]: any } } } =
 		policySession:runCommand("GetPolicies", true)
+		
 	for policyName, policyInfo: { type: string, value: string | number | boolean | { [number]: any } } in
 		currentlySetPolicies
 	do
