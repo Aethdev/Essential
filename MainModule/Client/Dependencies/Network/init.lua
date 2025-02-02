@@ -515,7 +515,7 @@ return function(env)
 		if not rawequal(ping, "Pong") then return 400000 end
 		local callEnded = tick()
 		local pingOs = (callEnded - callStarted) / 2
-		local ms = service.roundNumber(pingOs * 1000, 0.001)
+		local ms = service.roundNumber(pingOs * 1000, 0.01)
 		return ms
 	end
 
