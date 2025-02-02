@@ -1,3 +1,4 @@
+--!nocheck
 local _G, game, script, getfenv, setfenv, workspace, getmetatable, setmetatable, loadstring, coroutine, rawequal, typeof, print, math, warn, error, pcall, xpcall, select, rawset, rawget, ipairs, pairs, next, Rect, Axes, os, tick, Faces, unpack, string, Color3, newproxy, tostring, tonumber, Instance, TweenInfo, BrickColor, NumberRange, ColorSequence, NumberSequence, ColorSequenceKeypoint, NumberSequenceKeypoint, PhysicalProperties, Region3int16, Vector3int16, elapsedTime, require, table, type, wait, Enum, UDim, UDim2, Vector2, Vector3, Region3, CFrame, Ray, spawn =
 	_G,
 	game,
@@ -96,7 +97,7 @@ local wait = task.wait -- require(sharedFolder.CustomWait:Clone())
 local corotWrap = coroutine.wrap
 local warn = function(...) warn("_: ESSC :_", ...) end
 local print = function(...) print("_: ESSC :_", ...) end
-local message = function(...) game:GetService("TestService"):Message("_: ESSC :_ " .. table.concat({ ... }, " ")) end
+local message = function(...) game:GetService("TestService"):Message("_: ESSC :_ " .. table.concat({ ... }, " ")); return nil end
 local pCall = function(func, ...)
 	local rets = { pcall(func, ...) }
 	if not rets[1] then
@@ -911,5 +912,6 @@ return service.newProxy {
 				.. `Welcome {player.Name}! Essential founded by @trzistan in 2021.`
 				.. `\n------`
 		)
+		return nil
 	end,
 }
