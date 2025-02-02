@@ -580,7 +580,7 @@ return service.newProxy {
 
 			private = (#game.PrivateServerId > 0 and true),
 			studio = (server.Studio and true),
-			started = tick(),
+			started = os.time(),
 		}
 
 		serverInfo.detailedName = if server.Studio
