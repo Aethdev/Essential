@@ -4,6 +4,7 @@ return function(envArgs)
 
 	local client = envArgs.client
 	local service = envArgs.service
+
 	local variables = envArgs.variables
 	local loadModule = envArgs.loadModule
 	local getEnv = envArgs.getEnv
@@ -18,6 +19,10 @@ return function(envArgs)
 
 	local clientSettings = client.Settings or {}
 	client.Settings = clientSettings
+
+	if service.TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+		return
+	end
 
 	local curMuteState = false
 	local function toggleMuteOnAFK(bool: boolean, override: boolean?, reason: string?)
