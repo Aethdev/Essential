@@ -869,6 +869,29 @@ function parser:convertExecutionUrlToFunction(executionUrl: string, customArbitr
 			PreferredNetwork:fire("ManageSession", sessionId, "RunCommand", commandId, ...)
 		end
 	end
+	
+	if endpoint == "remotecommand" then
+		local PreferredNetwork
+		local networkId, remoteCommandName, luaParserEncodedArray = string.match(url, "(%w+):(%w+)||(.+)")
+
+		if luaParserEncodedArray then luaParserEncodedArray = client.LuaParser.Decode(luaParserEncodedArray) end
+
+		if not (networkId and luaParserEncodedArray) then return end
+
+		if networkId == "main" or networkId == "server" then
+			PreferredNetwork = Network
+		else
+			PreferredNetwork = Network:getSubNetwork(networkId) or Network:getSubNetwork(nil, networkId)
+		end
+
+		return function(...)
+			if not luaParserEncodedArray then return end
+			PreferredNetwork:fire(
+				remoteCommandName,
+				unpack(luaParserEncodedArray)
+			)
+		end
+	end
 
 	if endpoint == "playercommand" then
 		local commandId, commandInput = string.match(url, "(%w+)||(.*)")
