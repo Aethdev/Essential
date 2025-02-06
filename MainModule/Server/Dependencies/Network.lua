@@ -127,14 +127,28 @@ return function(envArgs)
 		mainDirectory = mainDirectory,
 		MainDirectory = mainDirectory,
 
-		newCreate = function(networkName: string, creationData: { [any]: any }): { [any]: any }
-			local creationData: { [any]: any } = creationData or {}
+		newCreate = function(networkName: string, creationData: {
+			networkFunc: () -> any,
+			invokable: boolean?,
+			serverRun: boolean,
+			parent: Instance?,
+			publicId: string?,
+			decoyName: string?,
+
+			firewallEnabled: boolean,
+			firewallType: "strict"|nil,
+			firewallCheckIndex: boolean?,
+			firewallRequireAccessKey: boolean?,
+			firewallAllowRemoteKeyForAccess: boolean?,
+
+			networkCommands: {[any]: any}?
+		}): { [any]: any }
 
 			local netFunction: any = creationData.networkFunc or creationData.run
 			local netInvokable: boolean = creationData.invokable or creationData.invoke
 			local netServer: boolean = creationData.serverRun
 			local netParent: Instance | nil = creationData.parent or creationData.directory or mainDirectory
-			local netPublicId: string = creationData.publicId
+			local netPublicId: string | nil = creationData.publicId
 			local netDecoyName: string? = creationData.decoyName or creationData.customName
 
 			--[[ Firewall types (only client-server networks)
@@ -1019,7 +1033,7 @@ return function(envArgs)
 			local netInvokable: boolean = creationData.invokable or creationData.invoke
 			local netServer: boolean = creationData.serverRun
 			local netParent: Instance | nil = creationData.parent or creationData.directory or mainDirectory
-			local netPublicId: string = creationData.publicId
+			local netPublicId: string | nil = creationData.publicId
 
 			local decoyName = decoyName or "_"
 			local networkData = Network.newCreate("DECOY_" .. tostring(decoyName), {
