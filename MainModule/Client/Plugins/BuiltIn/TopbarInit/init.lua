@@ -17,7 +17,7 @@ return function(envArgs)
 
 	local cliSettings = client.Network:get(
 		"GetSettings",
-		{ "helpEnabled", "helpIconImage", "consoleEnabled", "consoleIconImage", "hotkeys", "allowClientGlobal" }
+		{ "helpEnabled", "helpIconImage", "consoleEnabled", "consoleIconImage", "hotkeys" }
 	) or {}
 	local hotkeys = (cliSettings.hotkeys or {}).quickActions or {}
 
@@ -29,7 +29,7 @@ return function(envArgs)
 		:setTheme(topbarIconTheme.Base)
 		:setName(service.getRandom())
 		:setLabel("E")
-		:setCaption("Quick actions")
+		:setCaption("Essential Quick Menu")
 		:setOrder(5)
 		:setRight()
 		:setMenu({
@@ -163,7 +163,7 @@ return function(envArgs)
 						:setEnabled(false)
 						:modifyTheme(topbarIconTheme.Dropdown)
 						:setName(service.getRandom())
-						:setLabel(` CommandX`)
+						:setLabel(`CommandX`)
 						:oneClick(true)
 						:call(function(consoleIcon)
 							if cliSettings.consoleEnabled then
@@ -276,7 +276,7 @@ return function(envArgs)
 		--holdDuration = 1;
 		description = `Toggles the visiblity of the E Toopbar Icon`,
 		locked = false,
-		saveId = "SK", --// SK ackronym for System Keybind
+		saveId = "SKE", --// SK ackronym for System Keybind
 	})
 
 	quickActionsKeybind._event:connect(function(event: "Triggered" | "OnHold" | "RateLimited" | "Canceled")
