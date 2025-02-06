@@ -1202,8 +1202,9 @@ function utility:jailPlayer(player: Player | ParsedPlayer?): boolean
 
 	if not variables.jailedPlayers[jailIndex] then
 		local loopCheckInd = "_JAIL-" .. service.getRandom(20)
-
 		local jailEventHandler = Signal:createHandler()
+
+
 		local jailInfo = {
 			active = true,
 
@@ -1300,16 +1301,42 @@ function utility:jailPlayer(player: Player | ParsedPlayer?): boolean
 					currentItem.Parent = jailInfo.containedItemsFolder
 				end
 
-				jailInfo._playerCharacterAdded = player.CharacterAdded:Connect(function(newChar)
+				if player:FindFirstChildOfClass("Backpack") then
+					local backpackChildAdded = jailEventHandler.new()
+					backpackChildAdded:linkRbxEvent(player:FindFirstChildOfClass("Backpack").ChildAdded)
+					backpackChildAdded:connect(function(child)
+						if child:IsA "Tool" then
+							if not table.find(jailInfo.items, child) then
+								table.insert(jailInfo.items, child);
+							end
+							task.delay(0.5, function() child.Parent = jailInfo.containedItemsFolder end)
+						end
+					end)
+					
+					jailInfo.backpackChildAdded = backpackChildAdded
+				end
+
+				local function characterAdded(newChar)
 					if jailInfo._childAddedInCharacter then
 						jailInfo._childAddedInCharacter:Disconnect()
 						jailInfo._childAddedInCharacter = nil
 					end
 
 					jailInfo._childAddedInCharacter = newChar.ChildAdded:Connect(function(child)
-						if child:IsA "Tool" then service.Delete(child, 0.5) end
+						if child:IsA "Tool" then
+							if not table.find(jailInfo.items, child) then
+								table.insert(jailInfo.items, child);
+							end
+							task.delay(0.5, function() child.Parent = jailInfo.containedItemsFolder end)
+						end
 					end)
-				end)
+				end
+
+				jailInfo._playerCharacterAdded = player.CharacterAdded:Connect(characterAdded)
+
+				if mainChar then
+					task.defer(characterAdded, mainChar)
+				end
 
 				local function makeExile()
 					if jailInfo.active then
@@ -1371,9 +1398,7 @@ function utility:jailPlayer(player: Player | ParsedPlayer?): boolean
 				end
 
 				local function setupPlayerAdded(playerWhoJoined)
-					warn "player added 1"
 					if playerWhoJoined.UserId == jailInfo.suspectId then
-						warn "player added 2"
 						jailInfo.suspectActive = true
 						jailInfo.suspectJoined:fire(playerWhoJoined)
 
@@ -1388,16 +1413,15 @@ function utility:jailPlayer(player: Player | ParsedPlayer?): boolean
 						end
 
 						jailInfo.disconnectCheck = playerWhoJoined.disconnected:connectOnce(function()
-							warn "did trigger?"
 							jailInfo.suspectActive = false
 							jailInfo.suspectLeft:fire(playerWhoJoined)
 
-							warn(pcall(function()
+							pcall(function()
 								if jailInfo.active and jailInfo.exileInfo then
 									jailInfo.exileInfo.selection.Transparency = 0.9
 									jailInfo.exileBox.CanCollide = false
 								end
-							end))
+							end)
 						end)
 					end
 				end
@@ -1495,7 +1519,7 @@ function utility:unJailPlayer(player: { [any]: any }?, fakePlayer: boolean): boo
 			local failedItems = 0
 
 			Promise.each(jailInfo.items, function(item: Tool, index)
-				return Promise.promisify(function() item.Parent = backpack end):catch(function(err)
+				return Promise.promisify(function() item.Parent = backpack end)():catch(function(err)
 					failedItems += 1
 				end) --// Catch silent error
 			end)
