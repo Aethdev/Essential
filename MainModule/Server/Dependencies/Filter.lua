@@ -10,7 +10,7 @@ local cacheUpdateTime = {
 	phrase = 60,
 	message = 30,
 
-	filterAttemptTries = 3,
+	filterAttemptTries = 4,
 	filterFunctionReachTries = 1,
 }
 
@@ -27,7 +27,7 @@ local function retryFunction(maxTries: number, performer, ...)
 			performerReturnArgs = { table.unpack(performerRes) }
 			break
 		else
-			task.wait(0.1)
+			task.wait(0.5*(currentTries^2))
 		end
 	end
 
@@ -250,6 +250,10 @@ function filter:safeString(
 
 			msgFiltered = not nonChatFMsgSuccess or nonChatFilterMessage:lower() ~= newString:lower()
 			if msgFiltered and nonChatFMsgSuccess then newString = nonChatFilterMessage end
+		else
+			msgFilterCache.filtered = true
+			msgFilterCache.newString = string.rep("#", utf8.len(newString))
+			newString = msgFilterCache.newString
 		end
 	end
 
@@ -426,6 +430,10 @@ function filter:safeStringForPublic(
 
 			msgFiltered = not nonChatFMsgSuccess or nonChatFilterMessage:lower() ~= newString:lower()
 			if msgFiltered and nonChatFMsgSuccess then newString = nonChatFilterMessage end
+		else
+			msgFiltered.filtered = true
+			msgFilterCache.newString = string.rep("#", utf8.len(newString))
+			newString = msgFilterCache.newString
 		end
 	end
 
