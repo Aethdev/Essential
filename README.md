@@ -1,7 +1,7 @@
 # Essential
 ### Modern Administration Yet Finest
 
-Essential Admin is an administration system inspired from Basic Admin Essentials, Epix Corporation Adonis, & Kayoh's Commander.
+Essential Admin is an administration system inspired from Basic Admin Essentials, Epix Corporation Adonis, SimpleAdmin & Kayoh's Commander.
 
 ## Features
 
