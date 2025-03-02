@@ -13,7 +13,7 @@ settings.Datastore_Key = "[[CHANGE THIS]]" -- Datastore main key
 settings.Datastore_Scope = "[[CHANGE THIS]]" -- (Optional encrypted) Datastore default scope
 settings.Datastore_PlayerData = "[[CHANGE THIS]]" -- (datastore scope for player data) Change this to something random
 
--- MEMORY SETTINGS --
+-- MEMORY SETTINGS [COMING SOON] --
 settings.MemoryStore_Key = "EssentialMemoryStore" -- Memorystore main key
 settings.MemoryStore_PlayerData = "PlayerData" -- Memorystore scope of player data
 settings.MemoryStore_ProtectIndex = true
@@ -30,16 +30,24 @@ settings.playerData_AllowTransfer = true -- Allow players to transfer their play
 settings.playerData_MaxActivityLogs = 30 -- Maximum activity logs saved in player data
 
 -- CHAT SETTINGS --
-settings.chatAccess = true -- Allow features to run in chat like Slash commands
-settings.chatCommands = true -- (Required: ChatAccess) Allow running commands via chat
-settings.slashCommands = true -- (Required: ChatCommands) Allow running commands via chat using slash (e.g. :ff me -> /ff me)
+-- settings.chatAccess = true -- Allow features to run in chat like Slash commands
+-- settings.chatCommands = true -- (Required: ChatAccess) Allow running commands via chat
+-- settings.slashCommands = true -- (Required: ChatCommands) Allow running commands via chat using slash (e.g. :ff me -> /ff me)
 
-settings.chatSlowmode_Enabled = false -- (Required: ChatAccess) Enable chat slowmode? Prevents players from spamming chat.
-settings.chatSlowmode_Interval = 30 -- (Required: Slowmode) Wait the amount of specified interval to send another message.
---- SLOWMODE NOTE: ADMINISTRATORS AND SERVER MANAGERS ARE IMMUNE TO SLOWMODE
+settings.ChatService_Enabled = true -- Allows the ChatService module to provide functionality for chat moderation, ranks, and more. ChatService will support for 
+settings.ChatService_IgnoreChannels = {} -- List channels to bypass mute system and internal chat callbacks
+settings.ChatService_OverrideChatCallback = true -- Allows ChatService to support chat tags, 
+settings.ChatService_SecureInput = false -- Turns off input chatbar for players before Essential loads
+settings.ChatService_FilterSupport = true -- Include Essential's text filtering system; This is useful for filtering bypassed messages with rich text tags
+settings.ChatService_SlashCommandsEnabled = true -- Allow player commands to become a slash command in chat? (Excludes sensitive commands with Manage_Game perm or no chat allowed)
+settings.ChatService_SlashCommandsPrefix = "e-" -- (Recommended) Adds a prefix to the slash commands; This is helpful to prevent overlapping with other slash commands
+settings.ChatService_SlashCommandsConfirmation = false -- Asks the player to confirm the use of the slash command after execution 
 
 settings.chatMaxCommands = 30 -- (Required: ChatAccess) 
 
+
+-- MODERATION SETTINGS --
+settings.Moderation_Banlist = {}
 
 -- PERMISSIONS SETTINGS --
 --[[
@@ -228,40 +236,44 @@ settings.chatMaxCommands = 30 -- (Required: ChatAccess)
 					
 			MODERATION:
 			
-				Kick_Player 		= 			( true / false )	(default: false)
+				Kick_Player 			= 			( true / false )	(default: false)
 					-- Allow the use of kicking players?
 				
-				Ban_Player			= 			( true / false )	(default: false)
+				Ban_Player				= 			( true / false )	(default: false)
 					-- Allow the use of banning players?
 					
-				Mute_Player 		= 			( true / false )	(default: false)
+				Request_Ban 		= 			( true / false )	(default: false)
+					-- Allow the use of requesting ban modifications. This applies to banning/resolving.
+					-- BUT NOT ALLOWED to create/clear ban notes.
+						
+				Mute_Player 			= 			( true / false )	(default: false)
 					-- Allow the use of muting players?
-				
-				Warn_Player			= 			( true / false )	(default: false)
+					
+				Warn_Player				= 			( true / false )	(default: false)
 					-- Allow the use of warning players?
 					
-				Deafen_Player		= 			( true / false )	(default: false)
+				Deafen_Player			= 			( true / false )	(default: false)
 					-- Allow the use of deafening players? This deafens the players' chat.
 				
-				Manage_Map			=			( true / false )	(default: false)
+				Manage_Map				=			( true / false )	(default: false)
 					-- Allow the use of managing the map? This includes restoring, backing up map, and deleting the map.
 				
-				Private_Messaging 	=			( true / false )	(default: false)
+				Private_Messaging 		=			( true / false )	(default: false)
 					-- Allow the use of private messaging to players? You could also leave them a message in their inbox.
 				
-				Message_Commands	=			( true / false )	(default: false)
+				Message_Commands		=			( true / false )	(default: false)
 					-- Grants access to several commands such as message, hint, alert, etc.
 				
-				Manage_Characters	=			( true / false )	(default: false)
+				Manage_Characters		=			( true / false )	(default: false)
 					-- Grants access to several character commands such as bring, tp, freeze, etc.
 				
-				Help_Assistance 	=			( true / false )	(default: false)
+				Help_Assistance 		=			( true / false )	(default: false)
 					-- Grants access to receive help assistance calls.
 				
-				Manage_Game_Servers =			( true / false )	(default: false)
+				Manage_Game_Servers 	=			( true / false )	(default: false)
 					-- Allows to manage running servers
 				
-				Manage_Camera		=			( true / false )	(default: false)
+				Manage_Camera			=			( true / false )	(default: false)
 					-- Manages players' cameras
 				
 			ADMINISTRATION:
@@ -280,7 +292,7 @@ settings.chatMaxCommands = 30 -- (Required: ChatAccess)
 					-- WARNING! This is a very dangerous permission to grant. Allow administrators execute scripts?
 					
 				Admin_Terminal		=			( true / false )	(default: false)
-					-- (COMNG SOON) Allow the use of CMDR in the admin terminal
+					-- (COMNG SOON) Allow the use of TerminalX Console
 					
 				Cross_Commands		=			( true / false )	(default: false)
 					-- Allows the use of cross commands; for instance, crossshutdown
@@ -320,6 +332,14 @@ settings.Permissions = {
 				
 				Use_Utility = false;
 			};
+			ChatTag = {
+				Enabled = false;
+				Text = "";
+				Font = Enum.Font;
+				UseRoleColor = false;
+				CustomColor = Color3.fromRGB(255,255,255);
+
+			};
 		};
 	]]
 }
@@ -338,8 +358,6 @@ settings.musicPlayer_Songs = {
 	-- -> "song_name" must be in string and "song_id" as a number.
 
 }
-settings.musicPlayer_BannedSongs = {}
-settings.musicPlayer_BannedCreators = {}
 settings.musicPlayer_Playlists = { -- Only available with queue enabled
 	-- FORMAT:
 	-- [playlist_name] = {song_id, song_id, etc..};
@@ -491,7 +509,7 @@ settings.automatedTasks = {
 		maxHold = 15;			-- ONLY WORKS IF MODE IS SET TO SAVE: Max amount of backups stored
 
 		interval = 300; 		-- (Minimum: 20) The amount of interval looped to create a backup
-		announceChat = false;	-- Announce task completion to roblox chat
+		announceChat = true;	-- Announce task completion to roblox chat
 	}	
 }
 
@@ -629,21 +647,6 @@ settings.globalApi_Perms = { -- Default perms for public token and premade token
 settings.allowClientGlobal = true
 settings.minimizedPlayerView = true
 
-settings.R_API_Allow = true -- Allow use of Remote API?
-settings.R_API_TokenAuth = true -- Only allow access with token? (MainModule could also provide specific permissions for each token)
-settings.R_API_Perms = { -- Options are limited for Remote unlike _G.
-	
-}
-
--- DISCORD WEBHOOK SETTINGS --
-settings.DWebhook_Enabled = true
-settings.DWebhook_Main = "" -- Start after "https://discord.com/api/webhooks/"
-settings.DWebhook_List = {
-	-- [Webhook Name] = "Input after https://discord.com/api/webhooks/"
-	-- i.g. ["Test"] = "2349876542339/ahfoqAZqGcLcaRancvLUKTG-gXN8UhAYsaDURBXZfTeh246Yuzonos5bL"
-	
-}
-
 -- HELP SETTINGS --
 settings.helpEnabled = false
 settings.helpCooldown = 20
@@ -658,10 +661,6 @@ settings.helpMessage = "{player} needs help"
 		{regTime}	-	Regular time of the call (e.g. 12:00:00)
 		{date}		-	Regular date of the call
 ]]
-
--- MAILBOX SETTINGS --
-settings.mailboxEnabled = true
-settings.mailbox = true
 
 -- CONSOLE SETTINGS --
 settings.consoleEnabled = true -- Console enabled?

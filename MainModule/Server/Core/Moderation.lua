@@ -110,6 +110,7 @@ return function(envArgs)
 
 		-- Ehh.. the important ones
 		permissions = {},
+		requestedBanModifications = {},
 
 		legacyGlobalBans = setmetatable({}, {
 			__metatable = "Essential global bans",
@@ -184,7 +185,7 @@ return function(envArgs)
 				local ban, banInfo: {
 					isPermanent: boolean,
 					caseId: string,
-					moderatorId: string,
+					moderatorId: number,
 					reason: string,
 
 					startedOn: number,
@@ -205,7 +206,7 @@ return function(envArgs)
 			{
 				isPermanent: boolean;
 				caseId: string;
-				moderatorId: string;
+				moderatorId: number;
 				reason: string;
 				
 				startedOn: number;
@@ -888,7 +889,7 @@ return function(envArgs)
 			{
 				type: "Universal"|"Server";
 				caseId: string;
-				moderatorId: string;
+				moderatorId: number;
 				reason: string;
 				
 				expiresOn: number;
@@ -1050,9 +1051,6 @@ return function(envArgs)
 					if type(listOfUniversalBans) ~= "table" or not service.isTableAnArray(listOfUniversalBans) then
 						listOfUniversalBans = {}
 					end
-
-					local lengthOfList = #listOfUniversalBans
-					local lengthExceeded = lengthOfList + 1 > BanList_Limits.MaxEntries
 
 					repeat
 						table.remove(listOfUniversalBans, 1)
@@ -1798,6 +1796,46 @@ return function(envArgs)
 			--if savedBanRemoved > 0 then
 			--	savedBans._sync()
 			--end
+
+			return false
+		end,
+
+		createBanModification = function(requestCreation: {
+			requesterUserId: number,
+			modifyType: "CreateBan"|"RemoveBan",
+			affectedUserIds: {[number]: number},
+			modifyReason: string
+		})
+			assert(requestCreation.modifyType == `CreateBan` or requestCreation.modifyType == `RemoveBan`,
+				`Invalid modification type`
+			)
+
+			if requestCreation.requesterUserId > 0 then
+				assert(requestCreation.isPlayerUserIdValid(requestCreation.requesterUserId), `Requester user id must be valid`)
+			end
+
+			table.insert(Moderation.requestedBanModifications, {
+				started = DateTime.now(),
+				active = true,
+				status = `PENDING`,
+				requesterUserId = requestCreation.requesterUserId,
+				modifyType = requestCreation.modifyType,
+				affectedUserIds = requestCreation.affectedUserIds,
+				modifyReason = requestCreation.modifyReason or `No reason specified`,
+			})
+
+			Cross.sendToOtherServers(`RequestBanModification`, requestCreation.requesterUserId, #requestCreation.affectedUserIds,
+				requestCreation.modifyReason:sub(1,100)
+			)
+
+			for i, player in service.getPlayers(true) do
+				if not Moderation.checkAdmin(player) then continue end
+
+				player:makeUI("Notification", {
+					title = `Ban Request in server`,
+					desc = `{service.playerNameFromId(requestCreation.requesterUserId)} is requesting to ban/unban {#requestCreation.affectedUserIds} player(s)`,
+				})
+			end
 		end,
 
 		warnPlayer = function(

@@ -58,30 +58,13 @@ return function(envArgs, data)
 		--radioProgress.progressChanged:connect(function(newValue)
 		--	modifiedProgHolder:setHover(roundNumber(newValue, 0.001))
 		--end)
-
-		local muteOnAfk = cliSettingsCatg:makeObject "Toggle"
-		muteOnAfk.label.Text = "Mute on AFK"
-		muteOnAfk._object.Position = UDim2.new(0, 10, 0, 0)
-
-		muteOnAfk.toggled:connect(function(state)
-			manageClientSetting("ToggleMuteOnAFK", state)
-			clientSettings.ToggleMuteOnAFK = state
-		end)
-
-		muteOnAfk:setToggle(clientSettings.ToggleMuteOnAFK and true or false)
-
-		local muteHolder = window:modifyObject {
-			_object = muteOnAfk.toggleObj,
-		}
-
-		muteHolder:setHover "Mute on AFK helps keeps you safe from Chat hax while you're AFK"
-
+		
 		do
 			local isKeybindsLocked = client.Policies._clientPolicies.CMD_KEYBINDS_ALLOWED.value ~= true
 
 			local keybindsEnabledToggle = cliSettingsCatg:makeObject "Toggle"
 			keybindsEnabledToggle.label.Text = "Keybinds Enabled"
-			keybindsEnabledToggle._object.Position = UDim2.new(0, 10, 0, 40 + 10)
+			keybindsEnabledToggle._object.Position = UDim2.new(0, 10, 0, 0 * (40 + 10))
 
 			local keybindsEnabledHolder = window:modifyObject {
 				_object = keybindsEnabledToggle.toggleObj,
@@ -104,7 +87,7 @@ return function(envArgs, data)
 
 			local incognitoModeToggle = cliSettingsCatg:makeObject "Toggle"
 			incognitoModeToggle.label.Text = "Incognito Mode"
-			incognitoModeToggle._object.Position = UDim2.new(0, 10, 0, 50 + 40 + 10)
+			incognitoModeToggle._object.Position = UDim2.new(0, 10, 0, 1 * (40 + 10))
 
 			local incognitoModeToggleHolder = window:modifyObject {
 				_object = incognitoModeToggle.toggleObj,

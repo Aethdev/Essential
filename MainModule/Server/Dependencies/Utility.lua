@@ -75,247 +75,53 @@ function utility:shutdown(reason: string?, secsTillShutdown: number?, moderatorI
 	end
 end
 
-function utility:setupClient(plr: Player, config: { [any]: any }?)
+function utility:setupClient(plr: Player, config: {
+	idleTimeout: number?,
+	idleResultType: "Kick"?,
+	idleResultLog: boolean?,
+
+	loadingType: "PlayerGui"|"Replicated"
+ }?)
 	config = (type(config) == "table" and config)
 		or {
 			idleTimeout = 600,
 			idleResultType = "Kick", -- Supported actions: Kick, Crash
 			idleResultLog = false, -- Log the idle result
-			Type = "Init",
 			--> Init:	Only used to load players via GUI
 			--> RF:		Only used to load new players loading in from RF
 		}
 
-	local client = server.Core.clients[plr] or {}
-	local loader = (config.Type == "Init" and server.Assets.ClientInit:Clone()) or nil
+	local loadingType = config.loadingType or "PlayerGui"
+	local clientInfo = server.Core.clients[plr]
 
-	if client and client.loaded then
-		warn(`CLIENT LOADER RAN TWICE:`, debug.traceback(nil, 2))
-		return
+	if clientInfo.loaded then return end
+	clientInfo.verifyId = if loadingType == "Replicated" then "" else service.getRandom(math.random(15,20))
+	plr:SetAttribute("ESSVerifyId", clientInfo.verifyId)
+	
+	if loadingType == "PlayerGui" then
+		local quickJoinScript = server.Assets.ClientInit:Clone()
+		quickJoinScript.Name = `QuickSetupECLI`
+		quickJoinScript.Disabled = false
+		quickJoinScript.Parent = plr:WaitForChild("PlayerGui", 120)
+		-- warn(`Did add to player gui??`)
 	end
+end
 
-	if client and loader then
-		client.loaded = true
+function utility:setupClientLoader()
+	local clientFolder = server.ClientFolder:Clone()
+	clientFolder.Name = `EssentialClient`
+	clientFolder.Parent = service.ReplicatedStorage
 
-		local holder = service.New("ScreenGui", {
-			Name = "\0",
-			DisplayOrder = math.huge,
-			ResetOnSpawn = false,
-			Enabled = false,
-		})
+	local sharedFolder = server.SharedFolder:Clone()
+	sharedFolder.Parent = clientFolder
 
-		client.verifyId = service.getRandom(20)
 
-		loader:SetAttribute("VerifyId", (client and client.verifyId) or "[unknown]")
-		loader.Parent = holder
+	local essClientScript = server.Assets.ClientInit:Clone()
+	essClientScript.Name = `ESSCLI`
+	essClientScript.Disabled = false
+	essClientScript.Parent = service.StarterPlayer.StarterPlayerScripts
 
-		--holder:SetAttribute("Id", client.id)
-		--holder:SetAttribute("Registered", server.Parser:osDate(os.clock()))
-
-		local folder = server.Client:Clone()
-		folder.Name = service.getRandom()
-		folder.Parent = loader
-
-		-- Disable screenguis inside folder
-		for i, desc in pairs(folder:GetDescendants()) do
-			if desc:IsA "ScreenGui" then desc.Enabled = false end
-		end
-
-		local sharedFolder = server.SharedFolder:Clone()
-		sharedFolder.Parent = folder
-
-		local folderContents = folder:GetDescendants()
-		local contents_fullNames = (function()
-			local list = {}
-
-			for i, desc in pairs(folderContents) do
-				table.insert(list, desc:GetFullName())
-			end
-
-			return list
-		end)()
-
-		local secure1, secure2, secure3, secure4, secure5, secure6, secure7
-		local secureCheck_Cons = {}
-		local function stopSecuring()
-			if secure6 then
-				secure6:Disconnect()
-				secure6 = nil
-			end
-
-			if secure5 then
-				secure5:Disconnect()
-				secure5 = nil
-			end
-
-			if secure4 then
-				secure4:Disconnect()
-				secure4 = nil
-			end
-
-			if secure3 then
-				secure3:Disconnect()
-				secure3 = nil
-			end
-
-			if secure2 then
-				secure2:Disconnect()
-				secure2 = nil
-			end
-
-			if secure1 then
-				secure1:Disconnect()
-				secure1 = nil
-			end
-
-			for i, con in pairs(secureCheck_Cons) do
-				secureCheck_Cons[i] = nil
-				con:Disconnect()
-			end
-		end
-
-		local function kill(res)
-			stopSecuring()
-
-			if plr.Parent == service.Players then
-				plr:Kick("ESSC Detection:\n" .. tostring(res or "Tampering with client folder's components"))
-			end
-		end
-
-		secure1 = folder.DescendantAdded:Connect(function(desc)
-			if table.find(contents_fullNames, desc:GetFullName()) then
-				client.tamperedFolder = true
-				client.tamperedFolderReason = "Tampering with client folder (Duplicated item?)"
-				stopSecuring()
-				--kill("Tampering with client folder (Duplicated item?)")
-			elseif desc:IsA "Script" then
-				client.tamperedFolder = true
-				client.tamperedFolderReason = "Tampering with client folder (Suspicious script?)"
-				stopSecuring()
-				--kill("Tampering with client folder (Suspicious script?)")
-			end
-		end)
-
-		secure2 = folder.DescendantRemoving:Connect(function(desc)
-			if table.find(folderContents, desc) then
-				client.tamperedFolder = true
-				client.tamperedFolderReason = "Tampering with client folder (" .. desc:GetFullName() .. " was removed)"
-				stopSecuring()
-				--kill("Tampering with client folder ("..desc:GetFullName().." was removed)")
-			end
-		end)
-
-		secure3 = script.ChildRemoved:Connect(function(child)
-			if child == folderContents then
-				client.tamperedFolder = true
-				client.tamperedFolderReason = "Client folder was removed"
-				stopSecuring()
-				--kill("Client folder was removed")
-			end
-		end)
-
-		secure4 = server.Events.playerRemoved:Connect(function(playerLeft)
-			if playerLeft == plr then stopSecuring() end
-		end)
-
-		secure5 = server.Events.playerVerified:Connect(function(playerVerified)
-			if playerVerified._object == plr then
-				stopSecuring()
-				service.Debris:AddItem(holder, 0)
-			end
-		end)
-
-		secure6 = server.Events.playerRemoved:Connect(function(removedPlr)
-			if removedPlr == plr then
-				stopSecuring()
-				service.Debris:AddItem(holder, 0)
-			end
-		end)
-
-		secure7 = holder.AttributeChanged:Connect(function(attr)
-			local attrVal = holder:GetAttribute(attr)
-
-			if attr == "VerifyId" then
-				client.tamperedFolder = true
-				client.tamperedFolderReason = "Verify Id was tampered"
-				stopSecuring()
-				--kill("Client holder was tampered")
-				service.Debris:AddItem(holder, 0)
-			end
-		end)
-
-		for i, desc in ipairs(folderContents) do
-			if desc ~= holder then
-				local lockArchivable = false
-				desc.Archivable = lockArchivable
-				table.insert(
-					secureCheck_Cons,
-					desc:GetPropertyChangedSignal("Archivable"):Connect(function()
-						desc.Archivable = lockArchivable
-						--client.tamperedFolder = true
-						--client.tamperedFolderReason = "Archivable property from object "..tostring(attrName).." was maliciously changed"
-						----warn("Tampered remote")
-						--stopSecuring()
-						--service.Debris:AddItem(holder, 0)
-					end)
-				)
-				table.insert(
-					secureCheck_Cons,
-					desc.AttributeChanged:Connect(function(attrName)
-						client.tamperedFolder = true
-						client.tamperedFolderReason = "Attribute "
-							.. tostring(attrName)
-							.. " from object "
-							.. desc:GetFullName()
-							.. " was tampered"
-						--warn("Tampered remote")
-						stopSecuring()
-						service.Debris:AddItem(holder, 0)
-					end)
-				)
-			end
-		end
-
-		--local ignoreChangeTypes = {
-		--	IsLoaded = true;
-		--	TimeLength = true;
-		--}
-		--for i,desc in pairs(folderContents) do
-		--	local oldParent = desc.Parent
-		--	table.insert(secureCheck_Cons, desc.Changed:Connect(function(changeType)
-		--		if changeType == "Parent" then
-		--			local newParent = desc.Parent
-		--			if oldParent ~= newParent then
-		--				kill("Tampering with client folder ("..desc.Name.." changed parent)")
-		--				server.Events.securityCheck:fire("TamperedClient", plr, "FileChanged", desc, "Parent", newParent)
-		--			end
-		--		elseif not ignoreChangeTypes[changeType] then
-		--			kill("Tampering with client folder ("..desc.Name.." "..tostring(changeType).." changed)")
-		--			server.Events.securityCheck:fire("TamperedClient", plr, "FileChanged", desc, changeType, tostring(desc[changeType]))
-		--		end
-		--	end))
-		--end
-
-		local playerGui = plr:FindFirstChildOfClass "PlayerGui"
-
-		if not playerGui then
-			local guiAdded = server.Signal.new()
-
-			local childAdded
-			childAdded = plr.ChildAdded:connect(function(child)
-				if child:IsA "PlayerGui" then
-					childAdded:Disconnect()
-					guiAdded:fire(child)
-				end
-			end)
-
-			guiAdded:connectOnce(function(gui) holder.Parent = gui end)
-		else
-			holder.Parent = playerGui
-		end
-
-		--client.verified = server
-	end
+	return self
 end
 
 function utility:deferCheckRate(rateLimit: { [any]: any }, rateKey: string | number | userdata | table)
@@ -882,16 +688,8 @@ function utility:getMainSound(createIfNotAdded: boolean): Sound
 end
 
 function utility:isMuted(playerName: string): boolean
-	local mainChannel = (server.chatService and server.chatService:GetChannel "All")
-	local playerId = service.playerIdFromName(playerName) or 0
-
-	local existingPlr = service.getPlayer(playerName)
-	if existingPlr then
-		local parsed = server.Parser:apifyPlayer(existingPlr)
-		if parsed:getVar "MuteChat" then return true end
-	end
-
-	return variables.mutelist[playerId] or (mainChannel and mainChannel:IsSpeakerMuted(playerName)) or false
+	local playerUserId = service.playerIdFromName(playerName) or 0
+	return server.ChatService.TextSpeakers:isSpeakerMuted(playerUserId)
 end
 
 function utility:isDeafened(playerName: string): boolean
@@ -955,9 +753,6 @@ function utility:unmutePlayer(playerName: string, silent: boolean?): boolean
 		local parsedPlayer = server.Parser:apifyPlayer(service.getPlayer(playerName))
 		if parsedPlayer then
 			parsedPlayer:sendData("SetCore", "ChatBarDisabled", false)
-
-			local pData = parsedPlayer:getPData()
-			if pData.serverData.ToggleMuteOnAFK then pData.serverData.ToggleMuteOnAFK = false end
 		end
 
 		if variables.deaflist[playerId] then
@@ -1602,30 +1397,6 @@ function utility:createClone(character: Model): Model
 			end
 
 			return clone
-		end
-	end
-end
-
-function utility:isMutedByMOA(player: ParsedPlayer) --// Is Muted by Mute On Afk
-	local sData = player:getPData().serverData
-	return sData.ToggleMuteOnAFK and utility:isMuted(player.Name) or false
-end
-
-function utility:toggleMuteOnAfk(player: ParsedPlayer, state: boolean)
-	local sData = player:getPData().serverData
-	if state == nil then state = not sData.ToggleMuteOnAFK end
-
-	if state then
-		if not utility:isMuted(player.Name) and not sData.ToggleMuteOnAFK then
-			server.Events.playerMuteOnAfkStatusChanged:fire(player, true)
-			sData.ToggleMuteOnAFK = true
-			utility:mutePlayer(player.Name, nil, true)
-		end
-	else
-		if sData.ToggleMuteOnAFK then
-			server.Events.playerMuteOnAfkStatusChanged:fire(player, false)
-			sData.ToggleMuteOnAFK = false
-			utility:unmutePlayer(player.Name, true)
 		end
 	end
 end

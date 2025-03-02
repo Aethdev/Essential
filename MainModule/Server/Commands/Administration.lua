@@ -1903,7 +1903,7 @@ return function(envArgs)
 
 		universalBan = {
 			Prefix = settings.actionPrefix,
-			Aliases = { "universalban", "gban" },
+			Aliases = { "universeban", "universalban", "gban" },
 			Arguments = {
 				{
 					type = "players",
@@ -1929,7 +1929,7 @@ return function(envArgs)
 					filter = true,
 				},
 			},
-			Permissions = { "Ban_Player" },
+			Permissions = { "Request_Ban/Ban_Player" },
 			Roles = {},
 			CrossCooldown = 15,
 
@@ -2242,7 +2242,10 @@ return function(envArgs)
 							{
 								label = "Resolve",
 								backgroundColor = Color3.fromRGB(115, 143, 22),
-								--onExecute =
+								onExecute = "playercommand://"
+									.. Cmds.get(settings.actionPrefix .. "resolveban").Id
+									.. "||"
+									.. minimizedBanCase.caseId,
 							},
 							--[number]: {
 							--	label: string,

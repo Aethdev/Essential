@@ -1,3 +1,6 @@
+--!nocheck
+local ServerStorage = game:GetService("ServerStorage")
+
 return function(envArgs)
 	local server = envArgs.server
 	local service = envArgs.service
@@ -21,7 +24,12 @@ return function(envArgs)
 	local Vela = server.Vela
 	local PolicyManager = server.PolicyManager
 
+	local defaultPrivateMessageOptions = {
+
+	}
+
 	local addLog
+	local cloneTable = service.cloneTable
 	local getRandom, getRandomV3 = service.getRandom, service.getRandomV3
 
 	local Commands, Core, Cross, Datastore, Identity, Logs, Moderation, Process, Remote
@@ -44,7 +52,6 @@ return function(envArgs)
 	local PlayerEvents = {}
 	local SubNetworks = {}
 
-	local cloneTable = service.cloneTable
 
 	local remoteEncryptCompressionConfig = {
 		level = 1,
@@ -648,7 +655,7 @@ return function(envArgs)
 								Reset = 10,
 							}
 						end
-
+						
 						if listD and Utility:checkRate(listD.RateLimit, plr.UserId) then
 							local hasPermissionToView = Roles:hasPermissionsFromMember(plr, listD.Permissions)
 								or Identity.checkTable(plr, listD.Whitelist)
@@ -949,34 +956,17 @@ return function(envArgs)
 				Function = function(plr, args)
 					local messageId = args[1]
 					local replyMsg = args[2]
+					local wantsToBeSender = args[3]
+					local ignoreFilterConfirmation = args[4]
 
 					if type(messageId) == "string" and type(replyMsg) == "string" then
 						local msgData = variables.privateMessages[messageId]
 
-						if msgData and msgData.receiverId == plr.UserId then
-							if msgData.active and not msgData:isExpired() then
-								msgData.active = false
-
-								if not msgData.noReply then
-									local receiver = msgData.senderId and service.getPlayer(msgData.senderId)
-
-									msgData.replied:fire(replyMsg)
-									msgData.replyMessage = replyMsg
-
-									if not msgData.dontMessageSender and receiver then
-										local parsedReceiver = server.Parser:apifyPlayer(receiver)
-										local safeReply, filteredReply =
-											server.Filter:safeString(replyMsg, plr.UserId, receiver.UserId)
-
-										Remote.privateMessage {
-											receiver = parsedReceiver,
-											sender = plr,
-											topic = "From " .. tostring(plr),
-											message = Parser:filterForRichText(filteredReply),
-											expireOs = msgData.expireOs,
-										}
-									end
-								end
+						if msgData and (msgData.receiver.UserId == plr.UserId or msgData.sender.UserId == plr.UserId) then
+							if msgData.active and not msgData:isExpired() and msgData.repliable then
+								local isSender = msgData:isSender(plr.UserId)
+								if wantsToBeSender and not isSender then return end
+								msgData:internalReply(wantsToBeSender and true or false, replyMsg, ignoreFilterConfirmation)
 							end
 						end
 					else
@@ -3210,31 +3200,6 @@ return function(envArgs)
 				end,
 			},
 
-			ToggleMuteOnAFK = {
-				Disabled = false, -- Is this remote command disabled? Enabling this will block all requests' call indexing this command
-				Public = true, -- Allow this command to run publicly? This ignores whitelist and permissions.
-
-				RL_Enabled = true, -- Rate limit enabled?
-				RL_Rates = 12, -- (interval) (min: 1) Rate amount of requests
-				RL_Reset = 8, -- (number) (min: 0.01) Interval seconds to reset rate's cache.
-				RL_Error = nil, -- (string) Error message returned after passing the rate limit
-
-				Permissions = {}, -- (optional) (table) List of user permissions the player must have to call this command
-				Whitelist = {}, -- (table) List of users allowed to call this command
-				Blacklist = {}, -- (table) List of users denied to call this command
-
-				Lockdown_Allowed = false, -- (boolean) Allow this remote command to run during lockdown?
-
-				Can_Invoke = false, -- (boolean) Allow invoke for this command? This command can work on RemoteFunctions if enabled.
-				Can_Fire = true, -- (boolean) Allow fire for this command? This command can work on RemoteEvents if enabled.
-				--> SIDE NOTE: IF NEITHER CAN_INVOKE AND CAN_FIRE ARE ENABLED, CAN_FIRE WILL BE ENABLED BY DEFAULT
-
-				--> Supported command functions: Function, Run, Execute, Call
-				Function = function(plr, args, remoteData)
-					if type(args[1]) == "boolean" then Utility:toggleMuteOnAfk(plr, args[1]) end
-				end,
-			},
-
 			ToggleIncognito = {
 				Disabled = false, -- Is this remote command disabled? Enabling this will block all requests' call indexing this command
 				Public = true, -- Allow this command to run publicly? This ignores whitelist and permissions.
@@ -3329,314 +3294,545 @@ return function(envArgs)
 				--> Supported command functions: Function, Run, Execute, Call
 				Function = function(plr, args, remoteData) plr:getClientData().deviceType = tostring(args[1]) end,
 			},
+
+			JoinServerWithId = {
+				Disabled = false, -- Is this remote command disabled? Enabling this will block all requests' call indexing this command
+				Public = true, -- Allow this command to run publicly? This ignores whitelist and permissions.
+
+				RL_Enabled = true, -- Rate limit enabled?
+				RL_Rates = 25, -- (interval) (min: 1) Rate amount of requests
+				RL_Reset = 60, -- (number) (min: 0.01) Interval seconds to reset rate's cache.
+				RL_Error = nil, -- (string) Error message returned after passing the rate limit
+
+				Permissions = {}, -- (optional) (table) List of user permissions the player must have to call this command
+				Whitelist = {}, -- (table) List of users allowed to call this command
+				Blacklist = {}, -- (table) List of users denied to call this command
+
+				Lockdown_Allowed = false, -- (boolean) Allow this remote command to run during lockdown?
+
+				Can_Invoke = false, -- (boolean) Allow invoke for this command? This command can work on RemoteFunctions if enabled.
+				Can_Fire = true, -- (boolean) Allow fire for this command? This command can work on RemoteEvents if enabled.
+				--> SIDE NOTE: IF NEITHER CAN_INVOKE AND CAN_FIRE ARE ENABLED, CAN_FIRE WILL BE ENABLED BY DEFAULT
+
+				--> Supported command functions: Function, Run, Execute, Call
+				Function = function(plr, args, remoteData)
+					service.TeleportService:TeleportToPlaceInstance(game.PlaceId, args[1], plr._object)
+				end,
+			},
 		},
 
-		privateMessage = function(creationData: { [any]: any }?)
-			creationData = creationData or {}
+		-- makePoll = function(players, topic, desc, options, canSelectMultiple, tallyProgress, publicResults, expireOs)
+		-- 	local remoteSession = Remote.newSession()
+		-- 	remoteSession.expireOs = expireOs or nil
 
-			local receiver = creationData.receiver
-			local sender = creationData.sender
-			local topic = creationData.topic
-			local desc = creationData.desc or creationData.detail
-			local message = creationData.message
-			local expireOs = creationData.expireOs
-			local scheduledOs = creationData.scheduledOs
-			local openTime = creationData.openTime
-			local noReply = creationData.noReply or creationData.readOnly
-			local notifyOpts = creationData.notifyOpts
+		-- 	local submitPoll = remoteSession:makeCommand "SendResults"
+		-- 	submitPoll.name = "submit results"
+		-- 	submitPoll.canInvoke = false
+		-- 	submitPoll.canFire = true
 
-			local instantOpen = creationData.instantOpen or creationData.instantRead
-			local onRead = creationData.onRead
-			local onReply = creationData.onReply
+		-- 	local checkPoll = remoteSession:makeCommand "CheckResults"
+		-- 	checkPoll.name = "check results"
+		-- 	checkPoll.canInvoke = true
+		-- 	checkPoll.canFire = false
+
+		-- 	local connectedPlayers = {}
+		-- 	remoteSession.connectedPlayers = connectedPlayers
+
+		-- 	for i, player in pairs(players) do
+		-- 		connectedPlayers[player] = true
+		-- 		table.insert(submitPoll.allowedTriggers, player.UserId)
+		-- 		table.insert(checkPoll.allowedTriggers, player.UserId)
+		-- 	end
+
+		-- 	local pollSession = {
+		-- 		remoteSession = remoteSession,
+		-- 		topic = topic or "No topic",
+		-- 		desc = desc or "No description",
+		-- 		options = {},
+		-- 		results = {},
+		-- 		expireOs = expireOs,
+		-- 		players = players or {},
+		-- 		confirmPlayers = {},
+
+		-- 		confirmPlayerCount = 0,
+		-- 		totalPlayerCount = 0,
+
+		-- 		started = tick(),
+
+		-- 		updated = Signal.new(),
+		-- 		finished = Signal.new(),
+
+		-- 		tallyProgress = tallyProgress or false,
+		-- 		canSelectMultiple = canSelectMultiple or false,
+
+		-- 		id = getRandom(20),
+		-- 	}
+
+		-- 	pollSession.totalPlayerCount = service.tableCount(connectedPlayers)
+
+		-- 	for i, optData in pairs(options or {}) do
+		-- 		if type(optData) == "table" then
+		-- 			local clOptData = cloneTable(optData)
+		-- 			clOptData.uniqueId = clOptData.uniqueId or getRandom()
+
+		-- 			table.insert(pollSession.options, clOptData)
+
+		-- 			pollSession.results[clOptData.uniqueId] = {
+		-- 				count = 0,
+		-- 				players = {},
+		-- 				text = optData.text or "choice-" .. getRandom(),
+		-- 			}
+		-- 		end
+		-- 	end
+
+		-- 	submitPoll.execute = function(plr, chosenOpts)
+		-- 		warn "did execute submit poll?"
+		-- 		warn("chosenopts:", chosenOpts)
+		-- 		if connectedPlayers[plr] and not pollSession.confirmPlayers[plr] and type(chosenOpts) == "table" then
+		-- 			if
+		-- 				#chosenOpts > 0
+		-- 				and (
+		-- 					(not canSelectMultiple and #chosenOpts == 1)
+		-- 					or (canSelectMultiple and #pollSession.options >= #chosenOpts)
+		-- 				)
+		-- 			then
+		-- 				local checkIds = {}
+
+		-- 				warn "did submit poll?"
+		-- 				for i, optData in pairs(chosenOpts) do
+		-- 					if type(optData) == "table" then
+		-- 						local uniqueId = optData.id
+		-- 						local resultData = pollSession.results[uniqueId]
+
+		-- 						if not checkIds[uniqueId] then
+		-- 							checkIds[uniqueId] = true
+		-- 							resultData.count += 1
+
+		-- 							table.insert(resultData.players, plr)
+		-- 						end
+		-- 					end
+		-- 				end
+
+		-- 				pollSession.updated:fire(plr)
+		-- 				pollSession.confirmPlayers[plr] = cloneTable(chosenOpts)
+		-- 				pollSession.confirmPlayerCount += 1
+
+		-- 				if service.tableCount(pollSession.confirmPlayers) == service.tableCount(connectedPlayers) then
+		-- 					pollSession.finished:fire(true)
+		-- 				end
+		-- 			end
+		-- 		end
+		-- 	end
+
+		-- 	checkPoll.execute = function(plr)
+		-- 		warn "did check poll?"
+		-- 		if connectedPlayers[plr] then
+		-- 			local pollResults = {}
+
+		-- 			for resultId, resultData in pairs(pollSession.results) do
+		-- 				pollResults[resultId] = {
+		-- 					percent = resultData.count / service.tableCount(pollSession.confirmPlayers),
+		-- 					count = resultData.count,
+		-- 				}
+		-- 			end
+
+		-- 			return pollResults
+		-- 		end
+		-- 	end
+
+		-- 	for i, player in pairs(players) do
+		-- 		player:makeUI("MultipleChoice", {
+		-- 			title = topic,
+		-- 			desc = desc,
+
+		-- 			options = pollSession.options,
+		-- 			multipleSelection = canSelectMultiple,
+		-- 			responseType = (publicResults and "vote") or nil,
+
+		-- 			resultSuffix = " player(s)",
+
+		-- 			voteCheck = publicResults and {
+		-- 				type = "Session",
+		-- 				sessionId = remoteSession.id,
+		-- 				submitResultsId = submitPoll.id,
+		-- 				checkResultsId = checkPoll.id,
+		-- 			} or nil,
+
+		-- 			publishData = not publicResults and {
+		-- 				type = "Session",
+		-- 				sessionId = remoteSession.id,
+		-- 				submitId = submitPoll.id,
+		-- 			} or nil,
+
+		-- 			progressEnabled = true,
+
+		-- 			time = (expireOs and math.round(expireOs - os.time())) or nil,
+		-- 		})
+		-- 	end
+
+		-- 	variables.pollSessions[pollSession.id] = pollSession
+
+		-- 	return pollSession
+		-- end,
+
+		privateMessage = function(creationOpts: {
+			sender: {Name: string, UserId: number}?,
+			receiver: {Name: string, UserId: number},
+			
+			topic: string,
+			
+			description: string,
+			desc: string?,
+			detail: string?,
+
+			message: string,
+			expireUnix: number|DateTime|nil,
+			expireOs: number?,
+			scheduledUnix: number|DateTime|nil,
+			scheduledOs: number?,
+
+			redirectable: boolean|"Cross"|nil,
+
+			dontMessageSender: boolean?,
+
+			openTime: number?,
+			noReply: boolean?,
+
+			onReply: () -> any?,
+			onRead: () -> any?,
+
+			instantOpen: boolean?,
+
+			notifyOpts: {
+				title: string?,
+				desc: string?,
+				actionText: string?,
+				iconUrl: string?,
+				time: number?,
+			}?,
+		})
+			assert(type(creationOpts) == "table", `Private Message options must be supplied`)
+			assert((type(creationOpts.receiver) == "table" or type(creationOpts.receiver) == "userdata")
+				and type(creationOpts.receiver.UserId) == "number" and creationOpts.receiver.UserId > 0, `Receiver must be supplied`)
+			assert(not creationOpts.sender or (type(creationOpts.sender) == "table" or type(creationOpts.sender) == "userdata")
+				and type(creationOpts.sender.UserId) == "number", `Sender must be supplied`)
+
+			if not creationOpts.sender then
+				creationOpts.sender = {
+					Name = `[Unknown]`;
+					UserId = 0;
+				}
+			end
 
 			local messageData = {
-				topic = topic or "No topic",
-				desc = desc or "Private message",
-				message = message,
+				active = true;
 
-				expireTime = expireOs and expireOs - os.time(),
-				expireOs = expireOs,
-				scheduledOs = scheduledOs or os.time(),
-				openTime = openTime,
-				noReply = noReply,
-				dontMessageSender = not sender,
+				sender = creationOpts.sender;
+				receiver = creationOpts.receiver;
+				notifyOpts = creationOpts.notifyOpts;
 
-				senderId = sender and sender.UserId,
-				receiverId = receiver.UserId,
+				dontMessageSender = creationOpts.dontMessageSender;
 
-				openSince = nil,
+				topic = creationOpts.topic or "Private Message",
+				description = creationOpts.description or creationOpts.desc or creationOpts.detail or "",
+				
+				repliable = if not creationOpts.sender then false else
+					not creationOpts.noReply,
+
+				redirectable = if not creationOpts.sender or creationOpts.noReply then
+					false else creationOpts.redirectable,
+					
+				openTime = creationOpts.openTime or nil;
+
+				expireUnix = if creationOpts.expireOs or type(creationOpts.expireUnix) == "number" then
+						DateTime.fromUnixTimestamp(creationOpts.expireOs or creationOpts.expireUnix)
+					elseif typeof(creationOpts.expireUnix) == "DateTime" then
+						creationOpts.expireUnix
+					else nil;
+				
+				scheduledUnix = if creationOpts.scheduledOs or type(creationOpts.scheduledUnix) == "number" then
+						DateTime.fromUnixTimestamp(creationOpts.scheduledOs or creationOpts.scheduledUnix)
+					elseif typeof(creationOpts.scheduledOs) == "DateTime" then
+						creationOpts.scheduledOs
+					else nil;
+
+				messages = {
+					{true, creationOpts.message, creationOpts.message, DateTime.now().UnixTimestamp}
+				};
+
+				onReply = creationOpts.onReply;
+				onRead = creationOpts.onRead;
 
 				opened = Signal.new(),
 				replied = Signal.new(),
 
-				id = getRandom(30),
-				active = true,
+				id = service.getRandom(10),
 			}
-
-			if onRead then messageData.opened:connectOnce(onRead) end
-
-			if onReply then messageData.replied:connectOnce(onReply) end
-
-			local remSession = Remote.newSession()
-			remSession.connectedPlayers[receiver] = true
-
-			local sessOpenNotif = remSession:makeCommand "OpenNotif"
-			sessOpenNotif.connectedPlayers = remSession.connectedPlayers
-			sessOpenNotif.execute = function(plr)
-				if messageData:isExpired() then
-					plr:sendData(
-						"SendMessage",
-						"The private message you tried to open is expired and can no longer accept any replies.",
-						nil,
-						5,
-						"Context"
-					)
-				else
-					messageData.opened:fire(true)
-					messageData:showToPlayer(plr)
-				end
-			end
-
-			function messageData:isExpired(): boolean
-				local currentOs = os.time()
-				return self.active
-					and (
-						self.expireOs and (self.expireOs - os.time() <= 0)
-						or not self.expireOs and self.openTime and self.openSince and not (self.openSince <= currentOs and self.openSince + self.openTime >= currentOs)
-						or false
-					)
-			end
-
-			function messageData:showToPlayer(plr: ParsedPlayer)
-				if not self.openSince then self.openSince = os.time() end
-
-				plr:makeUI("PrivateMessageV2", {
-					title = messageData.topic,
-					desc = messageData.desc,
-					message = messageData.message,
-					publishId = not messageData.noReply and messageData.id,
-					readOnly = messageData.noReply,
-					time = (messageData.expireOs and math.clamp(messageData.expireOs - os.time(), 0, math.huge))
-						or (messageData.openTime and math.clamp(messageData.openTime, 2, math.huge))
-						or nil,
-				})
-			end
 
 			function messageData:destroy()
 				if variables.privateMessages[messageData.id] == messageData then
 					variables.privateMessages[messageData.id] = nil
 				end
-				remSession.active = false
+				messageData.remSession.active = false
 			end
 
-			if not messageData.noReply then variables.privateMessages[messageData.id] = messageData end
+			function messageData:isSenderReal()
+				return messageData.sender.UserId > 0
+			end
 
-			task.spawn(function()
-				if scheduledOs and scheduledOs - os.time() > 0 then
-					repeat
-						wait(0.1)
-					until not messageData.active or messageData:isExpired() or (scheduledOs - os.time() <= 0)
+			function messageData:isSender(playerUserId: number)
+				return messageData.sender.UserId == playerUserId
+			end
 
-					if not messageData.active or not receiver:isInGame() then return messageData:destroy() end
+			function messageData:isExpired()
+				local DateTimeNow = DateTime.now()
+
+				if not messageData.expireUnix then return false end
+				return DateTimeNow.UnixTimestamp >= messageData.expireUnix.UnixTimestamp
+			end
+
+			function messageData:internalReply(isSender: boolean, message: string, override: boolean?)
+				local safeString, filteredMessage;
+				
+				if isSender and not messageData:isSenderReal() then
+					safeString, filteredMessage = true, message
+				else
+					safeString, filteredMessage = Filter:safeString(message,
+						if isSender then
+							messageData.sender.UserId
+						else
+							messageData.receiver.UserId
+					)
 				end
 
-				if messageData.active and not messageData:isExpired() then
-					if receiver:isInGame() then
-						task.defer(function()
-							if instantOpen then
-								messageData.opened:fire(true)
-								messageData:showToPlayer(receiver)
-								return
-							end
+				local player = Parser:getParsedPlayer(if isSender then messageData.sender.UserId
+					else messageData.receiver.UserId, true)
 
-							receiver:makeUI("NotificationV2", {
-								title = (notifyOpts and notifyOpts.title) or "Private Message",
-								desc = (notifyOpts and notifyOpts.desc) or "From " .. tostring(
-									(sender and sender:toStringDisplayForPlayer(receiver)) or "[unknown]"
-								),
-								time = (notifyOpts and notifyOpts.time) or messageData.expireTime,
-								actionText = "Reply",
-								iconUrl = "mti://message",
-								--icon
+				local targetName = if isSender then messageData.receiver.Name else
+					messageData.sender.Name
 
-								openFunc = "sessioncommand://main:" .. remSession.id .. "-" .. sessOpenNotif.id,
-								--executeType = "session";
-								--sessionId = remSession.id;
-								--openNotifId = sessOpenNotif.id;
-							})
+				if not safeString and not override then
+					player:makeUI("Context", {
+						text = "Your private message for <b>"..Parser:filterForRichText(targetName).."</b> was filtered by Roblox."
+							.." Would you like to continue sending it?";
+						allowInputClose = false;
+						options = {
+							{
+								label = `Yes`;
+								backgroundColor = Color3.fromRGB(47, 209, 74);
+								onExecute = "remotecommand://main:PrivateMessage||"..luaParser.Encode{messageData.id, message, isSender, true};
+								closeAfterExecute = true;
+							};
+							{
+								label = `No`;
+								backgroundColor = Color3.fromRGB(211, 51, 51);
+								onExecute = "sessioncommand://main:"..messageData.remSession.id.."-"..messageData.remReturnDraftMessage.id.."||"..luaParser.Encode{isSender};
+								closeAfterExecute = true;
+							};
+						};
+					})
 
-							--if notifOpened and (not messageData.expireOs or (messageData.expireOs-os.time() > 0)) then
-							--	receiver:makeUI("PrivateMessageV2", {
-							--		title = messageData.topic;
-							--		desc = messageData.desc;
-							--		message = messageData.message;
-							--		publishId = not messageData.noReply and messageData.id;
-							--		readOnly = messageData.noReply;
-							--		time = messageData.expireOs and math.clamp(messageData.expireOs-os.time(), 0, math.huge);
-							--	})
-							--end
-						end)
-					else
-						messageData.active = false
+					table.insert(messageData.messages, {isSender, filteredMessage, message, DateTime.now().UnixTimestamp, true})
+					
+					return self
+				end
+
+				local targetPlayer = if not isSender and not messageData:isSenderReal() then
+					nil else Parser:getParsedPlayer(if isSender then messageData.receiver.UserId
+					else messageData.sender.UserId, true)
+
+				if messageData.redirectable == true and targetPlayer and not targetPlayer:isInGame() then
+					player:makeUI("Context", {
+						text = `{targetName} is not in the server at this moment. Your personal message has been redirected to their DMs.`;
+						time = 10;
+					})
+
+					targetPlayer:directMessage({
+						title = `RE: {messageData.topic}`,
+						text = filteredMessage,
+						senderUserId = player.UserId,
+						prevMessage = messageData:getLatestMessage(not isSender, false, true),
+						noReply = true;
+
+					})
+				elseif not messageData.redirectable and targetPlayer and not targetPlayer:isInGame() then
+					player:makeUI("Context", {
+						text = `{targetName} is not in the server at this moment. Your message is not redirectable.`;
+						time = 10;
+					})
+
+					messageData:destroy()
+				end
+
+				if messageData.redirectable == "Cross" then
+					-- Coming soon
+				end
+
+				local messageInput = {isSender, filteredMessage, message, DateTime.now().UnixTimestamp}
+				table.insert(messageData.messages, messageInput)
+
+				messageData.replied:fire(isSender, table.clone(messageInput))
+
+				if isSender or not isSender and not messageData.dontMessageSender then
+					messageData:showNotification(not isSender)
+				end
+
+				return self
+			end
+
+			function messageData:getLatestMessage(isSender: boolean, isDraft: boolean?, returnFiltered: boolean?)
+				local latestMessage: string = nil;
+				for i = #self.messages, 1, -1 do
+					local foundMessage = self.messages[i]
+
+					if foundMessage and foundMessage[1] == isSender and (not isDraft and not foundMessage[5] or isDraft and foundMessage[5] ~= nil) then
+						latestMessage = if returnFiltered then foundMessage[2] else foundMessage[3]
+						break;
 					end
 				end
-			end)
+
+				return latestMessage
+			end
+
+			function messageData:showNotification(forSender: boolean)
+				if forSender and not messageData:isSenderReal() then return self end
+
+				local targetPlayer = if forSender and not messageData:isSenderReal() then
+					nil else Parser:getParsedPlayer(if forSender then messageData.sender.UserId
+					else messageData.receiver.UserId)
+
+				local targetName = Parser:filterForRichText(if forSender then messageData.sender.Name
+					else messageData.receiver.Name)
+
+				local otherTargetName = Parser:filterForRichText(if forSender then messageData.receiver.Name
+					else messageData.sender.Name)
+
+				if not targetPlayer or not targetPlayer:isInGame() then return self end
+				
+				targetPlayer:makeUI("NotificationV2", {
+					title = if not messageData.notifyOpts or not messageData.notifyOpts.title then "Private Message"
+						else Parser:replaceStringWithDictionary(messageData.notifyOpts.title, {
+							["{{target}}"] = targetName,
+							["{{otherTarget}}"] = otherTargetName,
+						}),
+					
+					desc = if not messageData.notifyOpts
+							or not messageData.notifyOpts.desc
+						then `You have a new message from <b>{otherTargetName}</b>`
+						else Parser:replaceStringWithDictionary(messageData.notifyOpts.desc, {
+							["{{target}}"] = targetName,
+							["{{otherTarget}}"] = otherTargetName,
+						}),
+					
+					time = if messageData.notifyOpts and messageData.notifyOpts.time then
+						messageData.notifyOpts.time else messageData.expireTime,
+					actionText = if messageData.notifyOpts and messageData.notifyOpts.actionText then
+						messageData.notifyOpts.actionText else "Send a reply",
+					iconUrl = if messageData.notifyOpts and messageData.notifyOpts.iconUrl then
+						messageData.notifyOpts.iconUrl else "mti://message",
+
+					openFunc = "sessioncommand://main:"..messageData.remSession.id.."-"..messageData.remOpenNotification.id.."||"..luaParser.Encode{forSender};
+				})
+
+				return self
+			end
+
+			function messageData:showMessage(forSender: boolean, preInputText: string?)
+				local latestMessage: string = nil;
+				for i = #self.messages, 1, -1 do
+					local foundMessage = self.messages[i]
+					
+					-- Check to see if the newest message isn't from them and makes sure that the message was not a failure
+					if foundMessage and foundMessage[1] == (not forSender) and foundMessage[5] == nil then
+						latestMessage = foundMessage[2]
+						break;
+					end
+				end
+
+				if not latestMessage then
+					return self
+				end
+
+				if forSender and not messageData:isSenderReal() then
+					return self 
+				end
+
+				local player = Parser:getParsedPlayer(if forSender then messageData.sender.UserId
+					else messageData.receiver.UserId)
+
+				if not player then return self end
+
+				player:makeUI("PrivateMessageV2", {
+					title = messageData.topic,
+					desc = messageData.description,
+					placement = preInputText or nil,
+					message = latestMessage,
+					publishId = messageData.repliable and messageData.id or nil,
+					readOnly = not messageData.repliable,
+					time = (messageData.expireUnix and math.clamp(messageData.expireUnix - os.time(), 0, math.huge))
+						or (messageData.openTime and math.clamp(messageData.openTime, 5, math.huge))
+						or nil,
+					isSender = forSender;
+				})
+
+				return self
+			end
+
+			if messageData.onRead then messageData.opened:connect(messageData.onRead) end
+			if messageData.onReply then messageData.replied:connect(messageData.onReply) end
+
+			local remSession = Remote.newSession()
+			remSession.allowedTriggers = {creationOpts.receiver.UserId,
+				if creationOpts.sender then creationOpts.sender.UserId or nil else nil
+			}
+			messageData.remSession = remSession
+			
+			local openNotification = remSession:makeCommand("OpenNotif")
+			openNotification.allowedTriggers = remSession.allowedTriggers
+			openNotification.execute = function(plr, wantsToBeSender)
+				local isSender = messageData:isSender(plr.UserId)
+				if wantsToBeSender and not isSender then return end
+
+				if messageData:isExpired() then
+					plr:makeUI("Context", {
+						text = `Your private message with <b>{messageData.sender.Name or `[Unknown]`}</b> expired <i>\{\{t:{messageData.expireUnix.UnixTimestamp}\}\}</i>. Message is not retrievable at this time.`,
+						time = 10;
+					})
+
+					return
+				end
+
+				messageData.opened:fire(wantsToBeSender and true or false)
+				messageData:showMessage(wantsToBeSender or false)
+			end
+			messageData.remOpenNotification = openNotification
+
+			local returnDraftMessage = remSession:makeCommand("ReturnDraftMessage")
+			returnDraftMessage.allowedTriggers = remSession.allowedTriggers
+			returnDraftMessage.execute = function(plr, wantsToBeSender)
+				local isSender = messageData:isSender(plr.UserId)
+				if wantsToBeSender and not isSender then return end
+
+				local draftMessage = messageData:getLatestMessage(wantsToBeSender or false, true)
+				if not draftMessage then return end
+
+				messageData:showMessage(wantsToBeSender, draftMessage)
+			end
+			messageData.remReturnDraftMessage = returnDraftMessage
+
+			if messageData.repliable then
+				variables.privateMessages[messageData.id] = messageData
+			end
+
+			if not creationOpts.instantOpen then
+				messageData:showNotification(false)
+			else
+				messageData:showMessage(false)
+			end
+
+			--TODO: Scheduled messages
 
 			return messageData
-		end,
-
-		makePoll = function(players, topic, desc, options, canSelectMultiple, tallyProgress, publicResults, expireOs)
-			local remoteSession = Remote.newSession()
-			remoteSession.expireOs = expireOs or nil
-
-			local submitPoll = remoteSession:makeCommand "SendResults"
-			submitPoll.name = "submit results"
-			submitPoll.canInvoke = false
-			submitPoll.canFire = true
-
-			local checkPoll = remoteSession:makeCommand "CheckResults"
-			checkPoll.name = "check results"
-			checkPoll.canInvoke = true
-			checkPoll.canFire = false
-
-			local connectedPlayers = {}
-			remoteSession.connectedPlayers = connectedPlayers
-
-			for i, player in pairs(players) do
-				connectedPlayers[player] = true
-				table.insert(submitPoll.allowedTriggers, player.UserId)
-				table.insert(checkPoll.allowedTriggers, player.UserId)
-			end
-
-			local pollSession = {
-				remoteSession = remoteSession,
-				topic = topic or "No topic",
-				desc = desc or "No description",
-				options = {},
-				results = {},
-				expireOs = expireOs,
-				players = players or {},
-				confirmPlayers = {},
-
-				confirmPlayerCount = 0,
-				totalPlayerCount = 0,
-
-				started = tick(),
-
-				updated = Signal.new(),
-				finished = Signal.new(),
-
-				tallyProgress = tallyProgress or false,
-				canSelectMultiple = canSelectMultiple or false,
-
-				id = getRandom(20),
-			}
-
-			pollSession.totalPlayerCount = service.tableCount(connectedPlayers)
-
-			for i, optData in pairs(options or {}) do
-				if type(optData) == "table" then
-					local clOptData = cloneTable(optData)
-					clOptData.uniqueId = clOptData.uniqueId or getRandom()
-
-					table.insert(pollSession.options, clOptData)
-
-					pollSession.results[clOptData.uniqueId] = {
-						count = 0,
-						players = {},
-						text = optData.text or "choice-" .. getRandom(),
-					}
-				end
-			end
-
-			submitPoll.execute = function(plr, chosenOpts)
-				warn "did execute submit poll?"
-				warn("chosenopts:", chosenOpts)
-				if connectedPlayers[plr] and not pollSession.confirmPlayers[plr] and type(chosenOpts) == "table" then
-					if
-						#chosenOpts > 0
-						and (
-							(not canSelectMultiple and #chosenOpts == 1)
-							or (canSelectMultiple and #pollSession.options >= #chosenOpts)
-						)
-					then
-						local checkIds = {}
-
-						warn "did submit poll?"
-						for i, optData in pairs(chosenOpts) do
-							if type(optData) == "table" then
-								local uniqueId = optData.id
-								local resultData = pollSession.results[uniqueId]
-
-								if not checkIds[uniqueId] then
-									checkIds[uniqueId] = true
-									resultData.count += 1
-
-									table.insert(resultData.players, plr)
-								end
-							end
-						end
-
-						pollSession.updated:fire(plr)
-						pollSession.confirmPlayers[plr] = cloneTable(chosenOpts)
-						pollSession.confirmPlayerCount += 1
-
-						if service.tableCount(pollSession.confirmPlayers) == service.tableCount(connectedPlayers) then
-							pollSession.finished:fire(true)
-						end
-					end
-				end
-			end
-
-			checkPoll.execute = function(plr)
-				warn "did check poll?"
-				if connectedPlayers[plr] then
-					local pollResults = {}
-
-					for resultId, resultData in pairs(pollSession.results) do
-						pollResults[resultId] = {
-							percent = resultData.count / service.tableCount(pollSession.confirmPlayers),
-							count = resultData.count,
-						}
-					end
-
-					return pollResults
-				end
-			end
-
-			for i, player in pairs(players) do
-				player:makeUI("MultipleChoice", {
-					title = topic,
-					desc = desc,
-
-					options = pollSession.options,
-					multipleSelection = canSelectMultiple,
-					responseType = (publicResults and "vote") or nil,
-
-					resultSuffix = " player(s)",
-
-					voteCheck = publicResults and {
-						type = "Session",
-						sessionId = remoteSession.id,
-						submitResultsId = submitPoll.id,
-						checkResultsId = checkPoll.id,
-					} or nil,
-
-					publishData = not publicResults and {
-						type = "Session",
-						sessionId = remoteSession.id,
-						submitId = submitPoll.id,
-					} or nil,
-
-					progressEnabled = true,
-
-					time = (expireOs and math.round(expireOs - os.time())) or nil,
-				})
-			end
-
-			variables.pollSessions[pollSession.id] = pollSession
-
-			return pollSession
 		end,
 
 		newSession = function(expireOs1)
@@ -3687,9 +3883,8 @@ return function(envArgs)
 					end
 
 					function eventData:hasPermission(player)
-						if self.active then
-							return self.connectedPlayers[player] or Identity.checkTable(player, self.allowedTriggers)
-						end
+						if not self.active then return end
+						return self.connectedPlayers[player] or Identity.checkTable(player, self.allowedTriggers)
 					end
 
 					function eventData:killConnections(playerUserId, disconnectId)
@@ -3703,6 +3898,10 @@ return function(envArgs)
 								and (not disconnectId or connectionData.disconnectId == disconnectId)
 							then
 								connectionData.active = false
+								if connectionData.autoDisconnect then
+									connectionData.autoDisconnect:disconnect()
+								end
+
 								self.playerConnections[i] = nil
 								killCount += 1
 							end
@@ -3767,6 +3966,10 @@ return function(envArgs)
 								and player:isInGame()
 						end
 
+						connectionData.autoDisconnect = player.disconnected:connectOnce(function()
+							eventData:killConnections(player.playerId)
+						end)
+
 						table.insert(self.playerConnections, connectionData)
 						return connectionData
 					end
@@ -3783,6 +3986,19 @@ return function(envArgs)
 						end
 
 						return results
+					end
+
+					function eventData:isPlayerConnected(player: ParsedPlayer | Player)
+						for i, connectData in pairs(self.playerConnections) do
+							if
+								(connectData.player and connectData.player.UserId == player.UserId)
+								and connectData:isActive()
+							then
+								return true
+							end
+						end
+
+						return false
 					end
 
 					function eventData:fireToSpecificPlayers(players, ...)
@@ -3938,8 +4154,11 @@ return function(envArgs)
 			end
 
 			ConnectedSessions[sessionTab.id] = sessionTab
-			server.Events.sessionCreated:fire(sessionTab)
 
+			if server.Events.sessionCreated then
+				server.Events.sessionCreated:fire(sessionTab)
+			end
+			
 			return sessionTab
 		end,
 
@@ -3957,7 +4176,16 @@ return function(envArgs)
 				end)()
 		end,
 
-		newSubNetwork = function(networkName)
+		newSubNetwork = function(networkName, creationOptions: {
+			name: string?,
+			easyFind: boolean?,
+			joinable: boolean?,
+			securitySettings: {
+				maxTrustKeyRetrievals: number?,
+				canClientDisconnect: boolean?,
+				endToEndEncrypted: boolean?,
+			}
+		}?)
 			if SubNetworks[networkName] then
 				return SubNetworks[networkName]
 			else
@@ -3967,15 +4195,22 @@ return function(envArgs)
 
 				--// Server SEt
 
-				subNetwork.joinable = false
+				subNetwork.name = if creationOptions and creationOptions.name then creationOptions.name else ""
+				subNetwork.easyFind = if creationOptions and creationOptions.easyFind~=nil then
+					creationOptions.easyFind else false
+				subNetwork.joinable = if creationOptions and creationOptions.joinable~=nil then
+					creationOptions.joinable else false
 				subNetwork.connectedPlayers = {}
 				subNetwork.allowedTriggers = {}
 				subNetwork.disallowedPlayerIds = {}
 
 				subNetwork.securitySettings = {
-					maxTrustKeyRetrievals = 3,
-					canClientDisconnect = false,
-					endToEndEncrypted = false,
+					maxTrustKeyRetrievals = if creationOptions and creationOptions.securitySettings then
+						creationOptions.securitySettings.maxTrustKeyRetrievals or 3 else 3,
+					canClientDisconnect = if creationOptions and creationOptions.securitySettings then
+						creationOptions.securitySettings.canClientDisconnect or false else false,
+					endToEndEncrypted = if creationOptions and creationOptions.securitySettings then
+						creationOptions.securitySettings.endToEndEncrypted or false else false,
 				}
 
 				subNetwork.playerKeySettings = {
@@ -4798,9 +5033,9 @@ return function(envArgs)
 				end
 
 				-- [REQUIRED] Create a system session listener
-				do
-					local netSession = Remote.newSession()
-				end
+				-- do
+				-- 	local netSession = Remote.newSession()
+				-- end
 
 				SubNetworks[networkName] = subNetwork
 				return subNetwork

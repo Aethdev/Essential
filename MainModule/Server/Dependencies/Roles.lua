@@ -107,6 +107,7 @@ function roles:create(
 			id = service.getRandom(40),
 			priority = (type(priority) == "number" and priority) or 0,
 			members = {},
+			_cachedMembers = {},
 			color = (typeof(color) == "Color3" and color) or Color3.fromRGB(149, 165, 166),
 			created = os.time(),
 			permissions = cloneTable(rolePermissions),
@@ -416,8 +417,6 @@ function roles:hasPermissionFromMember(member: any, perms: { [any]: any }, accep
 
 	local didChecked = (function()
 		for d, perm in pairs(perms) do
-			local permFindSlash = string.find(perm, "/")
-
 			if not checkList[perm] then return false end
 		end
 

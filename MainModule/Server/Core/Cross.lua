@@ -156,6 +156,22 @@ return function(envArgs)
 
 			Cross.send("FireEvent", callbackEventId, serverInfo)
 		end,
+
+		RequestBanModification = function(fromServerJobId, requesterUserId, numOfAffectedPlayers, reason)
+			local requesterName: string = if requesterUserId == 0 then `SYSTEM` else
+				service.playerNameFromId(requesterUserId)
+
+			for i, player in service.getPlayers(true) do
+				if not Moderation.checkAdmin(player) then continue end
+
+				player:makeUI("Notification", {
+					title = `Ban Request in server {fromServerJobId}`,
+					desc = `{requesterName} is requesting to ban/unban {numOfAffectedPlayers} player(s)`,
+					actionText = `Join server to review`,
+					openFunc = `remotecommand://main:JoinServerWithId||{luaParser.Encode{fromServerJobId}}`
+				})
+			end
+		end;
 	}
 
 	local CrossSend_RL = setmetatable({
@@ -164,6 +180,7 @@ return function(envArgs)
 	}, {
 		__index = function(self, ind)
 			if ind == "Rates" then return (#service.getPlayers() * 80) + 300 end
+			return nil
 		end,
 	})
 

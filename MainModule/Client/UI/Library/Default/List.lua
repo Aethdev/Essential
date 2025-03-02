@@ -202,7 +202,7 @@ return function(envArgs, data: { [any]: any })
 						end
 					end
 
-					Promise.promisify(Network.get, Network, "GetList", autoUpdateListData, unpack(autoUpdateListArgs))()
+					Promise.promisify(Network.get)(Network, "GetList", autoUpdateListData, unpack(autoUpdateListArgs))
 						:andThen(function(listLogsData)
 							if not listLogsData or type(listLogsData) ~= "table" then
 								service.tweenCreate(

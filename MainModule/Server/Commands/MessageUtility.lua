@@ -290,6 +290,7 @@ return function(envArgs)
 						message = Parser:filterForRichText(args[3]),
 						--notifyOpts = {title = "Private message", desc = "Click to view"};
 						noReply = args[2],
+						redirectable = true;
 					}
 				end
 			end,
@@ -330,7 +331,7 @@ return function(envArgs)
 					target:directMessage {
 						title = "From " .. playerDisplayName,
 						text = Parser:filterForRichText(args[3]:sub(1, 1000)),
-						receiverUserId = plr.UserId,
+						senderUserId = plr.UserId,
 					}
 				end
 

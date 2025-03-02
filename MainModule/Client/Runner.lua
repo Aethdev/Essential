@@ -271,6 +271,7 @@ client.Promise = promiseModule
 client.Janitor = require(sharedFolder.Util.Janitor)
 client.Signal = require(sharedFolder.Util.Signal)
 client.Queue = require(sharedFolder.Util.Queue)
+client.ChatTagsModule = require(sharedFolder.Util.ChatTagsModule)
 client.MaterialIcons = require(sharedFolder.Misc.MaterialIcons)
 client.SpecialTextMarkdown = require(sharedFolder.Misc.SpecialTextMarkdown)
 
@@ -789,9 +790,7 @@ return service.newProxy {
 					for i, hotkeyName in ipairs(keybindData.hotkeys) do
 						table.insert(keyCodeStringsToEnums, Enum.KeyCode[hotkeyName])
 					end
-
-					--local cliKeybindData = client.Utility:makeKeybinds(`_PERSONALKEYBIND-{keybindName:lower()}`, keyCodeStringsToEnums, "PersonalKeybind", keybindName:lower())
-					--cliKeybindData.holdDuration = keybindData.holdDuration or 0
+					
 					client.Utility.Keybinds:register(`CommandKeybind.{keybindName}`, {
 						enabled = if keybindData.enabled == nil then true else keybindData.enabled or false,
 						trigger = "CommandKeybind",

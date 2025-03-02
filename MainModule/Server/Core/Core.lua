@@ -384,7 +384,6 @@ return function(envArgs)
 					--warn("Player called on sub network trust checker:", actionType, subNetworkId, trustKey)
 					if type(actionType) == "string" and actionType == "TrustCheck" then
 						local clientData = Core.clients[plr]
-						local parsedPlr = Parser:apifyPlayer(plr)
 
 						if
 							clientData
@@ -1239,6 +1238,8 @@ return function(envArgs)
 
 												dataCache._indexUpdated:fire(ind)
 											end
+										else
+											warn("can't update data tab?", ind, dataTab)
 										end
 									end, true)
 								end

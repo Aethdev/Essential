@@ -1581,7 +1581,7 @@ function parser:apifyPlayer(
 				noReply: boolean?,
 			})
 				directMessageOpts = directMessageOpts or {}
-				local receiverUserId = directMessageOpts.receiverUserId
+				local senderUserId = directMessageOpts.senderUserId
 
 				local targetPData = self:getPData()
 				task.defer(function()
@@ -1603,6 +1603,7 @@ function parser:apifyPlayer(
 						if not caughtDuplicate then goodId = true end
 					until goodId
 
+					directMessage.senderUserId = if type(senderUserId) == "number" then senderUserId else 0
 					directMessage.id = directMessageId
 					directMessage.openTime = directMessageOpts.openTime or 600
 					directMessage.sent = os.time()
@@ -1673,10 +1674,21 @@ function parser:apifyPlayer(
 	end
 end
 
-function parser:getParsedPlayer(playerIdOrName: string | number): ParsedPlayer
+function parser:getParsedPlayer(playerIdOrName: string | number, createIfNonExistent: boolean?): ParsedPlayer
 	local player = service.getPlayer(playerIdOrName)
-
-	if player then return parser:apifyPlayer(player) end
+	
+	if not player and createIfNonExistent then
+		local playerUserId = if type(playerIdOrName) == "number" then playerIdOrName
+			else service.playerIdFromName(playerIdOrName)
+			
+		return parser:apifyPlayer({
+			Name = if type(playerIdOrName) == "string" then
+				playerIdOrName else service.playerNameFromId(playerIdOrName);
+			UserId = playerUserId;
+		}, true)
+	end
+	
+	return parser:apifyPlayer(player)
 end
 
 --TODO: GET PLAYER FROM INCOGNITO NAME
@@ -2989,14 +3001,24 @@ function parser:filterForRichText(text: string): string
 		{ '"', "&quot;" },
 		{ "'", "&apos;" },
 	})
-
+	
 	--return parser:replaceStringWithDictionary(text, {
-	--	["<"] 		= "&lt;";
-	--	[">"] 		= "&gt;";
-	--	["&"] 		= "&amp;";
-	--	["\""]		= "&quot;";
-	--	["'"]		= "&apos;";
-	--})
+		--	["<"] 		= "&lt;";
+		--	[">"] 		= "&gt;";
+		--	["&"] 		= "&amp;";
+		--	["\""]		= "&quot;";
+		--	["'"]		= "&apos;";
+		--})
+	end
+	
+function parser:reverseFilterForRichText(richText: string): string
+	return parser:filterStringWithDictionary(richText, {
+		{ "&amp;", "&" },
+		{ "&lt;", "<" },
+		{ "&gt;", ">" },
+		{ "&quot;", '"' },
+		{ "&apos;", "'" },
+	})
 end
 
 function parser:removeRichTextTags(str: string): string

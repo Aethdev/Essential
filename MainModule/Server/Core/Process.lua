@@ -1,3 +1,4 @@
+local ServerStorage = game:GetService("ServerStorage")
 return function(envArgs)
 	local server = envArgs.server
 	local service = envArgs.service
@@ -8,7 +9,6 @@ return function(envArgs)
 	local Promise = server.Promise
 
 	local Signal = server.Signal
-	local Promise = server.Promise
 	local Filter = server.Filter
 	local Network = server.Network
 	local Parser = server.Parser
@@ -94,7 +94,7 @@ return function(envArgs)
 			KeybindMaxHoldDuration = 60,
 		},
 
-		playerAdded = function(plr: Player)
+		playerAdded = function(plr: Player, isExisting: boolean?)
 			if Core.clients[plr] then
 				warn("Failed to initiate player added event for player " .. plr.Name)
 			else
@@ -135,7 +135,7 @@ return function(envArgs)
 							local banInfo: {
 								isPermanent: boolean,
 								caseId: string,
-								moderatorId: string,
+								moderatorId: number,
 								reason: string,
 
 								startedOn: number,
@@ -425,10 +425,6 @@ return function(envArgs)
 
 						return playerData
 					end)
-					:andThen(function()
-						-- Remove Mute on AFK
-						Utility:toggleMuteOnAfk(parsedPlayer, false)
-					end)
 					:andThenCall(server.PolicyManager._updateClientPolicies, server.PolicyManager, parsedPlayer)
 					:andThen(function()
 						if parsedPlayer:isPrivate() then task.spawn(Moderation.updateIncognitoPlayersDynamicPolicy) end
@@ -457,7 +453,10 @@ return function(envArgs)
 				task.spawn(function() parsedPlayer:retrieveSocialPolicies() end)
 
 				if parsedPlayer:isInGame() then
-					Utility:setupClient(plr)
+					Utility:setupClient(plr, {
+						loadingType = if isExisting then "PlayerGui" else nil;
+					})
+					
 					Logs.addLogForPlayer(
 						parsedPlayer,
 						`Process`,
@@ -477,10 +476,7 @@ return function(envArgs)
 				if clientData._loadingPData and clientData._loadingPData:getStatus() ~= Promise.Status.Resolved then
 					clientData._loadingPData:cancel()
 				end
-
-				-- Remove Mute on AFK
-				task.spawn(Utility.toggleMuteOnAfk, Utility, parsed, false)
-
+				
 				local playerData = clientData.pData
 
 				if playerData then
@@ -544,7 +540,36 @@ return function(envArgs)
 			local ratePass, didThrottle, canThrottle, curRate, maxRate, throttleResetOs =
 				Utility:deferCheckRate(rateData, rateKey)
 
-			if clientData and ratePass then
+			if clientData and (ratePass or not ratePass and didThrottle) then
+				if not ratePass and didThrottle then
+					warn(
+						"Player "
+							.. plr.Name
+							.. " throttled remote call (+"
+							.. curRate - maxRate
+							.. "). Try sending less remote calls to prevent throttling !!"
+					)
+					
+					local warnRatePass, warnDidThrottle, warnCanThrottle =
+						Utility:deferCheckRate(Process.remoteCall_WarnBlockRateLimit, rateKey)
+
+					if warnRatePass then
+						for i, target in pairs(service.getPlayers(true)) do
+							if Moderation.checkAdmin(target) then
+								target:sendData(
+									"SendMessage",
+									"<u>" .. plr.Name .. "</u> is sending remote requests too quickly.",
+									nil,
+									5,
+									"Context"
+								)
+							end
+						end
+					end
+
+					wait(math.max(0.1*(curRate-maxRate)^2, 0))
+				end
+
 				--do
 				--	local rateAverage = 0
 				--	local debugRateLogsCount = #rateData.DebugRateLogs
@@ -759,6 +784,8 @@ return function(envArgs)
 												.. ": "
 												.. tostring(rets[2])
 										)
+										
+										return nil
 										-- Don't return the error ret to the client. It's never a good thing for them to see the error
 									else
 										Logs.addLog("Remote", {
@@ -777,6 +804,8 @@ return function(envArgs)
 											-- We never doubt on returning the success status with the function rets
 											return unpack(rets, 2)
 										end
+
+										return nil
 									end
 								elseif canUseCommand and not cmdFunction then
 									warn(
@@ -786,6 +815,8 @@ return function(envArgs)
 											.. cmdName
 											.. " with a missing function"
 									)
+
+									return nil
 								end
 							end
 						elseif not cmd then
@@ -811,41 +842,15 @@ return function(envArgs)
 					end
 				end
 			elseif not ratePass then
-				if didThrottle then
-					warn(
-						"Player "
-							.. plr.Name
-							.. " throttled remote call (+"
-							.. curRate - maxRate
-							.. "). Try sending less remote calls to prevent throttling !!"
-					)
-					local warnRatePass, warnDidThrottle, warnCanThrottle =
-						Utility:deferCheckRate(Process.remoteCall_WarnBlockRateLimit, rateKey)
-
-					if warnRatePass then
-						for i, target in pairs(service.getPlayers(true)) do
-							if Moderation.checkAdmin(target) then
-								target:sendData(
-									"SendMessage",
-									"<u>" .. plr.Name .. "</u> is sending remote requests too quickly.",
-									nil,
-									5,
-									"Context"
-								)
-							end
-						end
-					end
-				else
-					Moderation.addBan(
-						plr.Name,
-						"Time",
-						"Spammed remote network",
-						os.time(),
-						{ name = "SYSTEM", userid = -1 },
-						os.time() + 1200,
-						false
-					)
-				end
+				Moderation.addBan(
+					plr.Name,
+					"Time",
+					"Spammed remote network",
+					os.time(),
+					{ name = "SYSTEM", userid = -1 },
+					os.time() + 1200,
+					false
+				)
 			end
 		end,
 
@@ -1531,9 +1536,9 @@ return function(envArgs)
 
 				server.Events.playerChatted:fire(player, msg)
 
-				if Utility:isMuted(player.Name) then
-					player:Kick "Attempted to speak in chat while muted"
-				else
+				-- if Utility:isMuted(player.Name) then
+				-- 	player:Kick "Attempted to speak in chat while muted"
+				-- else
 					if msg:sub(1, 3) == "/e " then
 						msg = msg:sub(4)
 					elseif msg:sub(1, 1) == "/" and settings.slashCommands then
@@ -1554,7 +1559,7 @@ return function(envArgs)
 							})
 						end
 					end
-				end
+				-- end
 			end)
 
 			playerObj.CharacterAdded:connect(function(char) server.Events.characterAdded:fire(player, char) end)
@@ -1720,13 +1725,14 @@ return function(envArgs)
 				local function checkMessages()
 					if player:isInGame() then
 						local messages = playerData.__messages
+
 						for i, messageBody in ipairs(messages._table) do
 							if not watchedMsgIds[messageBody.id] then
 								watchedMsgIds[messageBody.id] = true
 								task.defer(function()
-									local receiverUserId = messageBody.receiverUserId
+									local senderUserId = messageBody.senderUserId
 									local messageText = messageBody.text
-									local receiverName = receiverUserId and service.playerNameFromId(receiverUserId)
+									local senderName = senderUserId and service.playerNameFromId(senderUserId)
 										or "[SYSTEM]"
 									local privateMessage = Remote.privateMessage {
 										receiver = player,
@@ -1741,31 +1747,38 @@ return function(envArgs)
 											"<i>Sent on "
 												.. Parser:osDate(messageBody.sent)
 												.. " UTC by player <b>"
-												.. receiverName
+												.. senderName
 												.. "</b> </i>",
 											"<i>-------</i>",
 											"<i>Replied to:</i>",
 											"<i>" .. tostring(messageBody.prevMessage or "none") .. "</i>",
 										}, "\n"),
-										notifyOpts = { title = "Direct message", desc = "From " .. receiverName },
-										noReply = not receiverUserId or messageBody.noReply,
+										notifyOpts = { title = "Direct message", desc = "From " .. senderName },
+										noReply = not senderUserId or messageBody.noReply,
 										openTime = messageBody.openTime,
 									}
 
-									privateMessage.opened:connectOnce(function()
+									privateMessage.opened:selfConnect(function(self, isSender)
 										--warn("Did open?")
+										if isSender then return end
+										self:disconnect()
 										messages._pull(messageBody)
 									end)
 
-									if not messageBody.noReply and receiverUserId and receiverUserId > 0 then
-										privateMessage.replied:connectOnce(function(replyMsg)
+									if not messageBody.noReply and senderUserId and senderUserId > 0 then
+										privateMessage.replied:connectOnce(function(fromSender, replyData)
+											if fromSender then return end
+											local replyMsg = replyData[2]
+
+											privateMessage:destroy()
+											
 											task.spawn(function()
-												local canSendMessage = service.isPlayerUserIdValid(receiverUserId)
+												local canSendMessage = service.isPlayerUserIdValid(senderUserId)
 												if not canSendMessage then
 													player:sendData(
 														"SendMessage",
 														"Your private message for a player with user id <b>"
-															.. receiverUserId
+															.. senderUserId
 															.. "</b> cannot send due to non-existent target",
 														nil,
 														8,
@@ -1773,14 +1786,14 @@ return function(envArgs)
 													)
 												else
 													local targetPlayer = Parser:apifyPlayer({
-														Name = service.playerNameFromId(receiverUserId),
-														UserId = receiverUserId,
+														Name = service.playerNameFromId(senderUserId),
+														UserId = senderUserId,
 													}, true)
 													if targetPlayer then
 														targetPlayer:directMessage {
 															title = "From " .. tostring(targetPlayer),
 															text = replyMsg,
-															receiverUserId = player.UserId,
+															senderUserId = player.UserId,
 															isAReply = true,
 															prevMessage = messageText,
 														}

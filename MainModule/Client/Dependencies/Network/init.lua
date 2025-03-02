@@ -670,7 +670,7 @@ return function(env)
 			local remoteArguments = arguments
 			if endToEndEncryption then
 				local filteredArguments, instanceList = convertListToArgumentsAndInstances(arguments)
-				remoteArguments = {
+				remoteArguments = { 
 					encryptRemoteArguments(clientToServerRemoteKey, arguments),
 					instanceList,
 				}
@@ -701,7 +701,7 @@ return function(env)
 				local networkInfo = network:get("GetNetworkInfo", subNetworkId, subNetworkEntryKey)
 
 				if type(networkInfo) ~= "table" then return -4 end
-
+				
 				local subNetwork = {}
 				subNetwork.active = true
 				subNetwork.ready = false
@@ -846,7 +846,7 @@ return function(env)
 						trackTask("_SUBNETWORK-" .. tostring(subNetworkId) .. "-GET", true, function()
 							local remoteArguments = arguments
 							local isETEE = subNetwork.endToEndEncrypted
-
+							
 							if isETEE then
 								local filteredArguments, instanceList = convertListToArgumentsAndInstances(arguments)
 								remoteArguments = {
@@ -1001,11 +1001,11 @@ return function(env)
 							if subNetwork.endToEndEncrypted then
 								local _, encryptedArgs, instanceList = ...
 								if type(encryptedArgs) ~= "string" then return end
-								encryptedArgs = decryptRemoteArguments(expectedAccessKey, encryptedArgs)
+								encryptedArgs = decryptRemoteArguments(subNetwork.accessKey, encryptedArgs)
 
 								if type(encryptedArgs) ~= "table" then return end
 								local assortedArguments = sortArgumentsWithInstances(encryptedArgs, instanceList)
-								remoteArguments = { _, unpack(assortedArguments) }
+								remoteArguments = { unpack(assortedArguments) }
 							end
 
 							local taskRets = {
@@ -1040,16 +1040,14 @@ return function(env)
 									else subNetwork.accessKey
 
 								if not rawequal(expectedAccessKey, accKey) then return end
-
 								local remoteArguments = { ... }
 								if subNetwork.endToEndEncrypted then
-									local _, encryptedArgs, instanceList = ...
+									local encryptedArgs, instanceList = ...
 									if type(encryptedArgs) ~= "string" then return end
-									encryptedArgs = decryptRemoteArguments(expectedAccessKey, encryptedArgs)
-
+									encryptedArgs = decryptRemoteArguments(subNetwork.accessKey, encryptedArgs)
 									if type(encryptedArgs) ~= "table" then return end
 									local assortedArguments = sortArgumentsWithInstances(encryptedArgs, instanceList)
-									remoteArguments = { _, unpack(assortedArguments) }
+									remoteArguments = { unpack(assortedArguments) }
 								end
 
 								local taskRets = {
@@ -1299,6 +1297,10 @@ return function(env)
 					self._verifying = false
 					self._verified = true
 
+					if isETEE then
+						subNetwork.entryKey = newPersonalKey
+					end
+
 					if self:isAccessible() then
 						self.ready = true
 						self.connected:fire()
@@ -1356,10 +1358,10 @@ return function(env)
 							if type(remoteArgs[1]) == "string" then
 								local cmdName = remoteArgs[1]
 								local remoteCmd = subNetwork.networkCommands[cmdName]
-
+								
 								if remoteCmd and not remoteCmd.Disabled then
 									local lockdown = client.lockdown
-
+									
 									if not lockdown or (lockdown and remoteCmd.Lockdown_Allowed) then
 										local cmdFunction = remoteCmd.Function
 											or remoteCmd.Run

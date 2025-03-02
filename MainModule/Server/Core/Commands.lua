@@ -180,114 +180,6 @@ return function(envArgs)
 				end,
 			},
 
-			startMuteOnAFK = {
-				Match = settings.playerPrefix .. "startmuteonafk",
-				StringMatch = false,
-				Public = true,
-				KeybindAndShortcutOnly = true,
-				Permissions = {},
-				Roles = {},
-
-				Function = function(plr, args, data)
-					if not plr:getPData().__clientSettings.ToggleMuteOnAFK then
-						plr:sendData(
-							"SendMessage",
-							"<b>Unable to start mute on AFK because you disabled Mute on AFK via client settings.</b>",
-							nil,
-							2,
-							"Context"
-						)
-						return 0
-					end
-
-					if Utility:isMuted(plr.Name) and not Utility:isMutedByMOA(plr) then
-						plr:sendData(
-							"SendMessage",
-							"<b>Unable to start mute on AFK because of your current muted state.</b>",
-							nil,
-							2,
-							"Context"
-						)
-						return 0
-					end
-
-					Utility:toggleMuteOnAfk(plr, true)
-					plr:sendData("SendMessage", "<b>You are now muted via Mute on AFK system</b>", nil, 2, "Context")
-				end,
-			},
-
-			endMuteOnAFK = {
-				Match = settings.playerPrefix .. "endmuteonafk",
-				StringMatch = false,
-				Public = true,
-				KeybindAndShortcutOnly = true,
-				Permissions = {},
-				Roles = {},
-
-				Function = function(plr, args, data)
-					if not plr:getPData().__clientSettings.ToggleMuteOnAFK then
-						plr:sendData(
-							"SendMessage",
-							"<b>Unable to end mute on AFK because you disabled Mute on AFK via client settings.</b>",
-							nil,
-							2,
-							"Context"
-						)
-						return 0
-					end
-
-					if Utility:isMuted(plr.Name) and not Utility:isMutedByMOA(plr) then
-						plr:sendData(
-							"SendMessage",
-							"<b>Unable to end mute on AFK because of your current muted state.</b>",
-							nil,
-							2,
-							"Context"
-						)
-						return 0
-					end
-
-					Utility:toggleMuteOnAfk(plr, false)
-					plr:sendData("SendMessage", "<b>You are now unmuted via Mute on AFK system</b>", nil, 2, "Context")
-				end,
-			},
-
-			toggleMuteOnAFK = {
-				Match = settings.playerPrefix .. "togglemuteonafk",
-				StringMatch = false,
-				Public = true,
-				KeybindAndShortcutOnly = true,
-				Permissions = {},
-				Roles = {},
-
-				Function = function(plr, args, data)
-					if not plr:getPData().__clientSettings.ToggleMuteOnAFK then
-						plr:sendData(
-							"SendMessage",
-							"<b>Unable to toggle mute on AFK because you disabled Mute on AFK via client settings.</b>",
-							nil,
-							2,
-							"Context"
-						)
-						return 0
-					end
-
-					if Utility:isMuted(plr.Name) and not Utility:isMutedByMOA(plr) then
-						plr:sendData(
-							"SendMessage",
-							"<b>Unable to toggle mute on AFK because of your current muted state.</b>",
-							nil,
-							2,
-							"Context"
-						)
-						return 0
-					end
-
-					Utility:toggleMuteOnAfk(plr)
-					plr:sendData("SendMessage", "<b>Toggled mute state by Mute on AFK system</b>", nil, 2, "Context")
-				end,
-			},
-
 			breakStatement = {
 				Match = settings.playerPrefix .. "break",
 				StringMatch = false,
@@ -416,6 +308,7 @@ return function(envArgs)
 			},
 
 			chat_mutePlayer = {
+				Disabled = not settings.ChatService_Enabled,
 				Prefix = settings.actionPrefix,
 				Aliases = { "mute" },
 				Arguments = {
@@ -426,10 +319,15 @@ return function(envArgs)
 						required = true,
 					},
 					{
-						argument = "duration",
-						type = "duration",
-						--ignoreSelf = true;
+						argument = "includeShadowMute",
+						type = "trueOrFalse",
+						required = false,
 					},
+					-- {
+					-- 	argument = "duration",
+					-- 	type = "duration",
+					-- 	--ignoreSelf = true;
+					-- },
 				},
 				Permissions = { "Mute_Player" },
 				Roles = {},
@@ -438,27 +336,27 @@ return function(envArgs)
 
 				Function = function(plr, args)
 					for i, target in pairs(args[1]) do
-						Utility:mutePlayer(target.Name, (args[2] and args[2].total) or nil)
-						Utility:toggleMuteOnAfk(target, false)
+						server.ChatService.TextSpeakers:muteSpeaker(target.UserId, args[2])
 
-						if args[2] and args[2].total > 0 then
-							coroutine.wrap(function()
-								local totalSecs = args[2].total
+						-- if args[2] and args[2].total > 0 then
+						-- 	coroutine.wrap(function()
+						-- 		local totalSecs = args[2].total
 
-								for i = 1, totalSecs, 1 do
-									if not Utility:isMuted(target.Name) then return end
+						-- 		for i = 1, totalSecs, 1 do
+						-- 			if not Utility:isMuted(target.Name) then return end
 
-									wait(1)
-								end
+						-- 			wait(1)
+						-- 		end
 
-								Utility:unmutePlayer(target.Name)
-							end)()
-						end
+						-- 		Utility:unmutePlayer(target.Name)
+						-- 	end)()
+						-- end
 					end
 				end,
 			},
 
 			chat_unmutePlayer = {
+				Disabled = not settings.ChatService_Enabled,
 				Prefix = settings.actionPrefix,
 				Aliases = { "unmute" },
 				Arguments = {
@@ -476,12 +374,13 @@ return function(envArgs)
 
 				Function = function(plr, args)
 					for i, target in pairs(args[1]) do
-						Utility:unmutePlayer(target.Name)
+						server.ChatService.TextSpeakers:unmuteSpeaker(target.UserId)
 					end
 				end,
 			},
 
 			chat_deafenPlayer = {
+				Disabled = not settings.ChatService_Enabled,
 				Prefix = settings.actionPrefix,
 				Aliases = { "deafen" },
 				Arguments = {
@@ -491,10 +390,10 @@ return function(envArgs)
 						--ignoreSelf = true;
 						required = true,
 					},
-					{
-						argument = "duration",
-						type = "duration",
-					},
+					-- {
+					-- 	argument = "duration",
+					-- 	type = "duration",
+					-- },
 				},
 				Permissions = { "Deafen_Player" },
 				Roles = {},
@@ -503,26 +402,27 @@ return function(envArgs)
 
 				Function = function(plr, args)
 					for i, target in pairs(args[1]) do
-						Utility:deafenPlayer(target.Name, (args[2] and args[2].total) or nil)
+						server.ChatService.TextSpeakers:deafenSpeaker(target.UserId)
 
-						if args[2] and args[2].total > 0 then
-							coroutine.wrap(function()
-								local totalSecs = args[2].total
+						-- if args[2] and args[2].total > 0 then
+						-- 	coroutine.wrap(function()
+						-- 		local totalSecs = args[2].total
 
-								for i = 1, totalSecs, 1 do
-									if not Utility:isDeafened(target.Name) then return end
+						-- 		for i = 1, totalSecs, 1 do
+						-- 			if not Utility:isDeafened(target.Name) then return end
 
-									wait(1)
-								end
+						-- 			wait(1)
+						-- 		end
 
-								Utility:unmutePlayer(target.Name)
-							end)()
-						end
+						-- 		Utility:unmutePlayer(target.Name)
+						-- 	end)()
+						-- end
 					end
 				end,
 			},
 
 			chat_undeafenPlayer = {
+				Disabled = not settings.ChatService_Enabled,
 				Prefix = settings.actionPrefix,
 				Aliases = { "undeafen" },
 				Arguments = {
@@ -540,96 +440,96 @@ return function(envArgs)
 
 				Function = function(plr, args)
 					for i, target in pairs(args[1]) do
-						if Utility:isDeafened(target.Name) then Utility:unmutePlayer(target.Name) end
+						server.ChatService.TextSpeakers:undeafenSpeaker(target.UserId)
 					end
 				end,
 			},
 
-			chatSystem_slowmode = {
-				Prefix = settings.actionPrefix,
-				Aliases = { "slowmode" },
-				Arguments = {
-					{
-						argument = "seconds/enable/disable/view",
-					},
-				},
-				Permissions = { "Manage_Game" },
-				Roles = {},
+			-- chatSystem_slowmode = {
+			-- 	Prefix = settings.actionPrefix,
+			-- 	Aliases = { "slowmode" },
+			-- 	Arguments = {
+			-- 		{
+			-- 			argument = "seconds/enable/disable/view",
+			-- 		},
+			-- 	},
+			-- 	Permissions = { "Manage_Game" },
+			-- 	Roles = {},
 
-				Description = "Enables slowmode for chat",
+			-- 	Description = "Enables slowmode for chat",
 
-				Function = function(plr, args)
-					if args[1] and args[1]:lower() == "disable" then
-						server.Events.modChangedSlowmode:fire(
-							plr:getInfo(),
-							"Status",
-							(settings.chatSlowmode_Enabled and true),
-							false
-						)
-						settings.chatSlowmode_Enabled = false
-						plr:sendData(
-							"SendMessage",
-							"Slowmode success",
-							"<b>Disabled slowmode</b>. Players can now chat without slowmode.",
-							5,
-							"Hint"
-						)
-					elseif args[1] and args[1]:lower() == "enable" then
-						server.Events.modChangedSlowmode:fire(
-							plr:getInfo(),
-							"Status",
-							(settings.chatSlowmode_Enabled and true),
-							true
-						)
-						settings.chatSlowmode_Enabled = true
-						plr:sendData(
-							"SendMessage",
-							"Slowmode success",
-							"<b>Enabled slowmode</b>. Players without permission 'Manage_Game' or 'Bypass_Chat_Slowmode' are affected by slowmode.",
-							5,
-							"Hint"
-						)
-					elseif args[1] and args[1]:lower() == "view" then
-						plr:sendData(
-							"SendMessage",
-							"Slowmode stats",
-							"Seconds: "
-								.. tostring(settings.chatSlowmode_Interval)
-								.. " | Status: "
-								.. tostring(settings.chatSlowmode_Enabled),
-							10,
-							"Hint"
-						)
-					elseif args[1] then
-						local number = tonumber(string.match(args[1], "^[%d%p]+$"))
+			-- 	Function = function(plr, args)
+			-- 		if args[1] and args[1]:lower() == "disable" then
+			-- 			server.Events.modChangedSlowmode:fire(
+			-- 				plr:getInfo(),
+			-- 				"Status",
+			-- 				(settings.chatSlowmode_Enabled and true),
+			-- 				false
+			-- 			)
+			-- 			settings.chatSlowmode_Enabled = false
+			-- 			plr:sendData(
+			-- 				"SendMessage",
+			-- 				"Slowmode success",
+			-- 				"<b>Disabled slowmode</b>. Players can now chat without slowmode.",
+			-- 				5,
+			-- 				"Hint"
+			-- 			)
+			-- 		elseif args[1] and args[1]:lower() == "enable" then
+			-- 			server.Events.modChangedSlowmode:fire(
+			-- 				plr:getInfo(),
+			-- 				"Status",
+			-- 				(settings.chatSlowmode_Enabled and true),
+			-- 				true
+			-- 			)
+			-- 			settings.chatSlowmode_Enabled = true
+			-- 			plr:sendData(
+			-- 				"SendMessage",
+			-- 				"Slowmode success",
+			-- 				"<b>Enabled slowmode</b>. Players without permission 'Manage_Game' or 'Bypass_Chat_Slowmode' are affected by slowmode.",
+			-- 				5,
+			-- 				"Hint"
+			-- 			)
+			-- 		elseif args[1] and args[1]:lower() == "view" then
+			-- 			plr:sendData(
+			-- 				"SendMessage",
+			-- 				"Slowmode stats",
+			-- 				"Seconds: "
+			-- 					.. tostring(settings.chatSlowmode_Interval)
+			-- 					.. " | Status: "
+			-- 					.. tostring(settings.chatSlowmode_Enabled),
+			-- 				10,
+			-- 				"Hint"
+			-- 			)
+			-- 		elseif args[1] then
+			-- 			local number = tonumber(string.match(args[1], "^[%d%p]+$"))
 
-						if not number then
-							plr:sendData(
-								"SendMessage",
-								"Slowmode error",
-								"Unknown option/seconds supplied for slowmode",
-								5,
-								"Hint"
-							)
-						else
-							server.Events.modChangedSlowmode:fire(
-								plr:getInfo(),
-								"Interval",
-								settings.chatSlowmode_Interval,
-								number
-							)
-							settings.chatSlowmode_Interval = number
-							plr:sendData(
-								"SendMessage",
-								"Slowmode success",
-								"Set seconds to " .. tostring(number),
-								5,
-								"Hint"
-							)
-						end
-					end
-				end,
-			},
+			-- 			if not number then
+			-- 				plr:sendData(
+			-- 					"SendMessage",
+			-- 					"Slowmode error",
+			-- 					"Unknown option/seconds supplied for slowmode",
+			-- 					5,
+			-- 					"Hint"
+			-- 				)
+			-- 			else
+			-- 				server.Events.modChangedSlowmode:fire(
+			-- 					plr:getInfo(),
+			-- 					"Interval",
+			-- 					settings.chatSlowmode_Interval,
+			-- 					number
+			-- 				)
+			-- 				settings.chatSlowmode_Interval = number
+			-- 				plr:sendData(
+			-- 					"SendMessage",
+			-- 					"Slowmode success",
+			-- 					"Set seconds to " .. tostring(number),
+			-- 					5,
+			-- 					"Hint"
+			-- 				)
+			-- 			end
+			-- 		end
+			-- 	end,
+			-- },
 
 			-- SCRIPT COMMANDS
 			--executeScript = {

@@ -4,7 +4,7 @@
 --	ESSENTIAL ADMIN
 --	 > Made by trzistan
 --
---
+--		Modern Administration Yet Finest
 --
 --	-----------------------------------------------------
 --
@@ -288,6 +288,7 @@ server = {
 
 	Folder = serverFolder,
 	Client = clientFolder,
+	ClientFolder = clientFolder,
 	Started = os.time(),
 
 	Cores = {},
@@ -300,7 +301,6 @@ server = {
 	DepsFolder = serverFolder.Dependencies,
 	SharedFolder = sharedFolder,
 	MainFolder = serverFolder.Main,
-	ClientFolder = clientFolder,
 
 	Studio = service.RunService:IsStudio(),
 }

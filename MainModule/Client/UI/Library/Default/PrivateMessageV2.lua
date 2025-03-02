@@ -63,7 +63,7 @@ return function(envArgs, data)
 		return Signal:waitOnSingleEvents({ privateMessage.replied, privateMessage.hidden }, nil, data.time)
 	elseif data.publishId then
 		privateMessage.replied:connectOnce(
-			function(dataResponse) client.Network:fire("PrivateMessage", data.publishId, dataResponse) end
+			function(dataResponse) client.Network:fire("PrivateMessage", data.publishId, dataResponse, data.isSender or false) end
 		)
 	else
 		return privateMessage

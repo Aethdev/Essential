@@ -388,8 +388,6 @@ return {
 					"playerChatted",
 					"characterAdded",
 
-					"playerMuteOnAfkStatusChanged",
-
 					"securityCheck",
 					"scriptErrored",
 
@@ -562,12 +560,15 @@ return {
 			Name = "PlayerHandler",
 			Order = 4,
 			Runner = function()
-				local onStudio = server.Studio
+				-- local onStudio = server.Studio
 				-- Load in the players and create the playerAdded & playerRemoved events
+
+				server.Utility:setupClientLoader()
+
 				for i, plr in pairs(service.getPlayers()) do
 					local suc, ers = service.trackTask("_LOADING_EXISTINGCLIENT-" .. plr.UserId, true, function()
 						-- if onStudio then warn(`Loading player {plr.Name} ({plr.UserId}`) end
-						server.Process.playerAdded(plr)
+						server.Process.playerAdded(plr, true)
 						-- if onStudio then warn(`Loaded player {plr.Name} ({plr.UserId}`) end
 					end)
 
@@ -700,444 +701,8 @@ return {
 			end,
 		},
 		{
-			Name = "ChatTower",
-			Order = 8,
-			RunAfterInit = false,
-			Runner = function()
-				local Utility, Process, Moderation, Roles, Parser =
-					server.Utility, server.Process, server.Moderation, server.Roles, server.Parser
-				local chatPriority = {
-					slashCommand = 5,
-					muteCheck = 30,
-					slowmode = 0,
-				}
-
-				local isUsingLegacyChat = service.TextChatService.ChatVersion == Enum.ChatVersion.LegacyChatService
-				local setupSlashCommandsListener = function()
-					local chatRunner = server.chatRunner
-					local chatSpeaker = server.chatSpeaker
-					local chatChannel = server.chatChannel
-					local chatService = server.chatService
-
-					local slashPrefix = "/"
-
-					if
-						slashPrefix:lower() == settings.actionPrefix:lower()
-						or slashPrefix:lower() == settings.playerPrefix:lower()
-					then
-						warn(
-							"Unable to setup slash command listener if action/player prefix is the same as '"
-								.. tostring(slashPrefix)
-								.. "'."
-						)
-						return
-					end
-
-					if isUsingLegacyChat then
-						if chatRunner and chatSpeaker and chatChannel then
-							local function commandProcessor(speakerName, message, channelName)
-								local speaker = chatService:GetSpeaker(speakerName)
-								if not speaker then return true end
-								local player = speaker:GetPlayer()
-
-								local didUsePrefix = message:sub(1, #slashPrefix) == slashPrefix
-
-								if didUsePrefix then
-									message = message:sub(#slashPrefix + 1)
-
-									if
-										player
-										and typeof(player) == "Instance"
-										and player:IsA "Player"
-										and Utility:checkRate(Process.chatProcessCommand_RateLimit, player.UserId)
-									then
-										local parsedPlayer = server.Parser:apifyPlayer(player)
-										--missingArgType,missingArgReason
-										local ran, cmdMatch, parserError, cmdErrorOrMissingArg, missingArgTypeOrErrMessage, missingArgReason, failedCmdArg =
-											Process.playerCommand(parsedPlayer, message, {
-												returnOutput = true,
-												noPrefixCheck = true,
-												noBatch = true,
-												chatted = true,
-												robloxChat = true,
-											})
-
-										if ran == false then
-											--speaker:SendSystemMessage("", channelName)
-											if parserError == "Args_NotParsed" then
-												local missingArgIndex = cmdErrorOrMissingArg
-												local missingArgValueType = type(failedCmdArg)
-												local missingArgParseType = missingArgTypeOrErrMessage or "string"
-												local missingArgName = (
-													missingArgValueType == "table" and failedCmdArg.argument
-												) or "Arg" .. missingArgIndex
-												local missingArgNameAndType = '"'
-													.. tostring(missingArgName)
-													.. '"'
-													.. ' "'
-													.. (failedCmdArg.type or "n/a")
-													.. '"'
-
-												speaker:SendSystemMessage(
-													"[Command "
-														.. cmdMatch
-														.. "]: Missing argument "
-														.. tostring(missingArgIndex)
-														.. " '"
-														.. missingArgParseType
-														.. "'",
-													channelName,
-													{
-														ChatColor = Color3.fromRGB(255, 78, 78),
-														Font = Enum.Font.SourceSansItalic,
-													}
-												)
-
-												return true
-											elseif parserError == "Args_NotFilled" then
-												speaker:SendSystemMessage(
-													"[Command "
-														.. cmdMatch
-														.. "]: Message arguments didn't fulfill the command arguments",
-													channelName,
-													{
-														ChatColor = Color3.fromRGB(255, 78, 78),
-														Font = Enum.Font.SourceSansItalic,
-													}
-												)
-											elseif parserError == "CmdError" then
-												speaker:SendSystemMessage(
-													"[Command "
-														.. cmdMatch
-														.. "]: Function encountered an error: "
-														.. tostring(cmdErrorOrMissingArg),
-													channelName,
-													{
-														ChatColor = Color3.fromRGB(255, 78, 78),
-														Font = Enum.Font.SourceSansItalic,
-													}
-												)
-											elseif parserError == "CmdInaccessible" then
-												local isCmdHidden = missingArgReason
-												if
-													cmdErrorOrMissingArg == "ServerCooldown"
-													or cmdErrorOrMissingArg == "PlayerCooldown"
-													or cmdErrorOrMissingArg == "CrossCooldown"
-												then
-													speaker:SendSystemMessage(
-														"[Command "
-															.. cmdMatch
-															.. "]: Wait for "
-															.. tostring(missingArgTypeOrErrMessage)
-															.. " to run this command again.",
-														channelName,
-														{
-															ChatColor = Color3.fromRGB(255, 78, 78),
-															Font = Enum.Font.SourceSansItalic,
-														}
-													)
-												elseif cmdErrorOrMissingArg == "PlayerDebounce" then
-													speaker:SendSystemMessage(
-														"[Command "
-															.. cmdMatch
-															.. "]: You must wait for the previous execution to finish before running this command",
-														channelName,
-														{
-															ChatColor = Color3.fromRGB(255, 78, 78),
-															Font = Enum.Font.SourceSansItalic,
-														}
-													)
-												elseif cmdErrorOrMissingArg == "ServerDebounce" then
-													speaker:SendSystemMessage(
-														"[Command "
-															.. cmdMatch
-															.. "]: You must wait for the previous execution from other players to finish before running this command",
-														channelName,
-														{
-															ChatColor = Color3.fromRGB(255, 78, 78),
-															Font = Enum.Font.SourceSansItalic,
-														}
-													)
-												elseif (cmdErrorOrMissingArg == "Chat") and not isCmdHidden then
-													speaker:SendSystemMessage(
-														"[Command " .. cmdMatch .. "]: Incompatible to run in chat.",
-														channelName,
-														{
-															ChatColor = Color3.fromRGB(255, 78, 78),
-															Font = Enum.Font.SourceSansItalic,
-														}
-													)
-												elseif (cmdErrorOrMissingArg == "MissingPerms") and not isCmdHidden then
-													speaker:SendSystemMessage(
-														"[Command "
-															.. cmdMatch
-															.. "]: Missing permissions to run this command: "
-															.. table.concat(missingArgTypeOrErrMessage, ", ")
-															.. ".",
-														channelName,
-														{
-															ChatColor = Color3.fromRGB(255, 78, 78),
-															Font = Enum.Font.SourceSansItalic,
-														}
-													)
-												elseif (cmdErrorOrMissingArg == "MissingRoles") and not isCmdHidden then
-													speaker:SendSystemMessage(
-														"[Command "
-															.. cmdMatch
-															.. "]: Missing roles to run this command: "
-															.. table.concat(missingArgTypeOrErrMessage, ", ")
-															.. ".",
-														channelName,
-														{
-															ChatColor = Color3.fromRGB(255, 78, 78),
-															Font = Enum.Font.SourceSansItalic,
-														}
-													)
-												elseif (cmdErrorOrMissingArg == "Disabled") and not isCmdHidden then
-													speaker:SendSystemMessage(
-														"[Command " .. cmdMatch .. "]: Disabled via developer setting.",
-														channelName,
-														{
-															ChatColor = Color3.fromRGB(255, 78, 78),
-															Font = Enum.Font.SourceSansItalic,
-														}
-													)
-												elseif cmdErrorOrMissingArg == "CommandBlacklist" then
-													speaker:SendSystemMessage(
-														"[Command "
-															.. cmdMatch
-															.. "]: Cannot perform due to command's blacklist system.",
-														channelName,
-														{
-															ChatColor = Color3.fromRGB(255, 78, 78),
-															Font = Enum.Font.SourceSansItalic,
-														}
-													)
-												elseif cmdErrorOrMissingArg == "GlobalBlacklist" then
-													speaker:SendSystemMessage(
-														"[Command "
-															.. cmdMatch
-															.. "]: Cannot perform due to in-game blacklist system.",
-														channelName,
-														{
-															ChatColor = Color3.fromRGB(40, 40, 40),
-															Font = Enum.Font.SourceSansItalic,
-														}
-													)
-												elseif cmdErrorOrMissingArg == "RanTwice" then
-													speaker:SendSystemMessage(
-														"[Command "
-															.. cmdMatch
-															.. "]: Cannot perform twice in the same batch.",
-														channelName,
-														{
-															ChatColor = Color3.fromRGB(40, 40, 40),
-															Font = Enum.Font.SourceSansItalic,
-														}
-													)
-												else
-													if isCmdHidden then return false end
-
-													speaker:SendSystemMessage(
-														"[Command "
-															.. cmdMatch
-															.. "]: Insufficient permissions or data.",
-														channelName,
-														{
-															ChatColor = Color3.fromRGB(255, 78, 78),
-															Font = Enum.Font.SourceSansItalic,
-														}
-													)
-												end
-											elseif parserError == "InvalidCommand" then
-												return false
-											end
-
-											return true
-										elseif ran then
-											local curChannel = chatService:GetChannel(channelName)
-
-											if curChannel and not curChannel.Private then
-												if ran == -1 then
-													curChannel:SendSystemMessageToSpeaker(
-														player.Name .. " — " .. tostring(cmdMatch),
-														{
-															ChatColor = Color3.fromRGB(152, 92, 255),
-															Font = Enum.Font.SourceSansItalic,
-														},
-														speakerName
-													)
-													return true
-												end
-
-												curChannel:SendSystemMessage(
-													player.Name .. " — " .. tostring(cmdMatch),
-													{
-														ChatColor = Color3.fromRGB(110, 161, 255),
-														Font = Enum.Font.SourceSansItalic,
-													}
-												)
-											end
-
-											return true
-										end
-									end
-								end
-
-								return false
-							end
-
-							chatService:RegisterProcessCommandsFunction(
-								"_SLASH_COMMANDS_" .. service.getRandom(),
-								commandProcessor,
-								chatPriority.slashCommand
-							)
-						else
-						end
-					else
-					end
-				end
-
-				local setupChat = function()
-					local chatRunner = service.getCSR()
-
-					if not chatRunner then
-						for i = 1, 10, 1 do
-							chatRunner = service.getCSR()
-							if not chatRunner then
-								wait(0.5)
-							else
-								break
-							end
-						end
-					end
-
-					local chatSpeaker = (chatRunner and chatRunner:FindFirstChild "Speaker")
-					local chatChannel = (chatRunner and chatRunner:FindFirstChild "ChatChannel")
-					local chatService = (chatRunner and chatRunner:FindFirstChild "ChatService")
-
-					chatSpeaker = (chatSpeaker and require(chatSpeaker)) or nil
-					chatChannel = (chatChannel and require(chatChannel)) or nil
-					chatService = (chatService and require(chatService)) or nil
-
-					server.chatRunner = chatRunner
-					server.chatSpeaker = chatSpeaker
-					server.chatChannel = chatChannel
-					server.chatService = chatService
-
-					if chatService then
-						chatService:RegisterProcessCommandsFunction(
-							"_MUTE_CHECK_" .. service.getRandom(),
-							service.metaFunc(function(speakerName, msg, channelName)
-								local speaker = chatService:GetSpeaker(speakerName)
-								if not speaker then return true end
-								local player = speaker:GetPlayer()
-
-								if player then
-									if variables.deaflist[player.UserId] then
-										--local parsedPlayer = server.Parser:apifyPlayer(player)
-
-										--if parsedPlayer then
-										--	parsedPlayer:Kick("Suspicious chat exploit while deafened?")
-										--end
-
-										return true
-									elseif variables.mutelist[player.UserId] then
-										speaker:SendSystemMessage("You cannot talk in chat", channelName, {
-											ChatColor = Color3.fromRGB(255, 123, 123),
-											Font = Enum.Font.SourceSansItalic,
-										})
-										return true
-									else
-										local parsed = server.Parser:apifyPlayer(player)
-										if parsed and parsed:getVar "MuteChat" then return true end
-									end
-								end
-
-								return false
-							end, true),
-							chatPriority.muteCheck
-						)
-
-						if settings.chatSlowmode_Enabled then
-							local slowmodeInterval =
-								math.floor(math.clamp(settings.chatSlowmode_Interval, 0, math.huge))
-
-							if slowmodeInterval > 0 then
-								chatService:RegisterProcessCommandsFunction(
-									"_SLOWMODE_CHECK_" .. service.getRandom(),
-									service.metaFunc(function(speakerName, msg, channelName)
-										local speaker = chatService:GetSpeaker(speakerName)
-										if not speaker then return true end
-										local player = speaker:GetPlayer()
-
-										if player then
-											local slowmodeCache = variables.slowmodeCache[player.UserId]
-											local canBypass = Moderation.checkAdmin(player)
-												or Roles:hasPermissionsFromMember(player, { "Bypass_Chat_Slowmode" })
-											local goodCheck = canBypass
-												or not slowmodeCache
-												or (os.time() - slowmodeCache >= slowmodeInterval)
-
-											if not goodCheck then
-												local timeData =
-													Parser:getTime(slowmodeInterval - (os.time() - slowmodeCache))
-												speaker:SendSystemMessage(
-													string.format(
-														"Slow down! You can send another message in %s hours, %s minutes, & %s seconds.",
-														timeData.hours,
-														timeData.mins,
-														timeData.secs
-													),
-													channelName,
-													{
-														ChatColor = Color3.fromRGB(255, 123, 123),
-														Font = Enum.Font.SourceSansItalic,
-													}
-												)
-
-												return true
-											else
-												slowmodeCache = os.time()
-												variables.slowmodeCache[player.UserId] = slowmodeCache
-											end
-										end
-
-										return false
-									end, true),
-									chatPriority.slowmode
-								)
-							end
-						end
-
-						local publicChannel_Id = service.getRandom()
-						local publicChannel = chatService:AddChannel(publicChannel_Id)
-
-						if publicChannel then
-							publicChannel.Leavable = false
-							--publicChannel.Private = true
-							publicChannel.AutoJoin = true
-
-							server.publicChannel = publicChannel
-							server.publicChannel_Id = publicChannel_Id
-						end
-					end
-				end
-
-				-- Setup connection with chat services
-				if settings.chatAccess then
-					service.trackTask("Chat Initial", true, function()
-						setupChat()
-
-						-- Create slash commands if allowed via settings
-						if settings.chatCommands and settings.slashCommands then setupSlashCommandsListener() end
-					end)
-				end
-			end,
-		},
-		{
 			Name = "TaskScheduler",
-			Order = 9,
+			Order = 8,
 			Runner = function()
 				-- Load automated routines/tasks
 				if settings.automatedTasks_Enabled then
@@ -1182,7 +747,7 @@ return {
 										service.loopTask(loopInd, loopInt, function()
 											if mapMode == "Save" then
 												local mapBackups = variables.mapBackups
-												if #mapBackups + 1 > maxHold then table.clear(variables.mapBackups) end
+												if #mapBackups + 1 > maxHold then repeat table.remove(mapBackups, 1) until #mapBackups == 0 or #mapBackups+1 <= maxHold end
 												server.Utility:makeMapBackup()
 											elseif mapMode == "Load" then
 												if os.time() - taskData.started > 30 then
@@ -1346,7 +911,7 @@ return {
 		},
 		{
 			Name = "DexExplorer",
-			Order = 10,
+			Order = 9,
 			RunAfterInit = true,
 			Runner = function()
 				local protectedAreas = {
@@ -1489,12 +1054,6 @@ return {
 				server.dexSession = dexSession
 				server.dexNetwork = dexNetwork
 			end,
-		},
-		{
-			Name = "CMDR",
-			Order = 11,
-			RunAfterInit = false,
-			Runner = function() end,
 		},
 	},
 }

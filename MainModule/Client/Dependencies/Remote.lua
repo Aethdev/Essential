@@ -278,6 +278,25 @@ return function(env)
 				end,
 			},
 
+			SendNotification = {
+				Disabled = false,
+
+				RL_Enabled = false,
+				RL_Rates = 20,
+				RL_Reset = 10,
+				RL_Error = nil,
+
+				Lockdown_Allowed = false,
+
+				Can_Invoke = true,
+				Can_Fire = true,
+
+				Function = function(args)
+					if not args[1] then return end
+					return client.UI.construct("NotificationV2", args[1])
+				end,
+			},
+
 			MakeUI = {
 				Disabled = false,
 
@@ -516,49 +535,49 @@ return function(env)
 				end,
 			},
 
-			bindKeybinds = {
-				Disabled = false,
+			-- bindKeybinds = {
+			-- 	Disabled = false,
 
-				RL_Enabled = true,
-				RL_Rates = 500,
-				RL_Reset = 10,
-				RL_Error = nil,
+			-- 	RL_Enabled = true,
+			-- 	RL_Rates = 500,
+			-- 	RL_Reset = 10,
+			-- 	RL_Error = nil,
 
-				Lockdown_Allowed = false,
+			-- 	Lockdown_Allowed = false,
 
-				Can_Invoke = false,
-				Can_Fire = true,
+			-- 	Can_Invoke = false,
+			-- 	Can_Fire = true,
 
-				Function = function(args) client.Utility:makeKeybinds(unpack(args)) end,
-			},
+			-- 	Function = function(args) client.Utility:makeKeybinds(unpack(args)) end,
+			-- },
 
-			unBindKeybinds = {
-				Disabled = false,
+			-- unBindKeybinds = {
+			-- 	Disabled = false,
 
-				RL_Enabled = true,
-				RL_Rates = 500,
-				RL_Reset = 10,
-				RL_Error = nil,
+			-- 	RL_Enabled = true,
+			-- 	RL_Rates = 500,
+			-- 	RL_Reset = 10,
+			-- 	RL_Error = nil,
 
-				Lockdown_Allowed = false,
+			-- 	Lockdown_Allowed = false,
 
-				Can_Invoke = false,
-				Can_Fire = true,
+			-- 	Can_Invoke = false,
+			-- 	Can_Fire = true,
 
-				Function = function(args)
-					local bindName = (type(args[1]) == "string" and args[1]) or nil
+			-- 	Function = function(args)
+			-- 		local bindName = (type(args[1]) == "string" and args[1]) or nil
 
-					if bindName and #bindName > 0 then
-						local keybindData = variables.userKeybinds[bindName]
-						if keybindData then
-							if keybindData.quickIcon then keybindData.quickIcon:destroy() end
+			-- 		if bindName and #bindName > 0 then
+			-- 			local keybindData = variables.userKeybinds[bindName]
+			-- 			if keybindData then
+			-- 				if keybindData.quickIcon then keybindData.quickIcon:destroy() end
 
-							keybindData.active = false
-							variables.userKeybinds[bindName] = nil
-						end
-					end
-				end,
-			},
+			-- 				keybindData.active = false
+			-- 				variables.userKeybinds[bindName] = nil
+			-- 			end
+			-- 		end
+			-- 	end,
+			-- },
 
 			focusCameraOnPart = {
 				Disabled = false,
@@ -692,7 +711,7 @@ return function(env)
 					--	return
 					--end
 
-					warn(pcall(function() client.Utility.Tracking:trackPlayer(Player) end))
+					pcall(function() client.Utility.Tracking:trackPlayer(Player) end)
 				end,
 			},
 
@@ -714,6 +733,65 @@ return function(env)
 					if type(PlayerUserId) ~= "number" then return end
 
 					client.Utility.Tracking:stopTrackingPlayer(PlayerUserId)
+				end,
+			},
+
+			ModifyNotification = {
+				Disabled = false,
+
+				RL_Enabled = false,
+				RL_Rates = 10,
+				RL_Reset = 30,
+				RL_Error = nil,
+
+				Lockdown_Allowed = false,
+
+				Can_Invoke = true,
+				Can_Fire = true,
+				Function = function(args)
+					local notifContainer = variables.notifV2Container
+					if not notifContainer then return end
+
+					local notification = notifContainer:findNotificationById(args[1])
+					if not notification then return end
+
+					if type(args[2]) ~= "table" then return end
+					
+					local allowedProperties = {"title", "description", "actionText", "richText",
+						"priorityLevel", "iconUrl", "showSoundUrl", "openSoundUrl", "hideTimeDuration",
+						"timeDuration", "unixTimestampExpiration", "allowInputClose"
+					}
+				
+					for prop, val in args[2] do
+						if not table.find(allowedProperties, prop) then continue end
+						notification[prop] = val
+					end
+					
+					notification:updateBodyDisplay()
+					notification:updateDisplaySize()
+				end,
+			},
+
+			CloseNotification = {
+				Disabled = false,
+
+				RL_Enabled = false,
+				RL_Rates = 10,
+				RL_Reset = 30,
+				RL_Error = nil,
+
+				Lockdown_Allowed = false,
+
+				Can_Invoke = true,
+				Can_Fire = true,
+				Function = function(args)
+					local notifContainer = variables.notifV2Container
+					if not notifContainer then return end
+
+					local notification = notifContainer:findNotificationById(args[1])
+					if not notification then return end
+
+					notification:hide()
 				end,
 			},
 		},
@@ -867,6 +945,8 @@ return function(env)
 							if didDisconnect then
 								if playerEvent then
 									playerEvent.didForceClose = true
+									playerEvent:disconnect()
+
 									self.eventSignals[disconnectId] = nil
 								end
 
@@ -908,6 +988,8 @@ return function(env)
 							sessionNetwork:fire("ManageSession", sessionId, "RunCommand", commandId, ...)
 						end
 					end
+
+					return nil
 				end
 
 				function sessionData:killEvents()

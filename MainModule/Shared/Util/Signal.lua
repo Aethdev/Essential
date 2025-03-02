@@ -905,7 +905,7 @@ function Signal:createHandler(): { [any]: any }
 				if not specificCatg or specificCatg == catgName then
 					for d, catgSignal in catgList do
 						catgList[d] = nil
-						task.defer(function() catgSignal:destroy() end)
+						task.defer(function() catgSignal:disconnect() end)
 					end
 				end
 			end
