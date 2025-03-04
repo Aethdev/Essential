@@ -39,7 +39,7 @@ if not plugins then warn("_EssentialL_ :: Plugins folder is missing"); return en
 if not uiFolder then warn("_Esssential: :: UI folder is missing"); return end
 
 if loadData.RojoEnabled then
-	loadData.Asset = if SS:FindFirstChild("RojoEssential") then SS.RojoEssential:FindFirstChild("MainModule") else loadData.Asset
+	loadData.Asset = if SS:FindFirstChild("RojoEssentialModule") then SS.RojoEssentialModule:FindFirstChild("MainModule") else loadData.Asset
 
 	for i, object in modelParent:GetChildren() do
 		if object ~= model and object:IsA"Folder" and object.Name:find("Essential$") and object:GetAttribute("RojoCrossCompatibility") == true then

@@ -13,6 +13,7 @@ local TextChatModule = {
 
 local TextChatService = game:GetService("TextChatService")
 local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
 
 local function CorrectValue(expectedValueType: string, defaultValue: any, givenValue: any)
@@ -105,13 +106,27 @@ TextChatModule.OnChatMessage = function(message: TextChatMessage)
 		end
 	end
 	
-	local DisplayName = CorrectValue("string", messagePlayer.DisplayName, messagePlayer:GetAttribute("DisplayName"))
-	local DisplayNameColor = CorrectValue("Color3", if messagePlayer.Neutral then TextChatModule:GetSpeakerNameColor(DisplayName) else messagePlayer.TeamColor.Color, messagePlayer:GetAttribute("DisplayNameColor"))
-	local MessageTextColor = CorrectValue("Color3", TextChatService.ChatWindowConfiguration.TextColor3, messagePlayer:GetAttribute("MessageColor"))
+	local DisplayName = CorrectValue("string", messagePlayer.DisplayName, messagePlayer:GetAttribute("DisplayName") or messagePlayer:GetAttribute("ChatTag"))
+	local DisplayNameColor = CorrectValue("Color3", if messagePlayer.Neutral then TextChatModule:GetSpeakerNameColor(DisplayName) else messagePlayer.TeamColor.Color,
+		messagePlayer:GetAttribute("DisplayNameColor") or messagePlayer:GetAttribute("ChatNameColor"))
+	local MessageTextColor = CorrectValue("Color3", TextChatService.ChatWindowConfiguration.TextColor3,
+		messagePlayer:GetAttribute("MessageColor") or messagePlayer:GetAttribute("ChatTagColor"))
 	
 	local PrefixText = (if #newPrefixText > 0 then newPrefixText.." " else "") .. "<font color='#"..DisplayNameColor:ToHex().."'>"..DisplayName.."</font>:"
 
 	local newProperties: ChatWindowMessageProperties | nil = if TextChatModule.OverrideChatCallback then TextChatService.ChatWindowConfiguration:DeriveNewMessageProperties() else nil
+
+	if message.TextChannel.Name:match("^RBXWhisper:(%d+)_(%d+)$") then
+		local playerUserId1, playerUserId2 = message.TextChannel.Name:match("^RBXWhisper:(%d+)_(%d+)$") 
+		playerUserId1, playerUserId2 = tonumber(playerUserId1), tonumber(playerUserId2)
+
+		local otherTarget = Players:GetPlayerByUserId(if LocalPlayer.UserId == playerUserId1 then
+			playerUserId2 else playerUserId1)
+
+		local otherTargetDisplayName = if not otherTarget then `{otherTarget.UserId}` else
+			CorrectValue("string", otherTarget.DisplayName, otherTarget:GetAttribute("DisplayName") or otherTarget:GetAttribute("ChatTag"))
+		PrefixText = `[To {otherTargetDisplayName}] ` .. PrefixText
+	end
 
 	if chatGradientColor and newProperties then
 		local UIGradient = Instance.new("UIGradient")

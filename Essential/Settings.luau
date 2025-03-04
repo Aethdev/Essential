@@ -361,6 +361,7 @@ settings.musicPlayer_Songs = {
 settings.musicPlayer_Playlists = { -- Only available with queue enabled
 	-- FORMAT:
 	-- [playlist_name] = {song_id, song_id, etc..};
+	["triz"] = {1846619127, 1843536398};
 }
 settings.musicPlayer_Queue = true -- Allow music player to run on queue
 settings.musicPlayer_NoDuplication = false -- (Required: Queue) Whether duplicated songs should be removed or not

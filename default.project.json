@@ -6,7 +6,7 @@
     "ServerStorage": {
       "$className": "ServerStorage",
 
-      "RojoEssential": {
+      "RojoEssentialModule": {
         "$className": "Folder",
         "MainModule": {
           "$path": "MainModule/"

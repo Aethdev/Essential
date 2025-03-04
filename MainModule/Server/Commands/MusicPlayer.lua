@@ -479,6 +479,150 @@ return function(envArgs)
 			end,
 		},
 
+		viewPlaylist = {
+			Disabled = not musicPlayerEnabled,
+			Prefix = settings.actionPrefix,
+			Aliases = { "viewplaylist", "viewdevplaylist" },
+			Arguments = {
+				{
+					argument = "playlistName",
+					required = true,
+				}
+			},
+			Permissions = { "Manage_MusicPlayer" },
+			Roles = {},
+			ServerCooldown = 2;
+			
+			Description = "Views songs in the developers' specific playlist",
+
+			Function = function(plr, args)
+				local playlistName = args[1]:lower()
+				local list = {}
+
+				local addSongToMusicQueueId = Cmds.Library.addSongToMusicQueue.Id
+				local addDevPlaylistToMusicId = Cmds.Library.addDevPlaylistToMusic.Id
+
+				local savedPlaylist = variables.musicPlaylists[playlistName]
+				if not savedPlaylist then
+					plr:sendData(
+						"SendMessage",
+						"<b>Music System</b>: Playlist "..Parser:filterForRichText(playlistName).." doesn't exist in the developer settings. Are you sure that it exists?",
+						nil,
+						6,
+						"Context"
+					)
+					return
+				end
+
+				for i, songInfo in savedPlaylist do
+					local songAssetInfo = service.getProductInfo(songInfo)
+					table.insert(list, {
+						type = "Action",
+						specialMarkdownSupported = false,
+						selectable = true,
+						label = `{i}. <b>{Parser:filterForRichText(songAssetInfo.Name)}</b>`
+							.. ` ({songInfo})`,
+						richText = true,
+						optionsLayoutStyle = `Log`;
+						options = {
+							{
+								label = `Add To Queue`,
+								backgroundColor = Color3.fromRGB(79, 122, 241),
+								onExecute = `playercommand://{addSongToMusicQueueId}||{songInfo}`;
+							};
+						},
+					})
+
+					if i == #savedPlaylist then
+						table.insert(list, {
+							type = "Action",
+							specialMarkdownSupported = false,
+							selectable = true,
+							label = ``,
+							richText = true,
+
+							options = {
+								{
+									label = `Add {#savedPlaylist} Song(s) To Queue`,
+									backgroundColor = Color3.fromRGB(59, 92, 182),
+									onExecute = `playercommand://{addDevPlaylistToMusicId}||{playlistName}`;
+								};
+							},
+						})
+					end
+				end
+
+				plr:makeUI("List", {
+					Title = "E. Music Developer Playlist "..playlistName,
+					List = list
+				})
+			end,
+		};
+
+		addDevPlaylistToMusic = {
+			Disabled = not (musicPlayerEnabled and settings.musicPlayer_Queue),
+			Prefix = settings.actionPrefix,
+			Aliases = { "addplaylisttomusic" },
+			Arguments = {
+				{
+					argument = "playlistName",
+					required = true,
+				},
+			},
+			Permissions = { "Manage_MusicPlayer" },
+			Roles = {},
+
+			Description = "Adds all the songs from the dev-settings playlist to the queue",
+			PlayerDebounce = true,
+			ServerCooldown = 5,
+
+			Function = function(plr, args)
+				local savedPlaylist = variables.musicPlaylists[args[1]:lower()] or {}
+				local addedSongs = {}
+
+				for i, songInfo in savedPlaylist do
+					local songAssetInfo = service.getProductInfo(songInfo)
+
+					if not songAssetInfo or songAssetInfo.AssetTypeId ~= 3 then
+						continue
+					end
+
+					table.insert(addedSongs, songInfo)
+				end
+
+				if #addedSongs == 0 then
+					plr:sendData("SendNotification", {
+						title = "Music System - ERROR";
+						description = `None of the songs listed in the saved playlist {args[1]} are eligible to add to the music queue`;
+						time = 10;
+					})
+					return
+				end
+
+				if settings.musicPlayer_MaxPlayerCreations > 0 then
+					local songsAddedByPlayer = MusicService:getSongsAddedFromRequester(plr.UserId)
+
+					if #songsAddedByPlayer+#addedSongs > settings.musicPlayer_MaxPlayerCreations then
+						plr:sendData("SendNotification", {
+							title = "Music System - ERROR";
+							description = `Adding {#addedSongs} song(s) results in exceeding your limit of adding songs to the queue. Trying adding songs individually.`;
+							time = 10;
+						})
+					end
+				end
+
+				for i, soundId in addedSongs do
+					MusicService:addSongToQueue(soundId, plr.UserId)
+				end
+
+				plr:sendData("SendNotification", {
+					title = "Music System";
+					description = `Added {#addedSongs} song(s) to the queue.`;
+					time = 10;
+				})
+			end
+		};
+
 		addSongsToSavedPlaylist = {
 			Disabled = not musicPlayerEnabled,
 			Prefix = settings.actionPrefix,
@@ -529,6 +673,7 @@ return function(envArgs)
 					plr:sendData(
 						"SendMessage",
 						"<b>Music System</b>: There are no valid songs to add in the saved playlist "..playlistName,
+						nil,
 						6,
 						"Context"
 					)
@@ -592,6 +737,7 @@ return function(envArgs)
 					plr:sendData(
 						"SendMessage",
 						"<b>Music System</b>: There are no valid songs to remove from the saved playlist "..playlistName,
+						nil,
 						6,
 						"Context"
 					)

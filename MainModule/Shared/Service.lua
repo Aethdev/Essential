@@ -1324,8 +1324,8 @@ return function(specificTab, errHandler, Promise)
 					local suc, foundName = pcall(function() return service.Players:GetNameFromUserIdAsync(num) end)
 
 					if suc and foundName then
-						foundName = foundName:lower()
 						if not table.find(existCache.possibleNames, foundName) then table.insert(existCache.possibleNames, foundName) end
+						if not table.find(existCache.possibleNames, foundName:lower()) then table.insert(existCache.possibleNames, foundName:lower()) end
 
 						if userIdCache[foundName] then userIdCache[foundName] = nil end
 
@@ -1362,7 +1362,7 @@ return function(specificTab, errHandler, Promise)
 							existingCache = {
 								userId = 0,
 								updated = os.time(),
-								possibleNames = { str:lower() },
+								possibleNames = { str, str:lower() },
 								temporary = true,
 								finished = false,
 							}

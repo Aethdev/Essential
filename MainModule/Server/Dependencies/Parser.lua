@@ -785,6 +785,10 @@ function parser:getPlayers(msg: string | table, caller: Player | ParsedPlayer, f
 			return count
 		end,
 
+		__iter = function(self)
+			return pairs, renewedSelection
+		end,
+
 		__metatable = "Essential - Grouped players",
 	})
 
@@ -1075,7 +1079,7 @@ function parser:apifyPlayer(
 				return table.find(self.socialPolicies.AllowedExternalLinkReferences, socialMedia) and true or false
 			end
 
-			function self:hasSafeChat() return self.socialPolicies.AreAdsAllowed end
+			function self:hasSafeChat() return not self.socialPolicies.AreAdsAllowed end
 
 			function self:sendData(...)
 				local plr = self._object or self._instance
@@ -1274,6 +1278,73 @@ function parser:apifyPlayer(
 			function self:isReal()
 				local plr = self._object or self._instance
 				return typeof(plr) == "Instance" and plr:IsA "Player" and plr.UserId == playerUserId
+			end
+
+			self.disguiseUserId = 0
+			function self:isDisguised()
+				return self.disguiseUserId > 0
+			end
+
+			function self:disguiseAsPlayer(targetUserId: number)
+				if targetUserId == self.disguiseUserId then return end
+
+				self.disguiseUserId = targetUserId
+
+				if self:isInGame() then
+					self:applyDisguise()
+
+					local targetUsername = service.playerNameFromId(targetUserId)
+					self:sendData("SendNotification", {
+						title = "Character Disguise",
+						description = if targetUserId == 0 or targetUserId == player.UserId then
+							`You are back as your original character`
+							else `You are now disguised as <b>{targetUsername}</b> ({targetUserId})`;
+						time = 10;
+					})
+				end
+
+			end
+
+			function self:applyDisguise()
+				local targetUserId = self.disguiseUserId
+
+				if targetUserId == 0 or targetUserId == player.UserId then
+					selfProxy:SetAttribute("DisplayName", nil)
+					selfProxy:SetAttribute("DisplayNameColor", nil)
+					self._object.CharacterAppearanceId = self._object.UserId
+
+					local success, desc =
+						pcall(service.Players.GetHumanoidDescriptionFromUserId, service.Players, self._object.UserId)
+					
+					local humanoid = selfProxy.Character and selfProxy.Character:FindFirstChildOfClass "Humanoid"
+
+					if success and humanoid then
+						humanoid:ApplyDescription(desc:Clone())
+					end
+
+					if humanoid then
+						humanoid.DisplayName = self._object.DisplayName
+					end
+				end
+
+				local targetDisplayName = server.Identity.getDisplayName(targetUserId)
+				
+				selfProxy:SetAttribute("DisplayName", targetDisplayName)
+				-- selfProxy:SetAttribute("DisplayNameColor", server.TextChatModule:GetSpeakerNameColor(targetDisplayName))
+				self._object.CharacterAppearanceId = targetUserId
+
+				local success, desc =
+					pcall(service.Players.GetHumanoidDescriptionFromUserId, service.Players, targetUserId)
+
+				local humanoid = selfProxy.Character and selfProxy.Character:FindFirstChildOfClass "Humanoid"
+				
+				if success and humanoid then
+					humanoid:ApplyDescription(desc:Clone())
+				end
+
+				if humanoid then
+					humanoid.DisplayName = targetDisplayName
+				end
 			end
 
 			function self:getInfo()

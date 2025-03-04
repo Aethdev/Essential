@@ -456,6 +456,10 @@ return function(envArgs)
 					Utility:setupClient(plr, {
 						loadingType = if isExisting then "PlayerGui" else nil;
 					})
+
+					if parsedPlayer.disguiseUserId > 0 then
+						parsedPlayer:applyDisguise()
+					end
 					
 					Logs.addLogForPlayer(
 						parsedPlayer,

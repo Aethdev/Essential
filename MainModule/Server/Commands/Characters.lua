@@ -1155,7 +1155,7 @@ return function(envArgs)
 				end
 
 				for i, target in pairs(args[1]) do
-					target.CharacterAppearanceId = morphUserId
+					target._object.CharacterAppearanceId = morphUserId
 
 					local humanoid = target.Character and target.Character:FindFirstChildOfClass "Humanoid"
 

@@ -62,17 +62,18 @@ return function(envArgs)
 						..(if err == true then "" else `<i>{tostring(err)}</i>`);
 					time = 20;
 				})
-
+				warn(`FAILED TO CONNECT TO CHAT SUBNETWORK`)
+				
 				return false
 			end)
 			:andThen(function(didConnectToSubNetwork: boolean)
 				if not didConnectToSubNetwork then return end
 
-				UI.construct("Notification", {
-					title = "Chat Client";
-					description = "Connected to the ChatService subnetwork successfully.";
-					time = 10;
-				})
+				-- UI.construct("Notification", {
+				-- 	title = "Chat Client";
+				-- 	description = "Connected to the ChatService subnetwork successfully.";
+				-- 	time = 10;
+				-- })
 				
 				return Promise.retryWithDelay(
 					function()
@@ -103,16 +104,18 @@ return function(envArgs)
 								..(if err == true then "" else `<i>{tostring(err)}</i>`);
 							time = 20;
 						})
+						
+						warn(`FAILED TO CONNECT TO CHAT SESSION`)
 
 						return false
 					end)
 					:andThen(function(didConnectToSession)
 						if not didConnectToSession then return end
-						UI.construct("Notification", {
-							title = "Chat Client";
-							description = "Connected to the ChatService session successfully.";
-							time = 10;
-						})
+						-- UI.construct("Notification", {
+						-- 	title = "Chat Client";
+						-- 	description = "Connected to the ChatService session successfully.";
+						-- 	time = 10;
+						-- })
 
 						ChatClient.Internals:connectNetwork()
 					end)

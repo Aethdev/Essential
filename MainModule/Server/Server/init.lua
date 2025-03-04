@@ -317,6 +317,7 @@ server.Signal = require(sharedFolder.Util.Signal)
 server.Queue = require(sharedFolder.Util.Queue)
 server.MaterialIcons = require(sharedFolder.Misc.MaterialIcons)
 server.SpecialTextMarkdown = require(sharedFolder.Misc.SpecialTextMarkdown)
+server.TextChatModule = require(sharedFolder.Util.ChatTagsModule)
 
 server.NameGeneration = require(server.AssetFolder.NameGeneration)
 server.Loadstring = require(server.AssetFolder.Loadstring)
