@@ -353,46 +353,6 @@ settings.Permissions = {
 			};
 		};
 	]]
-
-	["special"] = {
-		Priority = 10; -- (number) Priority level
-		Color = Color3.fromRGB(103, 76, 201); -- Supported actions: number or Color3
-		Members = { "trzistan" }; -- (table/string) Refer to "specifying/targeting members" section above
-		Permissions = {
-			-- List of Permissions here. Refer to "Roles Accessibility & Management" section above.
-			-- Here's an example..
-			
-			Use_Utility = false;
-		};
-		ChatTag = {
-			Enabled = true;
-			Text = "Founder";
-			Font = Enum.Font["Code"]; -- See https://create.roblox.com/docs/reference/engine/enums/Font for more fonts
-			UseRoleColor = true;
-			CustomColor = Color3.fromRGB(255,255,255);
-			MessageColor = Color3.fromRGB(248, 239, 119);
-		};
-	};
-
-	["everyperson"] = {
-		Priority = 5; -- (number) Priority level
-		Color = Color3.fromRGB(58, 134, 235); -- Supported actions: number or Color3
-		Members = { "@everyone" }; -- (table/string) Refer to "specifying/targeting members" section above
-		Permissions = {
-			-- List of Permissions here. Refer to "Roles Accessibility & Management" section above.
-			-- Here's an example..
-			
-			Use_Utility = false;
-		};
-		ChatTag = {
-			Enabled = false;
-			Text = "Everyone";
-			Font = Enum.Font["Antique"]; -- See https://create.roblox.com/docs/reference/engine/enums/Font for more fonts
-			UseRoleColor = false;
-			CustomColor = Color3.fromRGB(255,255,255);
-			MessageColor = Color3.fromRGB(230, 62, 221);
-		};
-	};
 }
 
 settings.DefaultRolePermissions = {
