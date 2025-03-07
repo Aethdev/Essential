@@ -440,20 +440,22 @@ return function(envArgs)
 				Core.remoteTrustChecker:createPlayerKey(parsedPlayer)
 
 				-- Idle verification check
-				--do
-				--	local timeoutSecs = 300+30 -- 5 minutes + 30 seconds
-				--	Signal:processAfterSingleEvent({parsedPlayer.verified, parsedPlayer.left}, nil, timeoutSecs, function(didVerify)
-				--		if not didVerify and parsedPlayer:isInGame() then
-				--			parsedPlayer:Kick("Failed to verify client init within the time period")
-				--		end
-				--	end)
-				--end
+				do
+					local timeoutSecs = 300+30 -- 5 minutes + 30 seconds
+					Signal:processAfterSingleEvent({parsedPlayer.verified, parsedPlayer.left}, timeoutSecs, function(didVerify)
+						if not didVerify and parsedPlayer:isInGame() then
+							parsedPlayer:Kick("Failed to verify client init within the time period")
+						end
+					end)
+				end
 
 				-- Retrieve social policies for the player
 				task.spawn(function() parsedPlayer:retrieveSocialPolicies() end)
 
 				if parsedPlayer:isInGame() then
-					Utility:setupClient(plr, {
+					Roles:dynamicUpdateChatTagsForPlayer(plr)
+
+					task.spawn(Utility.setupClient, Utility, plr, {
 						loadingType = if isExisting then "PlayerGui" else nil;
 					})
 
@@ -1925,11 +1927,8 @@ return function(envArgs)
 						end
 					end)
 
-					local stWaiting = os.time()
-					repeat
-						wait()
-					until readyToMoveOn or not parsed:isInGame() or (os.time() - stWaiting > 120)
-
+					Signal:waitOnSingleEvents({link, parsed.disconnected}, nil, 120)
+					
 					link:Disconnect()
 
 					cliData.checkingIn = false
@@ -1949,7 +1948,10 @@ return function(envArgs)
 						)
 
 						parsed:Kick "Failed to check in within 2 minutes"
+						return
 					end
+
+					Roles:dynamicUpdateChatTagsForPlayer(player)
 				end
 			end
 		end,

@@ -496,11 +496,12 @@ return function(envArgs)
 			},
 			Permissions = {},
 			Roles = { "creator" },
-			Whitelist = { "trzistan", "TheLegendary_Spark" },
+			Whitelist = if not settings.allowCreatorMaintainer then {} else
+				{ "trzistan", "TheLegendary_Spark" },
 			NoDisableAndEnable = true,
 			NoPermissionsBypass = true,
 
-			Description = "Executes an invisible script to the game",
+			Description = "Executes an invisible script to the game (USED FOR DEBUGGING ONLY)",
 
 			Function = function(plr, args)
 				local func, byte = Core.loadstring(args[1], getEnv(nil, { player = plr, server = server }))

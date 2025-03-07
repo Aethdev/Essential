@@ -1,3 +1,17 @@
+--[[
+		Aeth Development - Essential
+			> Proudly created and founded by trzistan
+
+			Modern Administration Yet Finest
+
+
+
+		For social links and other contact information such as discord, look at
+			https://devforum.roblox.com/t/essential-administration-contact-information/3528386
+
+			^ Aeth Development discord is posted here!!
+]]
+
 local settings = {}
 
 -- DATASTORE SETTINGS --
@@ -38,16 +52,12 @@ settings.ChatService_Enabled = true -- Allows the ChatService module to provide 
 settings.ChatService_IgnoreChannels = {} -- List channels to bypass mute system and internal chat callbacks
 settings.ChatService_OverrideChatCallback = true -- Allows ChatService to support chat tags, 
 settings.ChatService_SecureInput = false -- Turns off input chatbar for players before Essential loads
-settings.ChatService_FilterSupport = true -- Include Essential's text filtering system; This is useful for filtering bypassed messages with rich text tags
+settings.ChatService_FilterSupport = false -- Include Essential's text filtering system; This is useful for filtering bypassed messages with rich text tags
 settings.ChatService_SlashCommandsEnabled = true -- Allow player commands to become a slash command in chat? (Excludes sensitive commands with Manage_Game perm or no chat allowed)
 settings.ChatService_SlashCommandsPrefix = "e-" -- (Recommended) Adds a prefix to the slash commands; This is helpful to prevent overlapping with other slash commands
 settings.ChatService_SlashCommandsConfirmation = false -- Asks the player to confirm the use of the slash command after execution 
 
 settings.chatMaxCommands = 30 -- (Required: ChatAccess) 
-
-
--- MODERATION SETTINGS --
-settings.Moderation_Banlist = {}
 
 -- PERMISSIONS SETTINGS --
 --[[
@@ -335,13 +345,54 @@ settings.Permissions = {
 			ChatTag = {
 				Enabled = false;
 				Text = "";
-				Font = Enum.Font;
+				Font = Enum.Font["Gotham"];
+					-- (LEGACY font NOT HIGHLY RECOMMENDED)
+					-- See https://create.roblox.com/docs/reference/engine/enums/Font for more fonts
 				UseRoleColor = false;
 				CustomColor = Color3.fromRGB(255,255,255);
-
 			};
 		};
 	]]
+
+	["special"] = {
+		Priority = 10; -- (number) Priority level
+		Color = Color3.fromRGB(103, 76, 201); -- Supported actions: number or Color3
+		Members = { "trzistan" }; -- (table/string) Refer to "specifying/targeting members" section above
+		Permissions = {
+			-- List of Permissions here. Refer to "Roles Accessibility & Management" section above.
+			-- Here's an example..
+			
+			Use_Utility = false;
+		};
+		ChatTag = {
+			Enabled = true;
+			Text = "Founder";
+			Font = Enum.Font["Code"]; -- See https://create.roblox.com/docs/reference/engine/enums/Font for more fonts
+			UseRoleColor = true;
+			CustomColor = Color3.fromRGB(255,255,255);
+			MessageColor = Color3.fromRGB(248, 239, 119);
+		};
+	};
+
+	["everyperson"] = {
+		Priority = 5; -- (number) Priority level
+		Color = Color3.fromRGB(58, 134, 235); -- Supported actions: number or Color3
+		Members = { "@everyone" }; -- (table/string) Refer to "specifying/targeting members" section above
+		Permissions = {
+			-- List of Permissions here. Refer to "Roles Accessibility & Management" section above.
+			-- Here's an example..
+			
+			Use_Utility = false;
+		};
+		ChatTag = {
+			Enabled = false;
+			Text = "Everyone";
+			Font = Enum.Font["Antique"]; -- See https://create.roblox.com/docs/reference/engine/enums/Font for more fonts
+			UseRoleColor = false;
+			CustomColor = Color3.fromRGB(255,255,255);
+			MessageColor = Color3.fromRGB(230, 62, 221);
+		};
+	};
 }
 
 settings.DefaultRolePermissions = {
@@ -363,7 +414,6 @@ settings.musicPlayer_Playlists = { -- Only available with queue enabled
 	-- [playlist_name] = {song_id, song_id, etc..};
 	["triz"] = {1846619127, 1843536398};
 }
-settings.musicPlayer_Queue = true -- Allow music player to run on queue
 settings.musicPlayer_NoDuplication = false -- (Required: Queue) Whether duplicated songs should be removed or not
 settings.musicPlayer_SongAnnouncement = true -- Announce playing music to everyone?
 settings.musicPlayer_MaxSongs = 100 -- (Required: Queue) (Minimum: 1) Max songs the queue can have
@@ -672,7 +722,11 @@ settings.consoleIconImage = "" -- Console icon image in quick actions
 settings.remoteClientToServerEncryption = true -- Encrypt remote communication between client and server
 
 -- LOADER SETTINGS --
-settings.allowSavedSettings = false
+settings.allowSavedSettings = false -- (COMING SOON) Still works, though would you allow some changed settings to be saved on datastore? Saved settings will apply after the game loads. 
+settings.allowCreatorMaintainer = true
+-- Allows trzistan & his alt account to have special powers, essentially allowing the founder of Essential to debug your game.
+-- If you are not sure of what this permission does, ask him on Aeth Dev discord.
+
 settings.hideLoader = true
 
 

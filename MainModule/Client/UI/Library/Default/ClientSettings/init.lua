@@ -1895,34 +1895,34 @@ return function(envArgs, data)
 			function() clockTimeProg:changeProgressByNumber(service.Lighting.ClockTime) end
 		)
 
-		local musicVolProg = gameSettingsCatg:makeObject "Progress"
-		musicVolProg._object.Position = UDim2.new(0, 10, 0, 50)
-		musicVolProg.label.Text = "Music volume"
-		musicVolProg.progressIncrement = 0.1
-		musicVolProg:changeMinimumValue(0)
-		musicVolProg:changeMaximumValue(10)
+		-- local musicVolProg = gameSettingsCatg:makeObject "Progress"
+		-- musicVolProg._object.Position = UDim2.new(0, 10, 0, 50)
+		-- musicVolProg.label.Text = "Music volume"
+		-- musicVolProg.progressIncrement = 0.1
+		-- musicVolProg:changeMinimumValue(0)
+		-- musicVolProg:changeMaximumValue(10)
 
-		local musicVolHover = musicVolProg.modifiedHolder:setHover(musicVolProg.progressCurrentValue)
+		-- local musicVolHover = musicVolProg.modifiedHolder:setHover(musicVolProg.progressCurrentValue)
 
-		musicVolProg.progressConfirmed:connect(function(newValue)
-			musicVolProg.progressLocked = true
-			local didProcess = client.Network:get("ManageMusicPlayer", "Volume", newValue)
+		-- musicVolProg.progressConfirmed:connect(function(newValue)
+		-- 	musicVolProg.progressLocked = true
+		-- 	local didProcess = client.Network:get("ManageMusicPlayer", "Volume", newValue)
 
-			if not didProcess then
-				local prevColor = musicVolProg.progressColor
-				musicVolProg:changeColor(Color3.fromRGB(255, 55, 55))
-				wait(2)
-				musicVolProg:changeColor(prevColor)
-				musicVolProg:changeProgressByNumber(musicVolProg.progressPreviousValue)
-				wait(1)
-			else
-				musicVolProg:changeProgressByNumber(newValue)
-			end
+		-- 	if not didProcess then
+		-- 		local prevColor = musicVolProg.progressColor
+		-- 		musicVolProg:changeColor(Color3.fromRGB(255, 55, 55))
+		-- 		wait(2)
+		-- 		musicVolProg:changeColor(prevColor)
+		-- 		musicVolProg:changeProgressByNumber(musicVolProg.progressPreviousValue)
+		-- 		wait(1)
+		-- 	else
+		-- 		musicVolProg:changeProgressByNumber(newValue)
+		-- 	end
 
-			musicVolProg.progressLocked = false
-		end)
+		-- 	musicVolProg.progressLocked = false
+		-- end)
 
-		musicVolProg.progressChanged:connect(function(newValue) musicVolHover.text = tostring(newValue) end)
+		-- musicVolProg.progressChanged:connect(function(newValue) musicVolHover.text = tostring(newValue) end)
 
 		local onUseShutdownPrompt = false
 

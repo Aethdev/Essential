@@ -385,6 +385,7 @@ return function(envArgs)
 					argument = "player",
 					type = "players",
 					required = true,
+					allowFPCreation = true
 				},
 			},
 			Permissions = { "Manage_Players" },
@@ -396,73 +397,131 @@ return function(envArgs)
 			Function = function(plr, args)
 				local target = args[1][1]
 				local cliDat = plr:getClientData()
-				local pData = Core.getPlayerData(target.UserId)
+				local pData = target:getPData()
 
-				local highestRole = Roles:getHighestRoleFromMember(plr)
-
-				local targetInfo = {
-					"<b>Details</b>",
-					"Full name: <b>" .. tostring(target) .. "</b>",
-					"User Id: " .. target.UserId,
-					"Character Id: " .. target.CharacterAppearanceId,
-					`Device Type: {cliDat.deviceType}`,
-					"",
-					"<b>Team</b>:",
-					tostring(
-						(
-							target.Team ~= nil
-							and "<font color='#"
-								.. target.Team.TeamColor.Color:ToHex()
-								.. "'>"
-								.. target.Team.Name
-								.. "</font>"
-						) or "<u>not assigned</u>"
-					),
-					"",
-					"Joined on <b>" .. server.Parser:osDate(os.time() - (plr.AccountAge * 86400)) .. "</b>",
-					"Membership type: "
-						.. tostring(target.MembershipType == Enum.MembershipType.Premium and "Premium" or "NonPremium"),
-					"----",
-					"Warnings: <b>" .. #(pData.warnings or {}) .. "</b>",
-					"Ban status: <b>" .. tostring(Moderation.checkBan(target)) .. "</b>",
-					"",
-					"Highest role priority: <b>" .. tostring(highestRole.priority) .. "</b>",
-					"Highest role: <b>" .. (highestRole and highestRole.name or "[no highest role]") .. "</b>",
-					"",
-				}
-
+				local highestRole;
 				local joinedRoles = {}
+				local enlistedRoles = Roles:getRolesFromMember(target)
 				local otherRoleCount = 0
-				for i, roleInfo in pairs(Roles:getRolesFromMember(target)) do
+
+				table.sort(enlistedRoles, function(roleA, roleB)
+					return roleA.priority > roleB.priority
+				end)
+
+				for i, roleInfo in enlistedRoles do
+					if not highestRole or roleInfo.priority >= highestRole.priority then
+						highestRole = roleInfo
+					end
+				end
+
+				for i, roleInfo in enlistedRoles do
 					local canShowToViewer = not roleInfo.hiddenfromlist
 						and (not roleInfo.hidelistfromlowranks or roleInfo.priority <= highestRole.priority)
-					if roleInfo.name ~= "everyone" and canShowToViewer then
+					
+					if canShowToViewer then
 						if #joinedRoles + 1 <= 20 then
-							table.insert(joinedRoles, "<b>" .. roleInfo.name:sub(1, 50) .. "</b>")
+							table.insert(joinedRoles, "<font color='#"..roleInfo.color:ToHex().."'><b>" .. Parser:filterForRichText(roleInfo.name) .. "</b> ("..roleInfo.priority..")</font>")
 						else
 							otherRoleCount += 1
 						end
 					else
+						otherRoleCount += 1
 					end
 				end
 
-				if otherRoleCount > 0 then
-					table.insert(
-						targetInfo,
-						"Roles joined: " .. table.concat(joinedRoles, ", ") .. " +" .. (otherRoleCount - 20) .. " more"
-					)
-				else
-					table.insert(
-						targetInfo,
-						"Roles joined: <i>No roles to show. Either roles are not allowed to appear in your visibility or do not exist.</i>"
-					)
-				end
+				local banCaseInfo: {
+					caseId: string,
+					moderatorId: number,
+					startedOn: number,
+					expiresOn: number,
+					reason: string,
+				}? = pData.BanCase
+				local isBanExpired = if banCaseInfo and banCaseInfo.expiresOn then
+					DateTime.now().UnixTimestampMillis >= banCaseInfo.expiresOn else false
 
-				plr:makeUI("PrivateMessageV2", {
-					title = target.Name .. "'s player information",
-					desc = "",
-					message = table.concat(targetInfo, "\n"),
-					readOnly = true,
+				local targetInfo = {
+					{
+						type = "Label",
+						selectable = true,
+						label = `{plr:toStringDisplay()} - {plr.UserId}\n`
+					},
+					{
+						type = "Label",
+						selectable = true,
+						richText = true,
+						label = `<b>Details</b>\n`
+							.. `Full name: <u>{Parser:filterForRichText(target:toStringDisplay())}</u>\n`
+							.. `User Id: {target.UserId}\n`
+							.. `Character Appearance Id: {target.CharacterAppearanceId}\n`
+							.. `Device Type: {cliDat.deviceType}\n\n`
+					},
+					{
+						type = "Label",
+						selectable = true,
+						richText = true,
+						label = `<b>Incognito</b>\n`
+							.. `Status: {pData.clientSettings.IncognitoMode and "<b>Active</b>" or "<b>Inactive</b>"}\n`
+							.. `Name: {Parser:filterForRichText(pData.incognitoName or "<u>Not provided</u>")}\n\n`
+					},
+					{
+						type = "Label",
+						selectable = true,
+						richText = true,
+						label = `<b>Team</b>\n`
+							.. `Assigned to {if not plr.Team then `<i>None</i>` else
+								`<font color='#{plr.TeamColor.Color:ToHex()}'>{Parser:filterForRichText(plr.Team.Name)}</font>\n`
+							}`
+					},
+					{
+						type = "Detailed",
+						selectable = true,
+						richText = true,
+						specialMarkdownSupported = true,
+						label = `Warnings ({#pData.warnings})`;
+						description = (function()
+							local listOfWarnings = {}
+
+							for i, warnInfo in pData.warnings do
+								table.insert(listOfWarnings,  `[{warnInfo.id}]: {Parser:filterForRichText(warnInfo.reason)}`)
+							end
+
+							return table.concat(listOfWarnings, "\n")
+						end)();
+					}, 
+					{
+						type = "Detailed",
+						selectable = true,
+						richText = true,
+						specialMarkdownSupported = true,
+						label = `Enlisted Roles ({#enlistedRoles})`;
+						description = (function()
+							return (if otherRoleCount > 0 then `<i>+ {otherRoleCount} role{if otherRoleCount > 1 then `s` else ""} not shown</i>\n\n` else "")
+								.. `{table.concat(joinedRoles, "\n")}`
+						end)();
+					}, 
+					{
+						type = "Detailed",
+						selectable = true,
+						richText = true,
+						specialMarkdownSupported = true,
+						label = `Ban Case ({if banCaseInfo and isBanExpired then `<i>Expired</i>`
+							elseif not banCaseInfo then `<i>None</i>` else 
+							`<i>Active</i>`})`;
+						description = (function()
+							if not banCaseInfo then return `User was not banned` end
+							
+							return `Started on \{\{t:{banCaseInfo.startedOn}:ldt\}\}`
+								.. (if not banCaseInfo.expiresOn then `` else `\nExpires on \{\{{banCaseInfo.expiresOn}\}\}`)
+								.. `\nModerator: {if banCaseInfo.moderatorId <= 0 then `[SYSTEM]` else service.playerNameFromId(banCaseInfo.moderatorId)}`
+								.. `\nReason: {Parser:filterForRichText(banCaseInfo.reason or "")}`
+						end)();
+					}
+				}
+
+				plr:makeUI("List", {
+					Title = target.Name .. "'s player information",
+					List = targetInfo;
+					MainSize = Vector2.new(350, 250),
 				})
 			end,
 		},
@@ -623,6 +682,51 @@ return function(envArgs)
 				end):catch(Logs.Reporters.Promise.issue(`ForcePlace`, "Process"))
 			end,
 		},
+
+		-- INCOGNITO
+
+		changeIncognitoName = {
+			Prefix = settings.actionPrefix,
+			Aliases = { "changeincognitoname" },
+			Arguments = {
+				{
+					type = "players",
+					argument = "target",
+					required = true,
+				},
+				{
+					argument = "newString",
+					required = true,
+					filter = true,
+					requireSafeString = true,
+				},
+			},
+			Permissions = { "Manage_Game" },
+			Roles = {},
+			Chattable = false,
+
+			Description = "Changes specified player' incognito name.",
+
+			Function = function(plr, args)
+				local target = args[1][1]
+				local targetPData = target:getPData()
+
+				local oldIncognitoName = targetPData.incognitoName or ""
+				local incognitoName = Parser:trimString(args[2]) .. ` {targetPData.encryptKey:sub(3, 6)}`
+
+				targetPData.incognitoName = incognitoName
+
+				plr:sendData("SendMessage", `Successfully changed {target:toStringDisplayForPlayer(plr)}'s incognito name to {Parser:filterForRichText(incognitoName)}`, nil, 10, "Context")
+				target:sendData("SendNotification", {
+					title = `Incognito Name Changed`;
+					description = `{plr:toStringDisplayForPlayer(target)} changed your incognito name to {Parser:filterForRichText(incognitoName)}`
+						.. `\n\n<i>Previously {Parser:filterForRichText(oldIncognitoName)}</i>`,
+					time = 10,
+				})
+			end,
+		},
+
+		--
 
 		clearActivityLogs = {
 			Prefix = settings.actionPrefix,
@@ -1511,6 +1615,26 @@ return function(envArgs)
 			Function = function(plr, args)
 				local successIds = {}
 
+				local checkConfirm = plr:customGetData(10 + 30, "MakeUI", "ConfirmationV2", {
+					title = "Player Data Management",
+					desc = "Are you sure you want to clear "..#args[1].." player(s)'s player data? This action is irrversible.",
+
+					firstChoice = {
+						label = "I confirm",
+						customSubmissionPage = {
+							title = "Cleared player data",
+						},
+					},
+					secondChoice = { label = "No" },
+
+					returnOutput = true,
+					time = 10,
+				})
+
+				if checkConfirm ~= 1 then
+					return
+				end
+
 				for i, username in pairs(args[1]) do
 					local userId = service.playerIdFromName(username) or 0
 
@@ -1631,8 +1755,7 @@ return function(envArgs)
 					warnings = {}
 					targetPData.warnings = warnings
 				end
-
-				local list = {}
+				
 				local removeCount = 0
 
 				for i, warnInfo in pairs(warnings) do
@@ -1707,7 +1830,7 @@ return function(envArgs)
 
 					plr:makeUI("List", {
 						Title = "E. Warnings for " .. tostring(args[1][1]),
-						List = warnings,
+						List = list,
 						AutoUpdateListData = "Remote",
 					})
 				end
@@ -3536,6 +3659,7 @@ return function(envArgs)
 				end
 			end,
 		},
+
 	}
 
 	for cmdName, cmdTab in pairs(cmdsList) do

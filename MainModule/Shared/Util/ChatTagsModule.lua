@@ -23,6 +23,53 @@ local function CorrectValue(expectedValueType: string, defaultValue: any, givenV
 	return givenValue
 end
 
+local function FilterStringWithDictionary(str: string, dictionary: { [number]: {} })
+	assert(type(str) == "string", "Argument 1 must be a string")
+	assert(type(dictionary) == "table", "Argument 2 must be a table")
+
+	local newString = str
+	local function filterPattern(selected: string, entryArray: {})
+		local matchPattern: string = entryArray[1]
+		local substitution: string = entryArray[2]
+		local substitutionType: string | (...any) -> any = type(substitution)
+		local isOneCharacter: boolean = entryArray[4]
+
+		if isOneCharacter then
+			local newSelected = {}
+
+			for i = 1, utf8.len(selected), 1 do
+				local letter = selected:sub(i, i)
+
+				if letter == matchPattern then
+					table.insert(newSelected, substitution)
+				else
+					table.insert(newSelected, letter)
+				end
+			end
+
+			return table.concat(newSelected)
+		end
+
+		return select(1, string.gsub(selected, matchPattern, substitution))
+	end
+
+	for i, strMatchArray in dictionary do
+		newString = filterPattern(newString, strMatchArray)
+	end
+
+	return newString
+end
+
+local function FilterForRichText(str: string): string
+	return FilterStringWithDictionary(str, {
+		{ "&", "&amp;" },
+		{ "<", "&lt;" },
+		{ ">", "&gt;" },
+		{ '"', "&quot;" },
+		{ "'", "&apos;" },
+	})
+end
+
 function TextChatModule:GetSpeakerNameColor(speakerName: string)
 	local value = 0
 	
@@ -62,7 +109,7 @@ function TextChatModule:GetChatTags(player: Player): {
 		if chatTag:IsA("StringValue") then
 			if chatTag:GetAttribute("Enabled") ~= true then continue end
 
-			local tagFont = CorrectValue("Font", Font.fromEnum(Enum.Font.Gotham), chatTag:GetAttribute("Font"))
+			local tagFont = CorrectValue("Font", Font.fromEnum(Enum.Font.Gotham), if chatTag:GetAttribute("Font") then Font.fromEnum(chatTag:GetAttribute("Font")) else nil)
 			local tagColor = CorrectValue("Color3", TextChatService.ChatWindowConfiguration.TextColor3, chatTag:GetAttribute("Color"))
 			local tagGradientColor = CorrectValue("ColorSequence", nil, chatTag:GetAttribute("GradientColor"))
 			local tagPriority = CorrectValue("number", 0, chatTag:GetAttribute("Priority"))
@@ -102,7 +149,8 @@ TextChatModule.OnChatMessage = function(message: TextChatMessage)
 			if chatTag.GradientColor and not chatGradientColor then
 				chatGradientColor = chatTag.GradientColor
 			end
-			newPrefixText = newPrefixText .. (if i == 1 then "" else " ") .. `<font{if chatGradientColor and chatTag.chatGradientColor == chatTag.GradientColor then "" else " color='#"..chatTag.Color:ToHex().."'"} family='{chatTag.TagFont.Family}'>{chatTag.Text}</font>`
+			
+			newPrefixText = newPrefixText .. (if i == 1 then "" else " ") .. `<font{if chatGradientColor and chatTag.chatGradientColor == chatTag.GradientColor then "" else " color='#"..chatTag.Color:ToHex().."'"} family='{chatTag.TagFont.Family}'>{FilterForRichText(chatTag.Text)}</font>`
 		end
 	end
 	

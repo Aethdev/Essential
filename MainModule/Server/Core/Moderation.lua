@@ -1590,7 +1590,7 @@ return function(envArgs)
 						reason = "",
 
 						startedOn = 0,
-						expiresOn = 0,
+						expiresOn = nil,
 
 						useRobloxApi = false,
 						notes = BanCase_EmptyTable,
@@ -1689,117 +1689,6 @@ return function(envArgs)
 			if processInd then table.remove(Moderation.banProcessors, processInd) end
 		end,
 
-		removeBan = function(userid, banType, responsibleMod)
-			userid = (type(userid) == "number" and userid) or 0
-			banType = (type(banType) == "string" and banType) or "Server"
-			responsibleMod = (type(responsibleMod) == "table" and service.cloneTable(responsibleMod)) or nil
-
-			local serverBans = Moderation.serverBans
-			--local savedBans = Moderation.savedBans
-
-			if banType == "Server" then
-				local didAttempt
-
-				for i, ban in pairs(serverBans) do
-					if type(ban) == "table" then
-						if ban.type == banType and ban.offender.userid == userid then
-							serverBans[i] = nil
-							server.Events.banRemoved:fire(
-								banType,
-								{ name = ban.offender.name, userId = ban.offender.userid },
-								ban,
-								responsibleMod,
-								false
-							)
-							didAttempt = true
-						end
-					elseif type(ban) == "number" then
-						if ban == userid then
-							serverBans[i] = nil
-							server.Events.banRemoved:fire(
-								banType,
-								{ name = ban.offender.name, userId = ban.offender.userid },
-								ban,
-								responsibleMod,
-								false
-							)
-							didAttempt = true
-						end
-					end
-				end
-
-				if didAttempt then return true end
-			end
-
-			if banType == "Game" or banType == "Time" then
-				local banStatus, dataBan = Moderation.checkBan({ UserId = userid }, banType)
-
-				if dataBan and type(dataBan) == "table" then
-					if (banStatus == true or banStatus == -1) and dataBan.type:lower() == banType:lower() then
-						local pData = Core.getPlayerData(userid)
-
-						if pData then
-							pData.Banned = nil
-							pData._updateIfDead()
-						end
-
-						--server.playerDataGlobal:add(tostring(userid), {
-						--	type = "changeData";
-						--	index = "Banned";
-						--	value = nil;
-						--})
-
-						Datastore.tableRemove(nil, Datastore_Scopes.LEGACY_BANCASES, "value", dataBan)
-						server.Events.banRemoved:fire(
-							banType,
-							{ name = service.playerNameFromId(userid) or "[unknown]", userId = userid },
-							dataBan,
-							responsibleMod,
-							true
-						)
-						return true
-					end
-					--elseif dataBan and banType == "Game" then
-					--	server.playerDataGlobal:add(tostring(userid), {
-					--		type = "changeData";
-					--		index = "Banned";
-					--		value = nil;
-					--	})
-					--	server.Events.banRemoved:fire(banType, userid, banStatus)
-					--	return true
-					--elseif dataBan and banType == "Force" then
-					--	server.playerDataGlobal:add(tostring(userid), {
-					--		type = "changeData";
-					--		index = "Banned";
-					--		value = nil;
-					--	})
-					--	server.Events.banRemoved:fire(banType, userid, "Force")
-					--	return true
-				end
-			end
-
-			--local savedBanRemoved = 0
-			--for i,ban in pairs(savedBans) do
-			--	if type(ban) == "table" then
-			--		if ban.type == banType and ban.offender.userid == userid then
-			--			rawset(savedBans, i, nil)
-			--			savedBanRemoved = savedBanRemoved + 1
-			--		end
-			--	elseif type(ban) == "number" then
-			--		if ban == userid then
-			--			rawset(savedBans, i, nil)
-			--			savedBanRemoved = savedBanRemoved + 1
-			--		end
-			--	end
-			--end
-
-			--if savedBanRemoved > 0 then
-			--	savedBans._sync()
-			--end
-
-			return false
-		end,
-
 		createBanModification = function(requestCreation: {
 			requesterUserId: number,
 			modifyType: "CreateBan"|"RemoveBan",
@@ -1849,8 +1738,8 @@ return function(envArgs)
 			local pData = player:getPData()
 
 			local moderatorData = warnOptions.moderator or {}
-			local modUsername = moderatorData.Name or "[unknown]"
-			local modUserId = moderatorData.UserId or 0
+			local modUsername = moderatorData.Name or moderatorData.name or "[unknown]"
+			local modUserId = moderatorData.UserId or moderatorData.userId or 0
 
 			local warnReason = warnOptions.reason or "no reason specified"
 			local warnCategory = warnOptions.category or "default"

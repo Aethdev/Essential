@@ -3536,8 +3536,8 @@ return function(envArgs)
 				topic = creationOpts.topic or "Private Message",
 				description = creationOpts.description or creationOpts.desc or creationOpts.detail or "",
 				
-				repliable = if not creationOpts.sender then false else
-					not creationOpts.noReply,
+				repliable = if not creationOpts.sender or creationOpts.readOnly==true then false else
+					 not creationOpts.noReply,
 
 				redirectable = if not creationOpts.sender or creationOpts.noReply then
 					false else creationOpts.redirectable,
@@ -3727,7 +3727,7 @@ return function(envArgs)
 					time = if messageData.notifyOpts and messageData.notifyOpts.time then
 						messageData.notifyOpts.time else messageData.expireTime,
 					actionText = if messageData.notifyOpts and messageData.notifyOpts.actionText then
-						messageData.notifyOpts.actionText else "Send a reply",
+						messageData.notifyOpts.actionText else (not messageData.repliable and "View message") or "Send a reply",
 					iconUrl = if messageData.notifyOpts and messageData.notifyOpts.iconUrl then
 						messageData.notifyOpts.iconUrl else "mti://message",
 

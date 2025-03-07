@@ -249,25 +249,6 @@ return function(envArgs)
 			return false
 		end,
 
-		checkMatch2 = function(target, check)
-			local targetType = type(target)
-			local playerId = (targetType == "number" and target)
-				or (targetType == "userdata" and tostring(getmetatable(target)):sub(1, 3) == "EP-" and target.UserId)
-				or (typeof(target) == "Instance" and target:IsA "Player" and target.UserId)
-				or nil
-
-			if playerId and playerId > 0 then
-				for i, selector in pairs(checkSelectors) do
-					local selectType = selector.type
-					local foundMatch = nil
-
-					if selectType ~= "table" and selectType == targetType then
-					elseif selectType == "table" and selectType == targetType then
-					end
-				end
-			end
-		end,
-
 		checkMatch = function(plr, check)
 			-- Supported player checks: Instance, Parsed Player, string, number
 			local plr = (type(plr) == "userdata" and Parser:isParsedPlayer(plr) and plr._object) or plr
@@ -311,6 +292,8 @@ return function(envArgs)
 								end
 							end
 						end
+
+						return false
 					elseif check:match "^Subscription:(.+)" and checkInPlayer then
 						local subscriptionId = check:match "^Subscription:(.+)"
 						return select(1, service.checkActiveSubscription(plr, subscriptionId))
@@ -517,6 +500,8 @@ return function(envArgs)
 				elseif checkType == "function" then
 					return check(userId, (checkInPlayer and plr) or nil)
 				end
+
+				return false
 			end
 
 			if checkInPlayer then

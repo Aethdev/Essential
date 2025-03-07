@@ -344,7 +344,7 @@ function ChatService.internalTextChatPostMessageCallback(chatMessage: TextChatMe
 
             if success and result == false then
                 return false
-            elseif success and result == 1 then
+            elseif success and result == 1 or result == true then
                 return true
             elseif success and result ~= nil and type(result) ~= "boolean" then
                 warn(`ChatService: Internal Callback {internalCallback.name} did not return a boolean value: {type(result)}`)
@@ -670,6 +670,28 @@ function ChatService.Init(env)
             -- end
         end
 
+        ChatService:registerInternalPostMessageCallback("COMMAND CHECK", 30_000, function(chatMessage: TextChatMessage, targetChatSource: TextSource)
+            -- warn(`Mute check [{chatMessage.TextSource.UserId} -> {targetChatSource.UserId}]`)
+            if chatMessage.Status ~= Enum.TextChatMessageStatus.Success then return false end
+            if table.find(settings.ChatService_IgnoreChannels, chatMessage.TextChannel.Name) then return true end
+
+            local reverseFilteredText = Parser:reverseFilterForRichText(chatMessage.Text)
+            local messageArguments = Parser:getArguments({
+                str = reverseFilteredText,
+                delimiter = " ",
+                filterOptions = {
+                    maxArguments = 2
+                }
+            })
+
+            if messageArguments[1] and ChatService.SlashCommands:getRobloxCommandFromAlias(messageArguments[1]) then
+                --// DO NOT DOUBLE FILTER THE MESSAGE IF THE MESSAGE EXECUTED A ROBLOX SLASH COMMAND
+                return 1
+            end
+
+            return nil
+        end)
+
         ChatService:registerInternalPostMessageCallback("MUTE CHECK", 20_000, function(chatMessage: TextChatMessage, targetChatSource: TextSource)
             -- warn(`Mute check [{chatMessage.TextSource.UserId} -> {targetChatSource.UserId}]`)
             if table.find(settings.ChatService_IgnoreChannels, chatMessage.TextChannel.Name) then return true end
@@ -694,22 +716,8 @@ function ChatService.Init(env)
         if settings.ChatService_FilterSupport then
             ChatService:registerInternalPostMessageCallback("FILTER CHECK", 10_000, function(chatMessage: TextChatMessage, targetChatSource: TextSource)
                 -- warn(`Filter check [{chatMessage.TextSource.UserId} -> {targetChatSource.UserId}]`)
-                if chatMessage.Status ~= Enum.TextChatMessageStatus.Success then return end
 
                 local reverseFilteredText = Parser:reverseFilterForRichText(chatMessage.Text)
-                local messageArguments = Parser:getArguments({
-                    str = reverseFilteredText,
-                    delimiter = " ",
-                    filterOptions = {
-                        maxArguments = 2
-                    }
-                })
-
-                if messageArguments[1] and ChatService.SlashCommands:getRobloxCommandFromAlias(messageArguments[1]) then
-                    --// DO NOT DOUBLE FILTER THE MESSAGE IF THE MESSAGE EXECUTED A ROBLOX SLASH COMMAND
-                    return
-                end
-
                 local isSafeString, filteredString = server.Filter:safeString(reverseFilteredText,
                     chatMessage.TextSource.UserId,
                     targetChatSource.UserId,

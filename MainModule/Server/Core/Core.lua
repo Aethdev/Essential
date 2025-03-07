@@ -1101,6 +1101,7 @@ return function(envArgs)
 				cmdKeybinds = {},
 				messages = {},
 				shortcuts = {},
+				warnings = {},
 
 				clientSettings = {
 					KeybindsEnabled = true,
@@ -2272,6 +2273,10 @@ return function(envArgs)
 						end
 					end
 					dataCache.update = updateData
+					-- dataCache.startAutoLoop = function()
+					-- 	if dataCache.autoLooped then return end
+					-- 	dataCache.autoLooped = true
+					-- end
 
 					local updateTaskId = service.getRandom() .. "_UPDATE-DATA_" .. userId
 					local checkLoopSeconds = 30

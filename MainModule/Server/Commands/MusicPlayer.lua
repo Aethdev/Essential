@@ -25,7 +25,7 @@ return function(envArgs)
 
 	local cmdsList = {
 		viewMusicQueue = {
-			Disabled = not (musicPlayerEnabled and settings.musicPlayer_Queue),
+			Disabled = not musicPlayerEnabled,
 			Prefix = settings.actionPrefix,
 			Aliases = { "musicqueue" },
 			Arguments = {},
@@ -46,7 +46,7 @@ return function(envArgs)
 		},
 
 		clearMusicQueue = {
-			Disabled = not (musicPlayerEnabled and settings.musicPlayer_Queue),
+			Disabled = not musicPlayerEnabled,
 			Prefix = settings.actionPrefix,
 			Aliases = { "clearmusic" },
 			Arguments = {},
@@ -69,7 +69,7 @@ return function(envArgs)
 		},
 		
 		repeatMusicQueue = {
-			Disabled = not (musicPlayerEnabled and settings.musicPlayer_Queue),
+			Disabled = not musicPlayerEnabled,
 			Prefix = settings.actionPrefix,
 			Aliases = { "repeatmusic", "loopmusic" },
 			Arguments = { "track/queue" },
@@ -156,8 +156,57 @@ return function(envArgs)
 			end,
 		},
 
+		pauseMusic = {
+			Disabled = not musicPlayerEnabled,
+			Prefix = settings.actionPrefix,
+			Aliases = { "restartmusic" },
+			Arguments = {},
+			Permissions = { "Manage_MusicPlayer" },
+			Roles = {},
+
+			Description = "Pauses the current music.",
+
+			Function = function(plr, args)
+				local mainSound: Sound = MusicService:getSound()
+				
+				mainSound:Pause()
+				plr:sendData(
+					"SendMessage",
+					"<b>Music System</b>: Paused the music",
+					nil,
+					5,
+					"Context"
+				)
+			end,
+		},
+
+		resumeMusic = {
+			Disabled = not musicPlayerEnabled,
+			Prefix = settings.actionPrefix,
+			Aliases = { "resumemusic" },
+			Arguments = {},
+			Permissions = { "Manage_MusicPlayer" },
+			Roles = {},
+
+			Description = "Resumes the current music.",
+
+			Function = function(plr, args)
+				local mainSound: Sound = MusicService:getSound()
+				
+				mainSound:Pause()
+				plr:sendData(
+					"SendMessage",
+					"<b>Music System</b>: Resumes the music",
+					nil,
+					5,
+					"Context"
+				)
+			end,
+		},
+
+
 		addSongToMusicQueue = {
-			Disabled = not (musicPlayerEnabled and settings.musicPlayer_Queue),
+			Disabled = not musicPlayerEnabled,
 			Prefix = settings.actionPrefix,
 			Aliases = { "music", "playmusic", "playsound" },
 			Arguments = {
@@ -268,7 +317,7 @@ return function(envArgs)
 		},
 
 		skipMusicQueue = {
-			Disabled = not (musicPlayerEnabled and settings.musicPlayer_Queue),
+			Disabled = not musicPlayerEnabled,
 			Prefix = settings.actionPrefix,
 			Aliases = { "skipmusic" },
 			Arguments = {},
@@ -293,7 +342,7 @@ return function(envArgs)
 		},
 
 		jumpMusicToQueue = {
-			Disabled = not (musicPlayerEnabled and settings.musicPlayer_Queue),
+			Disabled = not musicPlayerEnabled,
 			Prefix = settings.actionPrefix,
 			Aliases = { "jumpmusic" },
 			Arguments = {
@@ -334,7 +383,7 @@ return function(envArgs)
 		},
 
 		removeMusic = {
-			Disabled = not (musicPlayerEnabled and settings.musicPlayer_Queue),
+			Disabled = not musicPlayerEnabled,
 			Prefix = settings.actionPrefix,
 			Aliases = { "removemusic", "remmusicfromqueue" },
 			Arguments = {
@@ -560,7 +609,7 @@ return function(envArgs)
 		};
 
 		addDevPlaylistToMusic = {
-			Disabled = not (musicPlayerEnabled and settings.musicPlayer_Queue),
+			Disabled = not musicPlayerEnabled,
 			Prefix = settings.actionPrefix,
 			Aliases = { "addplaylisttomusic" },
 			Arguments = {
@@ -832,7 +881,7 @@ return function(envArgs)
 		};
 
 		addSavedPlaylistToMusic = {
-			Disabled = not (musicPlayerEnabled and settings.musicPlayer_Queue),
+			Disabled = not musicPlayerEnabled,
 			Prefix = settings.actionPrefix,
 			Aliases = { "addsavedplaylisttomusic" },
 			Arguments = {
@@ -898,7 +947,7 @@ return function(envArgs)
 		};
 
 		clearSavedPlaylist = {
-			Disabled = not (musicPlayerEnabled and settings.musicPlayer_Queue),
+			Disabled = not musicPlayerEnabled,
 			Prefix = settings.actionPrefix,
 			Aliases = { "clearsavedplaylist" },
 			Arguments = {

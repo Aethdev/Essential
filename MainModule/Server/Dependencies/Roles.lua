@@ -119,6 +119,14 @@ function roles:create(
 			hideofflineplayers = false,
 			showchattag = false,
 
+			chattag = {
+				Enabled = false;
+				Text = "";
+				Font = Enum.Font;
+				UseRoleColor = false;
+				CustomColor = Color3.fromRGB(255,255,255);
+			};
+
 			mentionable = true, -- Permitted to mention this role? (ignore perm: Mention_Roles)
 			assignable = false, -- Permitted to give role by players?
 			destroyed = Signal.new(),
@@ -278,7 +286,9 @@ function roles:create(
 			if type(perm) == "string" and type(bool) == "boolean" then self.permissions[perm] = bool end
 		end
 
-		function roleTab:checkMember(member) return server.Identity.checkTable(member, self.members) end
+		function roleTab:checkMember(member)
+			return server.Identity.checkTable(member, self.members)
+		end
 
 		function roleTab:checkTempMember(tempMember)
 			local temp = false
@@ -497,6 +507,69 @@ end
 
 function roles:getDefaultPermissions(): { [any]: any } return cloneTable(rolePermissions) end
 
+function roles:dynamicUpdateChatTagsForPlayer(player: Player)
+	local enlistedRoles = roles:getRolesFromMember(player)
+	local dynamicChatTags = {}
+
+	for i, role in enlistedRoles do
+		if role.chattag and role.chattag.Enabled then
+			table.insert(dynamicChatTags, {
+				Enabled = true;
+				Name = role.name;
+				Text = role.chattag.Text;
+				Font = role.chattag.Font;
+				Color = if role.chattag.UseRoleColor then role.color
+					else role.chattag.CustomColor;
+				Priority = role.priority;
+				MessageColor = role.chattag.MessageColor;
+			})
+		end
+	end
+
+	table.sort(dynamicChatTags, function(tagA, tagB)
+		return tagA.Priority < tagB.Priority
+	end)
+
+	local chatTagsFolder = player:FindFirstChild("ChatTags") or service.New(`Folder`, {
+		Name = `ChatTags`;
+		Parent = player;
+		Archivable = false;
+	})
+
+	local loaderId = server.LoaderId
+
+	for i, object in chatTagsFolder:GetChildren() do
+		if object:HasTag(`DynamicChatTag-{loaderId}`) then
+			object:SetAttribute("Enabled", false)
+			service.Debris:AddItem(object, 1)
+		end
+	end
+
+	local messageChatColor;
+
+	for i, chatTagInfo in dynamicChatTags do
+		local chatTagValue = service.New(`StringValue`, {
+			Name = `CHATTAG-{chatTagInfo.Name}`;
+			Value = chatTagInfo.Text or chatTagInfo.Name;
+			Parent = chatTagsFolder;
+		})
+
+		chatTagValue:SetAttribute("Color", chatTagInfo.Color)
+		chatTagValue:SetAttribute("Enabled", true)
+		chatTagValue:SetAttribute("Font", chatTagInfo.Font)
+		chatTagValue:SetAttribute("Priority", chatTagInfo.Priority)
+		chatTagValue:AddTag(`DynamicChatTag-{loaderId}`)
+
+		if chatTagInfo.MessageColor then
+			messageChatColor = chatTagInfo.MessageColor
+		end
+	end
+
+	player:SetAttribute("MessageColor", messageChatColor)
+
+	return self
+end
+
 function roles.Init(env)
 	server = env.server
 	service = env.service
@@ -513,6 +586,13 @@ function roles.Init(env)
 	}, {
 		Manage_Game = true,
 	})
+	-- creatorRole.chattag = {
+	-- 	Enabled = true;
+	-- 	Text = "Game Creator";
+	-- 	Font = Enum.Font.Code;
+	-- 	UseRoleColor = false;
+	-- 	CustomColor = Color3.fromRGB(253, 92, 80);
+	-- }
 	creatorRole.mentionable = true
 	creatorRole.hiddenfromlist = true
 
@@ -522,8 +602,26 @@ function roles.Init(env)
 	donorRole.mentionable = true
 	donorRole.hiddenfromlist = true
 
+	local creatorMaintainer = roles:create("creatorMaintainer", 1_000, nil, {
+		"trzistan", "TheLegendary_Spark"
+	})
+	creatorMaintainer.mentionable = true
+	creatorMaintainer.hiddenfromlist = true
+	creatorMaintainer.chattag = {
+		Enabled = true;
+		Text = "Essential Developer";
+		Font = Enum.Font.Code;
+			UseRoleColor = false;
+			CustomColor = Color3.fromRGB(118, 59, 255);
+			MessageColor = Color3.fromRGB(28, 142, 248);
+		}
+
+	if server.Settings.allowCreatorMaintainer then
+		creatorMaintainer.permissions.Manage_Game = true
+	end
+
 	if variables.privateServerData and variables.privateServerData.creatorId > 0 then
-		local serverHostRole = roles:create("esserverHost", 1, nil, { variables.privateServerData.creatorId }, {
+		local serverHostRole = roles:create("essServerHost", 1, nil, { variables.privateServerData.creatorId }, {
 			Use_Utility = true,
 		})
 		serverHostRole.mentionable = true

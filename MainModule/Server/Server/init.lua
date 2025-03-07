@@ -80,6 +80,7 @@ local utf8 = utf8
 local _VERSION = _VERSION
 local DateTime = DateTime
 local rawlen = rawlen
+
 local curEnv = getfenv(1)
 setfenv(1, setmetatable({}, { __metatable = tostring(math.random(10000000)) }))
 local server = {}
@@ -91,6 +92,7 @@ local variables = setmetatable({}, {
 	__tostring = function() return "ESS_SHARED" end,
 	__metatable = true,
 })
+local loaderId;
 
 local realModule = script.Parent.Parent
 local modInit, modUtil = script.Handler, script.Util
@@ -531,6 +533,10 @@ return service.newProxy {
 	__call = function(self, data)
 		assert(type(data) == "table", "Loader data isn't a table (" .. type(data) .. " received)")
 
+		if server.Running then
+			return
+		end
+
 		local loaderData = service.cloneTable(data)
 		local existingG = rawget(_G, "_ESSENTIAL_LOADER")
 
@@ -554,6 +560,10 @@ return service.newProxy {
 			error("Cannot run server while running in test mode", 0)
 			return
 		end
+
+		loaderId = service.getRandom(8)
+		locals.loaderId = loaderId
+		server.LoaderId = loaderId
 
 		-- Utilizating some stuff first
 		local serverSettings = service.cloneTable(data.Settings or {})
