@@ -54,8 +54,6 @@ settings.ChatService_SlashCommandsEnabled = true -- Allow player commands to bec
 settings.ChatService_SlashCommandsPrefix = "e-" -- (Recommended) Adds a prefix to the slash commands; This is helpful to prevent overlapping with other slash commands
 settings.ChatService_SlashCommandsConfirmation = false -- Asks the player to confirm the use of the slash command after execution 
 
-settings.chatMaxCommands = 30 -- (Required: ChatAccess) 
-
 -- PERMISSIONS SETTINGS --
 --[[
 	
@@ -360,7 +358,7 @@ settings.DefaultRolePermissions = {
 
 -- MUSIC SETTINGS --
 settings.musicPlayer_Enabled = true
-settings.musicPlayer_Songs = {
+settings.  = {
 	-- FORMAT:
 	-- [song_name] = song_id;
 	-- -> "song_name" must be in string and "song_id" as a number.
@@ -450,7 +448,7 @@ settings.systemMessage = "<b>System Message</b>" -- Title of the system message 
 
 -- PREFIX SETTINGS --
 settings.playerPrefix 	= "!"	-- Player command prefix
-settings.actionPrefix 	= ":"	-- Server command prefix
+settings.actionPrefix 	= ";"	-- Server command prefix
 settings.delimiter 		= " "	-- Used to separate every part of the string (i.g. "." ":ff.me")
 settings.batchSeperator = "|"	-- Used in commands to seperate commands in a messsage (must have at least one character)
 
