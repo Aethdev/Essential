@@ -358,7 +358,7 @@ settings.DefaultRolePermissions = {
 
 -- MUSIC SETTINGS --
 settings.musicPlayer_Enabled = true
-settings.  = {
+settings.musicPlayer_Songs  = {
 	-- FORMAT:
 	-- [song_name] = song_id;
 	-- -> "song_name" must be in string and "song_id" as a number.
@@ -448,7 +448,7 @@ settings.systemMessage = "<b>System Message</b>" -- Title of the system message 
 
 -- PREFIX SETTINGS --
 settings.playerPrefix 	= "!"	-- Player command prefix
-settings.actionPrefix 	= ";"	-- Server command prefix
+settings.actionPrefix 	= ":"	-- Server command prefix
 settings.delimiter 		= " "	-- Used to separate every part of the string (i.g. "." ":ff.me")
 settings.batchSeperator = "|"	-- Used in commands to seperate commands in a messsage (must have at least one character)
 
