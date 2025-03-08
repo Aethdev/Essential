@@ -1561,7 +1561,7 @@ return function(envArgs)
 								noReturn = true,
 								chatted = true,
 								robloxChat = true,
-								maxCommands = settings.chatMaxCommands,
+								maxCommands = settings.ChatService_ChatMaxCommands or 30,
 							})
 						end
 					end

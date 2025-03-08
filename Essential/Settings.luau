@@ -48,6 +48,7 @@ settings.ChatService_IgnoreChannels = {} -- List channels to bypass mute system 
 settings.ChatService_OverrideChatCallback = true -- Allows ChatService to support chat tags, 
 settings.ChatService_SecureInput = false -- Turns off input chatbar for players before Essential loads
 settings.ChatService_ChatCommands = true -- Enables chat commands to run in TextChat
+settings.ChatService_ChatMaxCommands = 30 -- (ChatCommands must be enabled) How many commands are allowed to run in chat?
 settings.ChatService_FilterSupport = false -- Include Essential's text filtering system; This is useful for filtering bypassed messages with rich text tags
 settings.ChatService_SlashCommandsEnabled = true -- Allow player commands to become a slash command in chat? (Excludes sensitive commands with Manage_Game perm or no chat allowed)
 settings.ChatService_SlashCommandsPrefix = "e-" -- (Recommended) Adds a prefix to the slash commands; This is helpful to prevent overlapping with other slash commands
