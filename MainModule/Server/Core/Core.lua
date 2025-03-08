@@ -1118,7 +1118,7 @@ return function(envArgs)
 					maxEntries = 4,
 				},
 				activityLogs = {
-					maxEntries = math.clamp(math.floor(maxActivityLogs or 30), 1, 90),
+					maxEntries = math.clamp(math.floor(maxActivityLogs or 30), 1, 50),
 				},
 			}
 		end,

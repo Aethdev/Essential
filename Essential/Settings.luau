@@ -21,21 +21,20 @@ settings.Datastore_Allow = false -- Is datastore enabled?
 settings.Datastore_EncryptKeys = false -- Encrypts datastore keys only
 settings.Datastore_ProtectIndex = true -- Encrypts datastore key and scope
 settings.Datastore_Compression = true -- (RECOMMENDED) Compresses datastore values to smaller chunks which allows to save larger data
-settings.Datastore_UseLegacyHash = false
 settings.Datastore_EncryptKey = "[[CHANGE THIS]]" -- (required for encrypting data) Encrypt key to encrypt/decrypt the encrypted datastore data
 settings.Datastore_Key = "[[CHANGE THIS]]" -- Datastore main key
 settings.Datastore_Scope = "[[CHANGE THIS]]" -- (Optional encrypted) Datastore default scope
 settings.Datastore_PlayerData = "[[CHANGE THIS]]" -- (datastore scope for player data) Change this to something random
 
--- MEMORY SETTINGS [COMING SOON] --
-settings.MemoryStore_Key = "EssentialMemoryStore" -- Memorystore main key
-settings.MemoryStore_PlayerData = "PlayerData" -- Memorystore scope of player data
-settings.MemoryStore_ProtectIndex = true
-settings.MemoryStore_QueuePlayerDataSaves = true
+-- MEMORY SETTINGS [COMING SOON] || THESE SETTINGS HAVE NO USE RIGHT NOW --
+-- settings.MemoryStore_Key = "EssentialMemoryStore" -- Memorystore main key
+-- settings.MemoryStore_PlayerData = "PlayerData" -- Memorystore scope of player data
+-- settings.MemoryStore_ProtectIndex = true
+-- settings.MemoryStore_QueuePlayerDataSaves = true
 
 settings.CrossAPI_Allow = true -- Used to send remote signals to servers
 settings.CrossAPI_Key = "[[CHANGE THIS]]" -- The key name of the cross communication
-settings.CrossAPI_Global = false -- (Not recommended) Allow use of this in _G API?
+settings.CrossAPI_Global = false -- (Not recommended) (NOT YET IMPLEMENTED) Allow use of this in _G API?
 
 -- PDATA SETTINGS --
 settings.playerData_Datastore = true -- Allow player data saved in data stores?
