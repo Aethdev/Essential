@@ -270,7 +270,12 @@ return function(envArgs)
 								or 0
 
 							if tonumber(groupId) then
-								if ranks:sub(1, 2) == ">=" then
+								if tonumber(ranks:match"^(%d+)$") then
+									local fixedRank = tonumber(ranks:match"^(%d+)$")
+									if fixedRank == playerRank then
+										return true
+									end
+								elseif ranks:sub(1, 2) == ">=" then
 									local minimumRank = tonumber(match:sub(3))
 
 									if minimumRank and playerRank >= minimumRank then return true end

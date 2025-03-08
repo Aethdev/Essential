@@ -38,7 +38,7 @@ settings.CrossAPI_Global = false -- (Not recommended) (NOT YET IMPLEMENTED) Allo
 
 -- PDATA SETTINGS --
 settings.playerData_Datastore = true -- Allow player data saved in data stores?
-settings.playerData_EncryptData = false -- Allow player data saved in data stores?
+settings.playerData_EncryptData = true -- Allow player data saved in data stores?
 settings.playerData_AllowTransfer = true -- Allow players to transfer their player data to another player?
 settings.playerData_MaxActivityLogs = 30 -- Maximum activity logs saved in player data
 

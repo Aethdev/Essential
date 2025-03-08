@@ -3769,7 +3769,7 @@ return function(envArgs)
 					message = latestMessage,
 					publishId = messageData.repliable and messageData.id or nil,
 					readOnly = not messageData.repliable,
-					time = (messageData.expireUnix and math.clamp(messageData.expireUnix - os.time(), 0, math.huge))
+					time = (messageData.expireUnix and math.clamp(messageData.expireUnix.UnixTimestamp - os.time(), 0, math.huge))
 						or (messageData.openTime and math.clamp(messageData.openTime, 5, math.huge))
 						or nil,
 					isSender = forSender;

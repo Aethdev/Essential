@@ -123,11 +123,8 @@ do
 	end
 end
 
-task.delay(0.5, function()
-	EssentialFolder.Parent = nil
-end)
-
 wait(0.5)
+EssentialFolder.Parent = nil
 script:Destroy()
 
 local Initializer = copyOfEssentialFolder:FindFirstChild("Runner")

@@ -116,6 +116,11 @@ return function(envArgs)
 		playerDataStoreEnabled = settings.playerData_Datastore
 		playerData_EncryptData = settings.playerData_EncryptData
 
+		if playerData_EncryptData and service.Players.MaxPlayers > 20 then
+			warn(`[DATASTORE ENCRYPTION DISABLED] Player data encryption is not supported for servers with more than 20 players`)
+			settings.playerData_EncryptData = false
+		end
+
 		if #DS_PlayerData == 0 then
 			DS_PlayerData = "Default"
 			warn "[DATASTORE DISABLED] DATASTORE PLAYERDATA SCOPE MUST HAVE AT LEAST ONE CHARACTER."
