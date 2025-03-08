@@ -43,14 +43,11 @@ settings.playerData_AllowTransfer = true -- Allow players to transfer their play
 settings.playerData_MaxActivityLogs = 30 -- Maximum activity logs saved in player data
 
 -- CHAT SETTINGS --
--- settings.chatAccess = true -- Allow features to run in chat like Slash commands
--- settings.chatCommands = true -- (Required: ChatAccess) Allow running commands via chat
--- settings.slashCommands = true -- (Required: ChatCommands) Allow running commands via chat using slash (e.g. :ff me -> /ff me)
-
-settings.ChatService_Enabled = true -- Allows the ChatService module to provide functionality for chat moderation, ranks, and more. ChatService will support for 
+settings.ChatService_Enabled = true -- Allows the ChatService module to provide functionality for chat moderation, ranks, and more.
 settings.ChatService_IgnoreChannels = {} -- List channels to bypass mute system and internal chat callbacks
 settings.ChatService_OverrideChatCallback = true -- Allows ChatService to support chat tags, 
 settings.ChatService_SecureInput = false -- Turns off input chatbar for players before Essential loads
+settings.ChatService_ChatCommands = true -- Enables chat commands to run in TextChat
 settings.ChatService_FilterSupport = false -- Include Essential's text filtering system; This is useful for filtering bypassed messages with rich text tags
 settings.ChatService_SlashCommandsEnabled = true -- Allow player commands to become a slash command in chat? (Excludes sensitive commands with Manage_Game perm or no chat allowed)
 settings.ChatService_SlashCommandsPrefix = "e-" -- (Recommended) Adds a prefix to the slash commands; This is helpful to prevent overlapping with other slash commands

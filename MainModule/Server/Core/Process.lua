@@ -1552,7 +1552,7 @@ return function(envArgs)
 					end
 
 					if #msg > 0 then
-						local chatCommands = settings.chatCommands
+						local chatCommands = settings.ChatService_ChatCommands
 
 						if
 							chatCommands and Utility:deferCheckRate(Process.chatProcessCommand_RateLimit, player.UserId)
