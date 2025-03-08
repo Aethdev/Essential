@@ -1,6 +1,8 @@
 # Essential
 ### Modern Administration Yet Finest
 
+📰 [Roadmap](https://trello.com/b/6vYUmD2b/) | 📃 [Changelog](https://alphantriz.gitbook.io/essential/about/changelog) | 🗣️ [Discord](https://discord.gg/BZFw65wgtR)
+
 Essential Admin is an administration system inspired from Basic Admin Essentials, Epix Corporation Adonis, SimpleAdmin & Kayoh's Commander.
 
 ## Features
