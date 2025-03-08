@@ -672,7 +672,7 @@ function ChatService.Init(env)
 
         ChatService:registerInternalPostMessageCallback("COMMAND CHECK", 30_000, function(chatMessage: TextChatMessage, targetChatSource: TextSource)
             -- warn(`Mute check [{chatMessage.TextSource.UserId} -> {targetChatSource.UserId}]`)
-            if chatMessage.Status ~= Enum.TextChatMessageStatus.Success then return false end
+            if chatMessage.Status ~= Enum.TextChatMessageStatus.Success then return nil end
             if table.find(settings.ChatService_IgnoreChannels, chatMessage.TextChannel.Name) then return true end
 
             local reverseFilteredText = Parser:reverseFilterForRichText(chatMessage.Text)
@@ -716,6 +716,8 @@ function ChatService.Init(env)
         if settings.ChatService_FilterSupport then
             ChatService:registerInternalPostMessageCallback("FILTER CHECK", 10_000, function(chatMessage: TextChatMessage, targetChatSource: TextSource)
                 -- warn(`Filter check [{chatMessage.TextSource.UserId} -> {targetChatSource.UserId}]`)
+
+                if chatMessage.Status ~= Enum.TextChatMessageStatus.Success and chatMessage.Status ~= Enum.TextChatMessageStatus.TextFilterFailed then return nil end
 
                 local reverseFilteredText = Parser:reverseFilterForRichText(chatMessage.Text)
                 local isSafeString, filteredString = server.Filter:safeString(reverseFilteredText,
