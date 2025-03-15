@@ -455,7 +455,7 @@ settings.systemMessage = "<b>System Message</b>" -- Title of the system message 
 
 -- PREFIX SETTINGS --
 settings.playerPrefix 	= "!"	-- Player command prefix
-settings.actionPrefix 	= ":"	-- Server command prefix
+settings.actionPrefix 	= ";"	-- Server command prefix
 settings.delimiter 		= " "	-- Used to separate every part of the string (i.g. "." ":ff.me")
 settings.batchSeperator = "|"	-- Used in commands to seperate commands in a messsage (must have at least one character)
 
