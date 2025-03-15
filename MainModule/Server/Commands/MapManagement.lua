@@ -102,18 +102,9 @@ return function(envArgs)
 			Description = "Inserts F3x Building Tools to specified players",
 
 			Function = function(plr, args)
-				local btools = server.Assets.BTools:Clone()
-
-				plr:sendData(
-					"SendMessage",
-					"<b>Disclaimer</b: You are using an unofficial build of Building Tools, created by trzistan."
-						.. " In the open-source version, this tool will be replaced with the original building tools from GigsD4X.",
-					nil,
-					5,
-					"Context"
-				)
-
-				for i, target in args[1] do
+				local btools = server.Assets.Btools:Clone()
+				
+				for i, target in pairs(args[1]) do
 					local backpack = target:FindFirstChildOfClass "Backpack"
 
 					if backpack then

@@ -1144,7 +1144,7 @@ return function(envArgs)
 				end)
 				:andThen(function()
 					--// zDeprecated until further notice
-					if not isBanCaseOnlyOnServer and banRegisterInfo.useRobloxApi then
+					if not isBanCaseOnlyOnServer and banRegisterInfo.useRobloxApi and service.Players.BanningEnabled then
 						service.Players:BanAsync {
 							UserIds = banRegisterInfo.users,
 							ApplyToUniverse = banRegisterInfo.type == `Universal`,

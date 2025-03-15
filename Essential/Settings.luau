@@ -15,7 +15,7 @@
 local settings = {}
 
 -- DATASTORE SETTINGS --
-settings.Datastore_Allow = false -- Is datastore enabled?
+settings.Datastore_Allow = true -- Is datastore enabled?
 
 -- || Changing these settings will affect the saved datas ||
 settings.Datastore_EncryptKeys = false -- Encrypts datastore keys only
@@ -70,7 +70,7 @@ settings.ChatService_SlashCommandsConfirmation = false -- Asks the player to con
 					Group:[Group_Id]:<=[Maximum-Rank]
 
 				****** Only that rank
-					Group:[Group_Id]:=[Rank]
+					Group:[Group_Id]:==[Rank]
 
 				-> TABLE SUPPORTED:
 				
@@ -326,11 +326,17 @@ settings.ChatService_SlashCommandsConfirmation = false -- Asks the player to con
 ]]
 
 settings.Permissions = {
-	--[[ 
+	--[[ TEMPLATE FOR USE;
+
 		["PERMISSION_NAME"] = {
-			Priority = Priority; -- (number) Priority level
-			Color = Color; -- Supported actions: number or Color3
-			Members = { List_Of_Members }; -- (table/string) Refer to "specifying/targeting members" section above
+			Priority = 0; -- (number) Priority level
+			Color = Color3.fromRGB(255, 255, 255); -- Supported actions: number or Color3
+			Members = { 
+				-- Refer to "specifying/targeting members" section above for what to use
+				-- Here's an example: {Type = "Gamepass"; List = {3470758};};
+				-- Another example: "Group:10146858:>=1";
+				
+			}; -- (table/string) 
 			Permissions = {
 				-- List of Permissions here. Refer to "Roles Accessibility & Management" section above.
 				-- Here's an example..
@@ -348,6 +354,7 @@ settings.Permissions = {
 			};
 		};
 	]]
+		
 }
 
 settings.DefaultRolePermissions = {
@@ -651,7 +658,7 @@ settings.globalApi_Perms = { -- Default perms for public token and premade token
 
 -- CLIENT SETTINGS
 settings.allowClientGlobal = true
-settings.minimizedPlayerView = true
+settings.minimizedPlayerView = false
 
 -- HELP SETTINGS --
 settings.helpEnabled = false

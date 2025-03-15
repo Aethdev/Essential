@@ -192,7 +192,7 @@ return function(envArgs)
 				$
 	]]
 
-	local function createDatastoreProcess(datastore_scope: string, datastore_key: string, universe_id: boolean)
+	local function createDatastoreProcess(datastore_scope: string, datastore_key: string, universe_id: boolean?)
 		local queueName = (not datastore_scope and "" or datastore_scope) .. "_" .. datastore_key
 
 		if datastoreProcess[queueName] then
@@ -213,6 +213,7 @@ return function(envArgs)
 
 			local dataDatastore: GlobalDataStore = (not datastore_scope and globalDatastore)
 				or datastoreGetDS(datastore_scope)
+
 			local dataWriteQueue = Queue.new()
 			dataWriteQueue.id = "DataWrite-[" .. queueName .. "]"
 			dataWriteQueue.initialProcessDelay = 1
@@ -894,10 +895,13 @@ return function(envArgs)
 	server.Datastore = {
 		Init = Init,
 
+		createHashString = createHashString;
+
 		getDatastore = function(scope: string?, useMockService: boolean?)
 			if didLoad and scope then
 				scope = (datastoreProtectIndex and scope:sub(1, 100)) or scope:sub(1, 50)
 				if datastoreProtectIndex then
+					local beforeScp = scope
 					if not datastoreEncryptScopes[scope] then
 						local encrypted = createHashString(scope, "scope")
 						datastoreEncryptScopes[scope] = encrypted
@@ -1465,6 +1469,8 @@ return function(envArgs)
 			else
 				value = value
 			end
+
+			if scope then scope = scope:sub(1,50) end
 
 			if not didLoad then readyEv:wait() end
 

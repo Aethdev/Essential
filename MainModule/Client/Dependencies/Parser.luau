@@ -649,6 +649,16 @@ function parser:filterForRichText(text)
 	--})
 end
 
+function parser:reverseFilterForRichText(richText: string): string
+	return parser:filterStringWithDictionary(richText, {
+		{ "&amp;", "&" },
+		{ "&lt;", "<" },
+		{ "&gt;", ">" },
+		{ "&quot;", '"' },
+		{ "&apos;", "'" },
+	})
+end
+
 function parser:filterForSpecialTags(text: string): string
 	return parser:filterStringWithDictionary(text, {
 		{ "{{", "&dlb;" },

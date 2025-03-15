@@ -963,6 +963,33 @@ return function(envArgs)
 				})
 			end,
 		},
+
+		randomizeMyIncognitoName = {
+			Prefix = settings.playerPrefix,
+			Aliases = { "newincognitoname" },
+			Arguments = {},
+			Permissions = { "Use_Utility" },
+			Roles = {},
+
+			Description = "Randomizes my incognito name",
+			PlayerCooldown = 10,
+
+			Function = function(plr, args)
+				local oldIncognitoName = plr:getPData().incognitoName
+				plr:generateIncognitoName()
+				local incognitoName = plr:getPData().incognitoName
+				local playerIncognitoStatus, playerIncognitoOverriden = plr:isPrivate()
+
+				plr:toggleIncognitoStatus(playerIncognitoStatus, playerIncognitoOverriden)
+
+				plr:sendData("SendNotification", {
+					title = `Incognito Name Changed`;
+					description = `You changed your incognito name to {Parser:filterForRichText(incognitoName)}`
+						.. `\n\n<i>Previously {Parser:filterForRichText(oldIncognitoName)}</i>`,
+					time = 10,
+				})
+			end,
+		},
 	}
 
 	for cmdName, cmdTab in pairs(cmdsList) do

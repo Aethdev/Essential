@@ -1037,6 +1037,24 @@ function parser:apifyPlayer(
 
 					self.characterAdded:linkRbxEvent(plr.CharacterAdded)
 					self.characterRemoving:linkRbxEvent(plr.CharacterRemoving)
+
+					if not self._firstTimeSetupRbxEvents then
+						self._firstTimeSetupRbxEvents = true
+
+						local function characterAdded(character)
+							local humanoid = character:FindFirstChildOfClass"Humanoid"
+							local pData = self:getPData()
+
+							if humanoid and pData and self:isPrivate() then
+								humanoid.DisplayName = pData.incognitoName
+							end
+						end
+
+						self.characterAdded:connect(characterAdded)
+						if self._object.Character then
+							self.characterAdded:fire(self._object.Character)
+						end
+					end
 				end
 			end
 
@@ -1253,7 +1271,7 @@ function parser:apifyPlayer(
 
 			function self:isInGame()
 				local plr = self._object or self._instance
-				return not fakePlayer and plr.Parent == service.Players
+				return self:isReal() and plr.Parent == service.Players
 			end
 
 			function self:isVerified()
@@ -1264,15 +1282,16 @@ function parser:apifyPlayer(
 
 			function self:isPrivate() -- similarly to icognito mode
 				local pPolicies = self.policies
+				local isOverriden = pPolicies.OVERRIDE_INCOGNITO_MODE.value ~= nil
 
-				if pPolicies.OVERRIDE_INCOGNITO_MODE.value ~= nil then
-					return pPolicies.OVERRIDE_INCOGNITO_MODE.value and true or false
+				if isOverriden then
+					return pPolicies.OVERRIDE_INCOGNITO_MODE.value and true or false, true
 				end
 
 				local pData = self:getPData(true)
-				if pData then return pData.__clientSettings.IncognitoMode and true or false end
+				if pData then return (pData.__clientSettings.IncognitoMode and true or false), false end
 
-				return false
+				return false, false
 			end
 
 			function self:isReal()
@@ -1403,9 +1422,24 @@ function parser:apifyPlayer(
 
 				if isEnforced then
 					server.PolicyManager:setPolicyForPlayer(selfProxy, "OVERRIDE_INCOGNITO_MODE", status, "ENFORCED")
-				else
-					local pData = self:getPData()
-					if pData then pData.__clientSettings.IncognitoMode = status end
+				end
+
+				local pData = self:getPData()
+				if pData then
+					if not isEnforced then
+						pData.__clientSettings.IncognitoMode = status
+						pData.__clientSettings._reviveIfDead()
+					end
+
+					if self:isInGame() then
+						self._object:SetAttribute(`DisplayName`, if status then pData.incognitoName else nil)
+						
+						local humanoid = self._object.Character and self._object.Character:FindFirstChildOfClass"Humanoid"
+
+						if humanoid and status then
+							humanoid.DisplayName = pData.incognitoName
+						end
+					end
 				end
 
 				local currentStatus = self:isPrivate()

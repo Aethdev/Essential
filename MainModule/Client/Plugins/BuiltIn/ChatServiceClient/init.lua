@@ -117,7 +117,10 @@ return function(envArgs)
 						-- 	time = 10;
 						-- })
 
-						ChatClient.Internals:connectNetwork()
+						return Promise.retryWithDelay(function()
+							ChatClient.Internals:connectNetwork()
+							return true
+						end, 3, 5)
 					end)
 			end)	
 

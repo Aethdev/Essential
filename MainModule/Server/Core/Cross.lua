@@ -57,39 +57,11 @@ return function(envArgs)
 			end
 		end,
 
-		CrossChat = function(jobId, speakerName, message, extraTags, channelName)
-			channelName = channelName or "all"
+		CrossChat = function(jobId, speakerName: string?, speakerUserId: number?, message)
+			local givenSpeakerName = speakerName or service.playerNameFromId(speakerUserId) or "[SYSTEM]";
+			local speakerColor = server.TextChatModule:GetSpeakerNameColor(givenSpeakerName)
 
-			local generalChannel = (server.chatService and server.chatService:GetChannel(channelName))
-
-			if generalChannel then
-				local tempSpeaker = false
-
-				local speaker = server.chatService:GetSpeaker("_" .. speakerName)
-					or (function()
-						tempSpeaker = true
-						return server.chatService:AddSpeaker("_" .. speakerName)
-					end)()
-
-				local tempInChannel = false
-				if not speaker:IsInChannel(channelName) then
-					tempInChannel = true
-					speaker:JoinChannel(channelName)
-				end
-
-				speaker:SayMessage(message, channelName, {
-					Tags = {
-						{ TagText = "Cross", TagColor = Color3.fromRGB(255, 255, 255) },
-					},
-				})
-
-				if tempInChannel then
-					tempInChannel = true
-					speaker:LeaveChannel(channelName)
-				end
-
-				if tempSpeaker then server.chatService:RemoveSpeaker("_" .. speakerName) end
-			end
+			server.ChatService:sendSystemMessage(`[Cross] <font color='#{speakerColor:ToHex()}'>{givenSpeakerName}</font>: {message}`)
 		end,
 
 		PrivateMessage = function(jobId, topic, message, expireOs, scheduledOs, sender, targets, crossEventId)

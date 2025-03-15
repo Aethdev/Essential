@@ -62,6 +62,7 @@ return function(envArgs, data)
 		do
 			local isKeybindsLocked = client.Policies._clientPolicies.CMD_KEYBINDS_ALLOWED.value ~= true
 
+
 			local keybindsEnabledToggle = cliSettingsCatg:makeObject "Toggle"
 			keybindsEnabledToggle.label.Text = "Keybinds Enabled"
 			keybindsEnabledToggle._object.Position = UDim2.new(0, 10, 0, 0 * (40 + 10))
@@ -69,7 +70,7 @@ return function(envArgs, data)
 			local keybindsEnabledHolder = window:modifyObject {
 				_object = keybindsEnabledToggle.toggleObj,
 			}
-
+			
 			if isKeybindsLocked then
 				keybindsEnabledToggle.lockedState = true
 				keybindsEnabledToggle:setToggle(false)
@@ -110,6 +111,7 @@ return function(envArgs, data)
 							incognitoModeToggle:setToggle(not state)
 							wait(20)
 						else
+							clientSettings.IncognitoMode = state
 							--manageClientSetting("IncognitoMode", state)
 							wait(120)
 						end

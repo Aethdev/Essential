@@ -18,7 +18,7 @@ return function(envArgs)
 
 	local localPlayer = service.player
 
-	client.Policies:connectPolicyChangeEvent(`HIDDEN_PLAYERS`, function(policyValue: boolean, enforcementType: string)
+	client.Policies:connectPolicyChangeEvent(`HIDDEN_PLAYERS`, function(policyValue: {[any]: number}, enforcementType: string)
 		if type(policyValue) == "table" then
 			for i, userId in policyValue do
 				local targetPlayer: Player = service.getPlayer(userId)
@@ -29,7 +29,7 @@ return function(envArgs)
 
 	client.Policies:connectPolicyChangeEvent(
 		`INCOGNITO_PLAYERS`,
-		function(policyValue: boolean, enforcementType: string)
+		function(policyValue: {[any]: number}, enforcementType: string)
 			if type(policyValue) == "table" then
 				for i, userId in policyValue do
 					local targetPlayer: Player = service.getPlayer(userId)

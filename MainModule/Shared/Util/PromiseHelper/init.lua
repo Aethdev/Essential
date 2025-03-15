@@ -208,7 +208,7 @@ function PromiseHelper.prototype:waitForSignals(signals: { [number]: signal }, t
 					end
 
 					signalLink = signal:connectOnce(function(...)
-						warn(`signal {i} fired`)
+						-- warn(`signal {i} fired`)
 						if select("#", ...) > 0 then
 							resolve { ... }
 						else

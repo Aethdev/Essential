@@ -21,6 +21,7 @@ local uiElements = {}
 local uiLibrary = {}
 
 local loadData = {
+	LoaderVers = "";
 	Asset = nil;
 	RojoEnabled = model:GetAttribute("Rojo") == true,
 	RojoCrossCompatibility = model:GetAttribute("RojoCrossCompatibility") == true; -- To be determined after finding the existing Essential
@@ -30,9 +31,9 @@ local loadData = {
 	disablePlugins = false; -- DEBUG
 }
 
-
+-- loadData.LoaderVers = if model:GetAttribute("LoaderVers") then  end
 -- For cross compatibility between the development Essential and Rojo Essential
-loadData.Asset = if SS:FindFirstChild("Essential") then SS.Essential:FindFirstChild("MainModule") else model:FindFirstChild("MainModule")
+loadData.Asset = if SS:FindFirstChild("EssentialModule") then SS.EssentialModule:FindFirstChild("MainModule") else model:FindFirstChild("MainModule")
 
 if not themes then warn("_EssentialL_ :: Themes folder is missing"); return end
 if not plugins then warn("_EssentialL_ :: Plugins folder is missing"); return end

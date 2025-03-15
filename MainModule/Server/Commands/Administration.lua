@@ -290,7 +290,7 @@ return function(envArgs)
 				local cmdBlacklist = variables.commandBlacklist
 				local playerPriority = Roles:getHighestPriority(plr)
 
-				for i, target in args[1] do
+				for i, target in pairs(args[1]) do
 					local targetPriority = Roles:getHighestPriority(target)
 					if targetPriority < playerPriority then
 						local targetPData = target:getPData()
@@ -385,7 +385,6 @@ return function(envArgs)
 					argument = "player",
 					type = "players",
 					required = true,
-					allowFPCreation = true
 				},
 			},
 			Permissions = { "Manage_Players" },
@@ -704,6 +703,8 @@ return function(envArgs)
 			Permissions = { "Manage_Game" },
 			Roles = {},
 			Chattable = false,
+			ServerCooldown = 10,
+			PlayerCooldown = 5,
 
 			Description = "Changes specified player' incognito name.",
 
@@ -713,10 +714,12 @@ return function(envArgs)
 
 				local oldIncognitoName = targetPData.incognitoName or ""
 				local incognitoName = Parser:trimString(args[2]) .. ` {targetPData.encryptKey:sub(3, 6)}`
+				local targetIncognitoStatus, targetIncognitoOverriden = target:isPrivate()
 
 				targetPData.incognitoName = incognitoName
+				target:toggleIncognitoStatus(targetIncognitoStatus, targetIncognitoOverriden)
 
-				plr:sendData("SendMessage", `Successfully changed {target:toStringDisplayForPlayer(plr)}'s incognito name to {Parser:filterForRichText(incognitoName)}`, nil, 10, "Context")
+				plr:sendData("SendMessage", `Successfully changed {target:toStringDisplayForPlayer(plr)}'s incognito name to <b>{Parser:filterForRichText(incognitoName)}</b>`, nil, 10, "Context")
 				target:sendData("SendNotification", {
 					title = `Incognito Name Changed`;
 					description = `{plr:toStringDisplayForPlayer(target)} changed your incognito name to {Parser:filterForRichText(incognitoName)}`
@@ -1409,7 +1412,7 @@ return function(envArgs)
 			Description = "Presents a chat message to all players in the game",
 			PlayerCooldown = 5,
 
-			Function = function(plr, args) Cross.send("CrossChat", plr.Name, args[1]) end,
+			Function = function(plr, args) Cross.send("CrossChat", plr.Name, plr.UserId, args[1]) end,
 		},
 
 		whitelist = {
@@ -2492,7 +2495,7 @@ return function(envArgs)
 										onExecute = "playercommand://"
 											.. resolveBanCommandId
 											.. "||@"
-											.. service.playerNameFromId(userId),
+											.. service.playerNameFromId(userId)..settings.delimiter..args[1][1],
 									},
 								},
 								selectable = true,

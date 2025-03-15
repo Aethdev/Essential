@@ -15,6 +15,7 @@ return function(envArgs)
 	local Moderation = server.Moderation
 	local Process = server.Process
 	local Remote = server.Remote
+	local Roles = server.Roles
 
 	local cmdsList = {
 		boombox = {

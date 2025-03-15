@@ -1140,14 +1140,14 @@ return function(envArgs)
 
 				-- Datastore encryption
 				if datastore_Allow and (datastore_ProtectIndex or datastore_EncryptKeys) then
-					hashedDataKey = hashLib.md5(originalDataKey)
+					hashedDataKey = Datastore.createHashString(originalDataKey, "key")
 				end
 
 				local dataCache = playerDataCache[userId]
 
 				if not dataCache then
 					local bannedIndexes =
-						{ "_dataCache", "_changed", "_updated", "_lastUpdated", "_dataUpdate", "_dataCorrupted" }
+						{ "_dataCache", "_loading", "_loaded", "_changed", "_updated", "_lastUpdated", "_dataUpdate", "_dataCorrupted" }
 
 					dataCache = {
 						_dataChanged = false,
@@ -1172,8 +1172,9 @@ return function(envArgs)
 						specialProxy = service.newProxy {
 							__index = function(self, ind)
 								if rawequal(ind, "serverData") then return dataCache.serverData end
-
 								if rawequal(ind, "_dataCache") and server.Studio then return dataCache end
+								if rawequal(ind, "_loading") then return dataCache._dataLoadState end
+								if rawequal(ind, "_loaded") then return metaRead(dataCache._dataLoaded:wrapConnect()) end
 
 								if rawequal(ind, "_updated") then return metaRead(dataCache._updated:wrapConnect()) end
 
@@ -2301,7 +2302,7 @@ return function(envArgs)
 
 								if not ingamePlayer then dataCache._autoUpdate = false end
 
-								--warn("Updating pData "..userId)
+								-- warn("Updating pData "..userId)
 								local canCheckNewData = os.time() - dataCache.lastUpdated >= 60
 								updateData(canCheckNewData)
 							end
@@ -2338,8 +2339,23 @@ return function(envArgs)
 							end
 						end
 
-						for i, v in pairs(savedPData) do
-							rawset(dataCache.specialTable, i, v)
+						for index, value in pairs(savedPData) do
+							rawset(dataCache.specialTable, index, value)
+							if dataCache._metaTables[index] and type(value) == "table" then
+								local dataMetaTable = dataCache._metaTables[index]
+								local dataMetaSpecTable = dataMetaTable._table
+								task.defer(dataMetaTable.startAlive, dataMetaTable)
+
+								for i, v in pairs(dataMetaSpecTable) do
+									rawset(dataMetaSpecTable, i, nil)
+								end
+
+								for i, v in pairs(value) do
+									rawset(dataMetaSpecTable, i, v)
+								end
+							end
+
+							dataCache._indexUpdated:fire(index)
 						end
 
 						dataCache._dataLoadState = true

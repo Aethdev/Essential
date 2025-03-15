@@ -95,7 +95,7 @@ function utility:setupClient(plr: Player, config: {
 	local clientInfo = server.Core.clients[plr]
 
 	if clientInfo.loaded then return end
-	clientInfo.verifyId = if loadingType == "Replicated" then "" else service.getRandom(math.random(15,20))
+	clientInfo.verifyId = ""
 	plr:SetAttribute("ESSVerifyId", clientInfo.verifyId)
 	
 	if loadingType == "PlayerGui" then
@@ -1138,87 +1138,87 @@ function utility:jailPlayer(player: Player | ParsedPlayer?): boolean
 						if jailInfo.exileInfo then
 							local oldInfo = jailInfo.exileInfo
 
-							oldInfo.propertyChanged:Disconnect()
+							oldInfo._janitor:Cleanup()
 							jailInfo.exileInfo = nil
 						end
 
-						if jailInfo.exileBox then service.Delete(jailInfo.exileBox, 1) end
+						if jailInfo.exileCell then service.Delete(jailInfo.exileCell, 1) end
 
+						local exileJanitor = server.Janitor.new()
+						local exileCell = server.Assets.ExileCell:Clone()
+						local exileRoof, exileShell = exileCell.Roof, exileCell.Shell
 						local exileInfo = {
+							_object = exileCell;
+							_janitor = exileJanitor;
+							_collisionState = nil;
 							created = os.time(),
 						}
 
-						local exileBox = server.Assets.ExileBox:Clone()
-						exileBox.Name = "_JAIL-" .. service.getRandom()
-						exileBox.CanTouch = false
-						exileBox.CanCollide = jailInfo.suspectActive
-						exileBox.CFrame = locationCF
-						exileBox.Archivable = false
-						exileBox.Locked = true
-						exileBox.Parent = workspace
+						exileJanitor:Add(exileCell)
 
-						local exileSelection: SelectionBox = exileBox:FindFirstChildOfClass "SelectionBox"
-						exileSelection.Transparency = if jailInfo.suspectActive then 0 else 0.9
-						exileInfo.selection = exileSelection
+						exileCell.Name = `_ESSJAIL-{player.UserId}`
 
-						local checkProperties = {
-							"CanTouch",
-							"Transparency",
-							"CFrame",
-							"Archivable",
-							"Locked",
-							"CanCollide",
-							"Anchored",
-							"Parent",
-						}
-						local savedProperties = {}
+						function exileInfo:toggleCollision(state: boolean)
+							if self._collisionState == state then return self end
+							self._collisionState = state
 
-						for i, checkProp in pairs(checkProperties) do
-							savedProperties[checkProp] = exileBox[checkProp]
+							for i, part in exileShell:GetChildren() do
+								if part:IsA"BasePart" then
+									part.CanCollide = state
+								end
+							end
+							for i, part in exileRoof:GetChildren() do
+								if part:IsA"BasePart" then
+									part.CanCollide = state
+								end
+							end
+
+							self._collisionState = state
+							return self
 						end
 
-						exileInfo.propertyChanged = exileBox.Changed:Connect(function(prop)
-							if table.find(checkProperties, prop) and savedProperties[prop] ~= exileBox[prop] then
-								makeExile()
-								exileBox[prop] = savedProperties[prop]
-							end
-						end)
+						exileInfo:toggleCollision(jailInfo.suspectActive)
+						exileCell:PivotTo(locationCF * CFrame.Angles(0, 90, 0) )
 
-						exileInfo._object = exileBox
+						exileJanitor:Add(exileCell:GetPropertyChangedSignal"Parent":Connect(function()
+							makeExile()
+						end))
+						
+						exileCell.Base.Nameplate.SurfaceGui.Title.Text = if player.Name == player.DisplayName then player.Name else
+							`{player.DisplayName} (@{player.Name})`
+						
+						exileCell.Parent = workspace
 
-						jailInfo.exileBox = exileBox
+						jailInfo.exileCell = exileCell
 						jailInfo.exileInfo = exileInfo
 						jailInfo.refreshed:fire(exileInfo)
 					end
 				end
 
 				local function setupPlayerAdded(playerWhoJoined)
-					if playerWhoJoined.UserId == jailInfo.suspectId then
-						jailInfo.suspectActive = true
-						jailInfo.suspectJoined:fire(playerWhoJoined)
+					if playerWhoJoined.UserId ~= jailInfo.suspectId then return end
+					jailInfo.suspectActive = true
+					jailInfo.suspectJoined:fire(playerWhoJoined)
 
-						if jailInfo.active and jailInfo.exileInfo then
-							jailInfo.exileInfo.selection.Transparency = 0
-							jailInfo.exileBox.CanCollide = true
-						end
-
-						if jailInfo.disconnectCheck then
-							jailInfo.disconnectCheck:disconnect()
-							jailInfo.disconnectCheck = nil
-						end
-
-						jailInfo.disconnectCheck = playerWhoJoined.disconnected:connectOnce(function()
-							jailInfo.suspectActive = false
-							jailInfo.suspectLeft:fire(playerWhoJoined)
-
-							pcall(function()
-								if jailInfo.active and jailInfo.exileInfo then
-									jailInfo.exileInfo.selection.Transparency = 0.9
-									jailInfo.exileBox.CanCollide = false
-								end
-							end)
-						end)
+					if jailInfo.active and jailInfo.exileInfo then
+						jailInfo.exileInfo:toggleCollision(true)
 					end
+
+					if jailInfo.disconnectCheck then
+						jailInfo.disconnectCheck:disconnect()
+						jailInfo.disconnectCheck = nil
+					end
+
+					jailInfo.disconnectCheck = playerWhoJoined.disconnected:connectOnce(function()
+						jailInfo.suspectActive = false
+						jailInfo.suspectLeft:fire(playerWhoJoined)
+
+						pcall(function()
+							if jailInfo.active and jailInfo.exileInfo then
+								jailInfo.exileInfo:toggleCollision(false)
+							end
+						end)
+					end)
 				end
 
 				makeExile()
@@ -1303,9 +1303,8 @@ function utility:unJailPlayer(player: { [any]: any }?, fakePlayer: boolean): boo
 		local exileInfo = jailInfo.exileInfo
 
 		if exileInfo then
-			exileInfo.propertyChanged:Disconnect()
-
-			if exileInfo._object then service.Delete(exileInfo._object, 0.5) end
+			exileInfo._janitor:Cleanup()
+			jailInfo.exileInfo = nil
 		end
 
 		local backpack = player:FindFirstChildOfClass "Backpack"

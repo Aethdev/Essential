@@ -325,22 +325,23 @@ function ChatService.internalTextChatPostMessageCallback(chatMessage: TextChatMe
         -- warn(`Processed internal post message callback`)
 
         for i, internalCallback: {name: string, priority: number, execute: () -> any} in ChatService.InternalChatCallbacks do
-            local waitSignal = Signal.new()
+            -- local waitSignal = Signal.new()
             local success, result = true, nil;
             
-            task.spawn(function()
+            -- task.spawn(function()
+            debug.profilebegin(`Process {i} - {internalCallback.name}`)
                 success, result = service.trackTask(`ChatService: Internal Callback {internalCallback.name}`, false, internalCallback.execute,
                     chatMessage, chatSource    
                 )   
-                waitSignal:fire()
+                -- waitSignal:fire()
 
                 if not success then
                     Logs.addLog("Process",  `ChatService: Internal Callback {internalCallback.name} encountered an error: {tostring(result)}`)
                 end
-            end)
+            -- end)
 
-            waitSignal:wait(nil, 0.2)
-            waitSignal:disconnect()
+            -- waitSignal:wait(nil, 0.2)
+            -- waitSignal:disconnect()
 
             if success and result == false then
                 return false
@@ -670,106 +671,131 @@ function ChatService.Init(env)
             -- end
         end
 
-        ChatService:registerInternalPostMessageCallback("COMMAND CHECK", 30_000, function(chatMessage: TextChatMessage, targetChatSource: TextSource)
-            -- warn(`Mute check [{chatMessage.TextSource.UserId} -> {targetChatSource.UserId}]`)
-            if chatMessage.Status ~= Enum.TextChatMessageStatus.Success then return nil end
-            if table.find(settings.ChatService_IgnoreChannels, chatMessage.TextChannel.Name) then return true end
-
-            local reverseFilteredText = Parser:reverseFilterForRichText(chatMessage.Text)
-            local messageArguments = Parser:getArguments({
-                str = reverseFilteredText,
-                delimiter = " ",
-                filterOptions = {
-                    maxArguments = 2
-                }
-            })
-
-            if messageArguments[1] and ChatService.SlashCommands:getRobloxCommandFromAlias(messageArguments[1]) then
-                --// DO NOT DOUBLE FILTER THE MESSAGE IF THE MESSAGE EXECUTED A ROBLOX SLASH COMMAND
-                return 1
-            end
-
-            return nil
-        end)
-
-        ChatService:registerInternalPostMessageCallback("MUTE CHECK", 20_000, function(chatMessage: TextChatMessage, targetChatSource: TextSource)
-            -- warn(`Mute check [{chatMessage.TextSource.UserId} -> {targetChatSource.UserId}]`)
-            if table.find(settings.ChatService_IgnoreChannels, chatMessage.TextChannel.Name) then return true end
-            if ChatService.TextSpeakers:isSpeakerMuted(chatMessage.TextSource.UserId, chatMessage.TextChannel.Name) then
-                local sourceSpeaker = ChatService.TextSpeakers.new(chatMessage.TextSource.UserId)
-                
-                if targetChatSource.UserId == chatMessage.TextSource.UserId then
-                    if sourceSpeaker.shadowMuted then
-                        -- warn(`Shadow muted for player {targetChatSource.UserId}`)
-                        return 1
-                    end
-                    
-                    ChatService:sendSystemMessage(`You do not have permission to speak in this channel. Your message is not visible to other players.`, {Parser:getParsedPlayer(chatMessage.TextSource.UserId)})   
-                end
-                
-                return false
-            end
-
-            return true
-        end)
-        
-        if settings.ChatService_FilterSupport then
-            ChatService:registerInternalPostMessageCallback("FILTER CHECK", 10_000, function(chatMessage: TextChatMessage, targetChatSource: TextSource)
-                -- warn(`Filter check [{chatMessage.TextSource.UserId} -> {targetChatSource.UserId}]`)
-
-                if chatMessage.Status ~= Enum.TextChatMessageStatus.Success and chatMessage.Status ~= Enum.TextChatMessageStatus.TextFilterFailed then return nil end
+        if settings.ChatService_OverrideChatCallback then
+            ChatService:registerInternalPostMessageCallback("COMMAND CHECK", 30_000, function(chatMessage: TextChatMessage, targetChatSource: TextSource)
+                -- warn(`Mute check [{chatMessage.TextSource.UserId} -> {targetChatSource.UserId}]`)
+                if chatMessage.Status ~= Enum.TextChatMessageStatus.Success then return nil end
+                if table.find(settings.ChatService_IgnoreChannels, chatMessage.TextChannel.Name) then return true end
 
                 local reverseFilteredText = Parser:reverseFilterForRichText(chatMessage.Text)
-                local isSafeString, filteredString = server.Filter:safeString(reverseFilteredText,
-                    chatMessage.TextSource.UserId,
-                    targetChatSource.UserId,
-                    if chatMessage.TextChannel.Name == `RBXGeneral` then
-                        Enum.TextFilterContext.PublicChat else Enum.TextFilterContext.PrivateChat
-                )
+                local messageArguments = Parser:getArguments({
+                    str = reverseFilteredText,
+                    delimiter = " ",
+                    filterOptions = {
+                        maxArguments = 2
+                    }
+                })
 
-                if not isSafeString then
-                    local targetParsedPlayer = Parser:getParsedPlayer(targetChatSource.UserId)
-                    local sourceParsedPlayer = Parser:getParsedPlayer(chatMessage.TextSource.UserId, true)
+                if messageArguments[1] and ChatService.SlashCommands:getRobloxCommandFromAlias(messageArguments[1]) then
+                    --// DO NOT DOUBLE FILTER THE MESSAGE IF THE MESSAGE EXECUTED A ROBLOX SLASH COMMAND
+                    return 1
+                end
+
+                return nil
+            end)
+
+            ChatService:registerInternalPostMessageCallback("MUTE CHECK", 20_000, function(chatMessage: TextChatMessage, targetChatSource: TextSource)
+                -- warn(`Mute check [{chatMessage.TextSource.UserId} -> {targetChatSource.UserId}]`)
+                if table.find(settings.ChatService_IgnoreChannels, chatMessage.TextChannel.Name) then return true end
+                if ChatService.TextSpeakers:isSpeakerMuted(chatMessage.TextSource.UserId, chatMessage.TextChannel.Name) then
+                    local sourceSpeaker = ChatService.TextSpeakers.new(chatMessage.TextSource.UserId)
                     
-                    if targetChatSource.UserId ~= chatMessage.TextSource.UserId then
-                        local newPrefixText = ""
-                        local playerChatTags = server.TextChatModule:GetChatTags(sourceParsedPlayer._object)
+                    if targetChatSource.UserId == chatMessage.TextSource.UserId then
+                        if sourceSpeaker.shadowMuted then
+                            -- warn(`Shadow muted for player {targetChatSource.UserId}`)
+                            return 1
+                        end
                         
-                        if playerChatTags and #playerChatTags > 0 then
-                            for i, chatTag in playerChatTags do
-                                newPrefixText = newPrefixText .. (if i == 1 then "" else " ") .. `<font color='#{chatTag.Color:ToHex()}' family='{chatTag.TagFont.Family}'>{chatTag.Text}</font>`
-                            end
-                        end
-
-                        local DisplayName = CorrectValue("string", sourceParsedPlayer.DisplayName, sourceParsedPlayer:GetAttribute("DisplayName") or sourceParsedPlayer:GetAttribute("ChatTag"))
-                        local DisplayNameColor = CorrectValue("Color3", if sourceParsedPlayer.Neutral then server.TextChatModule:GetSpeakerNameColor(DisplayName) else sourceParsedPlayer.TeamColor.Color,
-                            sourceParsedPlayer:GetAttribute("DisplayNameColor") or sourceParsedPlayer:GetAttribute("ChatNameColor"))
-                        local MessageTextColor = CorrectValue("Color3", TextChatService.ChatWindowConfiguration.TextColor3,
-                            sourceParsedPlayer:GetAttribute("MessageColor") or sourceParsedPlayer:GetAttribute("ChatTagColor"))
-                        
-                        local PrefixText = (if #newPrefixText > 0 then newPrefixText.." " else "") .. "<font color='#"..DisplayNameColor:ToHex().."'>"..DisplayName.."</font>:"
-
-                        if chatMessage.TextChannel.Name:match("^RBXWhisper:") then
-                            local otherTargetDisplayName = CorrectValue("string",
-                                targetParsedPlayer.DisplayName, targetParsedPlayer:GetAttribute("DisplayName") or targetParsedPlayer:GetAttribute("ChatTag"))
-
-                            PrefixText = `[To {otherTargetDisplayName}] ` .. PrefixText
-                        end
-
-                        ChatService:sendSystemMessage(PrefixText..` <font color='#{MessageTextColor:ToHex()}'>{Parser:filterForRichText(filteredString)}</font>`, {targetParsedPlayer})
-                        if sourceParsedPlayer and sourceParsedPlayer.Character then
-                            ChatService:sendBubbleMessage(sourceParsedPlayer.Character, filteredString, {targetParsedPlayer})
-                        end
-                    else
-                        return true
+                        ChatService:sendSystemMessage(`You do not have permission to speak in this channel. Your message is not visible to other players.`, {Parser:getParsedPlayer(chatMessage.TextSource.UserId)})   
                     end
                     
-
                     return false
                 end
 
-                return true
+                return nil
             end)
+            
+            ChatService:registerInternalPostMessageCallback("INCOGNITO PLAYER CHECK", 25_000, function(chatMessage: TextChatMessage, targetChatSource: TextSource)
+                -- warn(`Mute check [{chatMessage.TextSource.UserId} -> {targetChatSource.UserId}]`)
+                if table.find(settings.ChatService_IgnoreChannels, chatMessage.TextChannel.Name) then return true end
+
+                if chatMessage.TextChannel.Name:match("^RBXWhisper:(%d+)_(%d+)$") and chatMessage.TextSource.UserId ~= targetChatSource.UserId then
+                    local playerUserId1, playerUserId2 = chatMessage.TextChannel.Name:match("^RBXWhisper:(%d+)_(%d+)$") 
+		            playerUserId1, playerUserId2 = tonumber(playerUserId1), tonumber(playerUserId2)
+                    
+                    local oppositeTargetUserId = targetChatSource.UserId
+                    local parsedTarget = Parser:getParsedPlayer(oppositeTargetUserId)
+                    local parsedPlayer = Parser:getParsedPlayer(chatMessage.TextSource.UserId)
+                    
+                    if parsedTarget and parsedTarget:isPrivate() and not server.Moderation.checkAdmin(parsedPlayer) then
+                        ChatService:sendSystemMessage(`You do not have permission to speak to {parsedTarget:toStringDisplayForPlayer(parsedTarget)}.`, {parsedPlayer})   
+                        return false
+                    end
+                end
+
+
+                return nil
+            end)
+            
+
+            if settings.ChatService_FilterSupport then
+                ChatService:registerInternalPostMessageCallback("FILTER CHECK", 10_000, function(chatMessage: TextChatMessage, targetChatSource: TextSource)
+                    -- warn(`Filter check [{chatMessage.TextSource.UserId} -> {targetChatSource.UserId}]`)
+
+                    if chatMessage.Status ~= Enum.TextChatMessageStatus.Success and chatMessage.Status ~= Enum.TextChatMessageStatus.TextFilterFailed then return nil end
+
+                    local reverseFilteredText = Parser:reverseFilterForRichText(chatMessage.Text)
+                    local isSafeString, filteredString = server.Filter:safeString(reverseFilteredText,
+                        chatMessage.TextSource.UserId,
+                        targetChatSource.UserId,
+                        if chatMessage.TextChannel.Name == `RBXGeneral` then
+                            Enum.TextFilterContext.PublicChat else Enum.TextFilterContext.PrivateChat
+                    )
+
+                    if not isSafeString then
+                        local targetParsedPlayer = Parser:getParsedPlayer(targetChatSource.UserId)
+                        local sourceParsedPlayer = Parser:getParsedPlayer(chatMessage.TextSource.UserId, true)
+                        
+                        if targetChatSource.UserId ~= chatMessage.TextSource.UserId then
+                            local newPrefixText = ""
+                            local playerChatTags = server.TextChatModule:GetChatTags(sourceParsedPlayer._object)
+                            
+                            if playerChatTags and #playerChatTags > 0 then
+                                for i, chatTag in playerChatTags do
+                                    newPrefixText = newPrefixText .. (if i == 1 then "" else " ") .. `<font color='#{chatTag.Color:ToHex()}' family='{chatTag.TagFont.Family}'>{chatTag.Text}</font>`
+                                end
+                            end
+
+                            local DisplayName = CorrectValue("string", sourceParsedPlayer.DisplayName, sourceParsedPlayer:GetAttribute("DisplayName") or sourceParsedPlayer:GetAttribute("ChatTag"))
+                            local DisplayNameColor = CorrectValue("Color3", if sourceParsedPlayer.Neutral then server.TextChatModule:GetSpeakerNameColor(DisplayName) else sourceParsedPlayer.TeamColor.Color,
+                                sourceParsedPlayer:GetAttribute("DisplayNameColor") or sourceParsedPlayer:GetAttribute("ChatNameColor"))
+                            local MessageTextColor = CorrectValue("Color3", TextChatService.ChatWindowConfiguration.TextColor3,
+                                sourceParsedPlayer:GetAttribute("MessageColor") or sourceParsedPlayer:GetAttribute("ChatTagColor"))
+                            
+                            local PrefixText = (if #newPrefixText > 0 then newPrefixText.." " else "") .. "<font color='#"..DisplayNameColor:ToHex().."'>"..DisplayName.."</font>:"
+
+                            if chatMessage.TextChannel.Name:match("^RBXWhisper:") then
+                                local otherTargetDisplayName = CorrectValue("string",
+                                    targetParsedPlayer.DisplayName, targetParsedPlayer:GetAttribute("DisplayName") or targetParsedPlayer:GetAttribute("ChatTag"))
+
+                                PrefixText = `[To {otherTargetDisplayName}] ` .. PrefixText
+                            end
+
+                            ChatService:sendSystemMessage(PrefixText..` <font color='#{MessageTextColor:ToHex()}'>{Parser:filterForRichText(filteredString)}</font>`, {targetParsedPlayer})
+                            if sourceParsedPlayer and sourceParsedPlayer.Character then
+                                ChatService:sendBubbleMessage(sourceParsedPlayer.Character, filteredString, {targetParsedPlayer})
+                            end
+                        else
+                            return true
+                        end
+                        
+
+                        return false
+                    end
+
+                    return true
+                end)
+            end
         end
 
         ChatService.TextChannels:syncChannels()

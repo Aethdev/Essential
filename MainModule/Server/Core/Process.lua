@@ -339,6 +339,11 @@ return function(envArgs)
 						return playerData
 					end)
 					:andThen(function(playerData)
+						parsedPlayer:toggleIncognitoStatus(playerData.__clientSettings.IncognitoMode and true or false)
+						
+						return playerData
+					end)
+					:andThen(function(playerData)
 						local banCheck
 						banCheck = playerData._updated:connect(function()
 							local banData = playerData.Banned
@@ -1626,252 +1631,269 @@ return function(envArgs)
 				player:sendData("SetCoreGuiEnabled", Enum.CoreGuiType.Backpack, false)
 			end
 
-			local playerData = player:getPData()
+			local playerDisconnectCheck;
+			local waitForPlayerData; waitForPlayerData = Promise.promisify(Core.getPlayerData)(player.UserId)
+				:andThen(function(playerData)
+					-- Check if player data has encryption (warning notification)
+					if playerData._encryptionEnabled and not playerData.seenEncryptMessage then
+						local impPM = Remote.privateMessage {
+							receiver = player,
+							sender = nil,
+							topic = "PData Encryption Notice",
+							desc = "Important info about player data",
+							message = table.concat({
+								"Your player data is being encrypted under lightweight AES encryption.",
+								"It is <b>NOT 100%</b> guaranteed that it saves upon server shutdown or the time you leave the game.",
+								"",
+								"Your game developer has enabled player data encryption under developer settings.",
+							}, "\n"),
+							notifyOpts = {
+								title = "PData encryption",
+								desc = "Read about what's happening with your player data",
+								time = 30,
+							},
+							expireOs = os.time() + 60,
+							noReply = true,
+						}
 
-			-- Check if player data has encryption (warning notification)
-			if playerData._encryptionEnabled and not playerData.seenEncryptMessage then
-				local impPM = Remote.privateMessage {
-					receiver = player,
-					sender = nil,
-					topic = "PData Encryption Notice",
-					desc = "Important info about player data",
-					message = table.concat({
-						"Your player data is being encrypted under lightweight AES encryption.",
-						"It is <b>NOT 100%</b> guaranteed that it saves upon server shutdown or the time you leave the game.",
-						"",
-						"Your game developer has enabled player data encryption under developer settings.",
-					}, "\n"),
-					notifyOpts = {
-						title = "PData encryption",
-						desc = "Read about what's happening with your player data",
-						time = 30,
-					},
-					expireOs = os.time() + 60,
-					noReply = true,
-				}
-
-				impPM.opened:connectOnce(function() playerData.seenEncryptMessage = true end)
-			elseif not playerData._encryptionEnabled and playerData.seenEncryptMessage then
-				playerData.seenEncryptMessage = nil
-			end
-
-			-- Check for latest Essential update
-			local lastUpdated, updateDuration, updateVers, updateInfo =
-				changelog.lastUpdated, changelog.updateDuration, changelog.updateVers, changelog.updateInformation
-
-			local canShowUpdate = (lastUpdated + updateDuration) >= os.time()
-			if canShowUpdate then
-				local lastViewedVers = playerData.viewedUpdateVers
-				--warn("Got last viewed:", lastViewedVers)
-				--warn("Cur vers:", updateVers)
-				if lastViewedVers ~= updateVers then
-					playerData.viewedUpdateVers = updateVers
-
-					Remote.privateMessage {
-						receiver = player,
-						sender = nil,
-						topic = "Essential Changelogs",
-						desc = "Latest information of Essential <i>(latest version: v" .. updateVers .. ")</i>",
-						message = Parser:replaceStringWithDictionary(table.concat(updateInfo, "\n"), {
-							["{$selfprefix}"] = settings.playerPrefix,
-							["{$actionprefix}"] = settings.actionPrefix,
-							["{$delimiter}"] = settings.delimiter,
-							["{$batchSeperator}"] = settings.batchSeperator,
-						}),
-						notifyOpts = {
-							title = "New update! ⬆️",
-							desc = "Click to view the latest changes",
-						},
-						noReply = true,
-					}
-				end
-			end
-
-			-- Auto-update dynamic policies
-			do
-				PolicyManager:_updateDynamicClientPolicies(player)
-				service.stopLoop(`AUTOUPDATE_DYNAMICPOLICIES-{player.UserId}`)
-				service.loopTask(`AUTOUPDATE_DYNAMICPOLICIES-{player.UserId}`, 300, function()
-					if not player:isInGame() then
-						service.stopLoop(`AUTOUPDATE_DYNAMICPOLICIES-{player.UserId}`)
-						return
+						impPM.opened:connectOnce(function() playerData.seenEncryptMessage = true end)
+					elseif not playerData._encryptionEnabled and playerData.seenEncryptMessage then
+						playerData.seenEncryptMessage = nil
 					end
-					server.PolicyManager:_updateDynamicClientPolicies(player)
-				end)
-			end
 
-			-- Saved roles
+					-- Check for latest Essential update
+					local lastUpdated, updateDuration, updateVers, updateInfo =
+						changelog.lastUpdated, changelog.updateDuration, changelog.updateVers, changelog.updateInformation
 
-			do
-				local savedRoles = playerData.__savedRoles
-				local assignedInSavedRoles = {}
-				local function updateRoles()
-					for i, role in pairs(Roles:getAll()) do
-						if role.saveable then
-							local didFindInSave = savedRoles._find(role.name)
-							if didFindInSave and not role:checkTempMember(player) then
-								role:tempAssignWithMemberId(player.UserId)
-								assignedInSavedRoles[role] = true
-							elseif not didFindInSave then
-								if assignedInSavedRoles[role] then
-									assignedInSavedRoles[role] = nil
-									role:tempUnAssignWithMemberId(player.UserId)
+					local canShowUpdate = (lastUpdated + updateDuration) >= os.time()
+					if canShowUpdate then
+						local lastViewedVers = playerData.viewedUpdateVers
+						--warn("Got last viewed:", lastViewedVers)
+						--warn("Cur vers:", updateVers)
+						if lastViewedVers ~= updateVers then
+							playerData.viewedUpdateVers = updateVers
+
+							Remote.privateMessage {
+								receiver = player,
+								sender = nil,
+								topic = "Essential Changelogs",
+								desc = "Latest information of Essential <i>(latest version: v" .. updateVers .. ")</i>",
+								message = Parser:replaceStringWithDictionary(table.concat(updateInfo, "\n"), {
+									["{$selfprefix}"] = settings.playerPrefix,
+									["{$actionprefix}"] = settings.actionPrefix,
+									["{$delimiter}"] = settings.delimiter,
+									["{$batchSeperator}"] = settings.batchSeperator,
+								}),
+								notifyOpts = {
+									title = "New update! ⬆️",
+									desc = "Click to view the latest changes",
+								},
+								noReply = true,
+							}
+						end
+					end
+
+					-- Saved roles
+
+					do
+						local savedRoles = playerData.__savedRoles
+						local assignedInSavedRoles = {}
+						local function updateRoles()
+							for i, role in pairs(Roles:getAll()) do
+								if role.saveable then
+									local didFindInSave = savedRoles._find(role.name)
+									if didFindInSave and not role:checkTempMember(player) then
+										role:tempAssignWithMemberId(player.UserId)
+										assignedInSavedRoles[role] = true
+									elseif not didFindInSave then
+										if assignedInSavedRoles[role] then
+											assignedInSavedRoles[role] = nil
+											role:tempUnAssignWithMemberId(player.UserId)
+										end
+									end
 								end
 							end
 						end
+						savedRoles._updated:connect(updateRoles)
+						updateRoles()
 					end
-				end
-				savedRoles._updated:connect(updateRoles)
-				updateRoles()
-			end
 
-			-- Messaging
-			do
-				local watchedMsgIds = {}
-				local function checkMessages()
-					if player:isInGame() then
-						local messages = playerData.__messages
+					-- Messaging
+					do
+						local watchedMsgIds = {}
+						local function checkMessages()
+							if player:isInGame() then
+								local messages = playerData.__messages
 
-						for i, messageBody in ipairs(messages._table) do
-							if not watchedMsgIds[messageBody.id] then
-								watchedMsgIds[messageBody.id] = true
-								task.defer(function()
-									local senderUserId = messageBody.senderUserId
-									local messageText = messageBody.text
-									local senderName = senderUserId and service.playerNameFromId(senderUserId)
-										or "[SYSTEM]"
-									local privateMessage = Remote.privateMessage {
-										receiver = player,
-										topic = "Direct Message - "
-											.. tostring(messageBody.title or "[no title]")
-											.. (messageBody.isAReply and " [reply]" or ""),
-										desc = "<i>This message was sent directly from your player data. Opening this has marked your dm on read.</i>",
-										message = table.concat({
-											messageText,
-											"",
-											"",
-											"<i>Sent on "
-												.. Parser:osDate(messageBody.sent)
-												.. " UTC by player <b>"
-												.. senderName
-												.. "</b> </i>",
-											"<i>-------</i>",
-											"<i>Replied to:</i>",
-											"<i>" .. tostring(messageBody.prevMessage or "none") .. "</i>",
-										}, "\n"),
-										notifyOpts = { title = "Direct message", desc = "From " .. senderName },
-										noReply = not senderUserId or messageBody.noReply,
-										openTime = messageBody.openTime,
-									}
+								for i, messageBody in ipairs(messages._table) do
+									if not watchedMsgIds[messageBody.id] then
+										watchedMsgIds[messageBody.id] = true
+										task.defer(function()
+											local senderUserId = messageBody.senderUserId
+											local messageText = messageBody.text
+											local senderName = senderUserId and service.playerNameFromId(senderUserId)
+												or "[SYSTEM]"
+											local privateMessage = Remote.privateMessage {
+												receiver = player,
+												topic = "Direct Message - "
+													.. tostring(messageBody.title or "[no title]")
+													.. (messageBody.isAReply and " [reply]" or ""),
+												desc = "<i>This message was sent directly from your player data. Opening this has marked your dm on read.</i>",
+												message = table.concat({
+													messageText,
+													"",
+													"",
+													"<i>Sent on "
+														.. Parser:osDate(messageBody.sent)
+														.. " UTC by player <b>"
+														.. senderName
+														.. "</b> </i>",
+													"<i>-------</i>",
+													"<i>Replied to:</i>",
+													"<i>" .. tostring(messageBody.prevMessage or "none") .. "</i>",
+												}, "\n"),
+												notifyOpts = { title = "Direct message", desc = "From " .. senderName },
+												noReply = not senderUserId or messageBody.noReply,
+												openTime = messageBody.openTime,
+											}
 
-									privateMessage.opened:selfConnect(function(self, isSender)
-										--warn("Did open?")
-										if isSender then return end
-										self:disconnect()
-										messages._pull(messageBody)
-									end)
-
-									if not messageBody.noReply and senderUserId and senderUserId > 0 then
-										privateMessage.replied:connectOnce(function(fromSender, replyData)
-											if fromSender then return end
-											local replyMsg = replyData[2]
-
-											privateMessage:destroy()
-											
-											task.spawn(function()
-												local canSendMessage = service.isPlayerUserIdValid(senderUserId)
-												if not canSendMessage then
-													player:sendData(
-														"SendMessage",
-														"Your private message for a player with user id <b>"
-															.. senderUserId
-															.. "</b> cannot send due to non-existent target",
-														nil,
-														8,
-														"Context"
-													)
-												else
-													local targetPlayer = Parser:apifyPlayer({
-														Name = service.playerNameFromId(senderUserId),
-														UserId = senderUserId,
-													}, true)
-													if targetPlayer then
-														targetPlayer:directMessage {
-															title = "From " .. tostring(targetPlayer),
-															text = replyMsg,
-															senderUserId = player.UserId,
-															isAReply = true,
-															prevMessage = messageText,
-														}
-														player:sendData(
-															"SendMessage",
-															"Successfully replied to your dm with player <b>"
-																.. tostring(targetPlayer)
-																.. "</b>",
-															nil,
-															4,
-															"Context"
-														)
-													end
-												end
+											privateMessage.opened:selfConnect(function(self, isSender)
+												--warn("Did open?")
+												if isSender then return end
+												self:disconnect()
+												messages._pull(messageBody)
 											end)
+
+											if not messageBody.noReply and senderUserId and senderUserId > 0 then
+												privateMessage.replied:connectOnce(function(fromSender, replyData)
+													if fromSender then return end
+													local replyMsg = replyData[2]
+
+													privateMessage:destroy()
+													
+													task.spawn(function()
+														local canSendMessage = service.isPlayerUserIdValid(senderUserId)
+														if not canSendMessage then
+															player:sendData(
+																"SendMessage",
+																"Your private message for a player with user id <b>"
+																	.. senderUserId
+																	.. "</b> cannot send due to non-existent target",
+																nil,
+																8,
+																"Context"
+															)
+														else
+															local targetPlayer = Parser:apifyPlayer({
+																Name = service.playerNameFromId(senderUserId),
+																UserId = senderUserId,
+															}, true)
+															if targetPlayer then
+																targetPlayer:directMessage {
+																	title = "From " .. tostring(targetPlayer),
+																	text = replyMsg,
+																	senderUserId = player.UserId,
+																	isAReply = true,
+																	prevMessage = messageText,
+																}
+																player:sendData(
+																	"SendMessage",
+																	"Successfully replied to your dm with player <b>"
+																		.. tostring(targetPlayer)
+																		.. "</b>",
+																	nil,
+																	4,
+																	"Context"
+																)
+															end
+														end
+													end)
+												end)
+											end
 										end)
 									end
-								end)
+								end
 							end
 						end
+
+						local listenEvent = playerData._listenIndexChangedEvent("messages", checkMessages)
+						player.disconnected:connectOnce(function()
+							listenEvent:disconnect()
+						end)
+
+						checkMessages()
 					end
-				end
 
-				local listenEvent = playerData._listenIndexChangedEvent("messages", checkMessages)
-				player.disconnected:connectOnce(function() listenEvent:disconnect() end)
+					-- Server details
+					do
+						if not server.Studio then
+							local joinedOs = os.time()
 
-				checkMessages()
-			end
+							local sessionUpdateloopIndex = `Auto-Update Player {player.UserId} Session Data`
+							service.loopTask(sessionUpdateloopIndex, 180, function()
+								if player:isInGame() then
+									playerData.serverDetails = {
+										serverJobId = game.JobId,
+										serverAccessCode = variables.privateServerData
+												and variables.privateServerData.serverAccessId
+											or nil,
+										privateServer = #game.PrivateServerId > 0,
+										privateServerId = game.PrivateServerId,
+										joined = joinedOs,
+										lastUpdated = os.time(),
+									}
+								end
+							end)
 
-			-- Server details
-			do
-				if not server.Studio then
-					local joinedOs = os.time()
-
-					local sessionUpdateloopIndex = `Auto-Update Player {player.UserId} Session Data`
-					service.loopTask(sessionUpdateloopIndex, 180, function()
-						if player:isInGame() then
-							playerData.serverDetails = {
-								serverJobId = game.JobId,
-								serverAccessCode = variables.privateServerData
-										and variables.privateServerData.serverAccessId
-									or nil,
-								privateServer = #game.PrivateServerId > 0,
-								privateServerId = game.PrivateServerId,
-								joined = joinedOs,
-								lastUpdated = os.time(),
-							}
+							player.disconnected:connectOnce(function() service.stopLoop(sessionUpdateloopIndex) end)
 						end
+					end
+
+
+
+					-- Setup Incognito name
+					do
+						local incognitoName = playerData.incognitoName
+
+						if not incognitoName or #incognitoName == 0 or playerData.incognitoNameRandom then
+							playerData.incognitoNameRandom = false
+							player:generateIncognitoName()
+							player:sendData(
+								"SendMessage",
+								`Your incognito mode is <b>{playerData.incognitoName}</b>. This name will appear in logs and display names to people, although in-game administrators have full visibility to your name.`,
+								nil,
+								4,
+								"Context"
+							)
+						end
+
+						--warn(`Player {player.Name} incognito name: {playerData.incognitoName}`)
+					end
+					
+				-- Auto-update dynamic policies
+				do
+					PolicyManager:_updateDynamicClientPolicies(player)
+					service.stopLoop(`AUTOUPDATE_DYNAMICPOLICIES-{player.UserId}`)
+					service.loopTask(`AUTOUPDATE_DYNAMICPOLICIES-{player.UserId}`, 300, function()
+						if not player:isInGame() then
+							service.stopLoop(`AUTOUPDATE_DYNAMICPOLICIES-{player.UserId}`)
+							return
+						end
+						server.PolicyManager:_updateDynamicClientPolicies(player)
 					end)
-
-					player.disconnected:connectOnce(function() service.stopLoop(sessionUpdateloopIndex) end)
 				end
-			end
-
-			-- Setup Incognito name
-			do
-				local incognitoName = playerData.incognitoName
-
-				if not incognitoName or #incognitoName == 0 or playerData.incognitoNameRandom then
-					playerData.incognitoNameRandom = false
-					player:generateIncognitoName()
-					player:sendData(
-						"SendMessage",
-						`Your incognito mode is <b>{playerData.incognitoName}</b>. This name will appear in logs and display names to people, although in-game administrators have full visibility to your name.`,
-						nil,
-						4,
-						"Context"
-					)
+			end)
+			:finally(function()
+				if playerDisconnectCheck then
+					playerDisconnectCheck:disconnect()
 				end
+			end)
 
-				--warn(`Player {player.Name} incognito name: {playerData.incognitoName}`)
-			end
+			playerDisconnectCheck = player.disconnected:connectOnce(function()
+				if waitForPlayerData.Status == Promise.Status.Started then
+					waitForPlayerData:cancel()
+				end
+			end)
 
 			-- Show global notices
 			do
